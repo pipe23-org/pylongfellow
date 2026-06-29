@@ -1,0 +1,140 @@
+[build-system]
+requires = ["scikit-build-core>=0.12", "cffi>=2.0"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "pylongfellow"
+version = "0.0.1.dev0"
+description = "Thin Python binding to Google's Longfellow zero-knowledge mdoc library"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE", "vendor/longfellow-zk/LICENSE"]
+authors = [{ name = "Nathan Schepers" }]
+keywords = ["zero-knowledge", "mdoc", "longfellow", "eudi", "iso18013-5", "cffi"]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Operating System :: POSIX :: Linux",
+  "Topic :: Security :: Cryptography",
+]
+# cffi API-mode extensions import _cffi_backend at runtime, so cffi is a real
+# runtime dependency (as for cryptography, bcrypt, PyNaCl).
+dependencies = ["cffi>=2.0"]
+
+[project.urls]
+Upstream = "https://github.com/google/longfellow-zk"
+
+# Test/dev only — not shipped in the wheel.
+[dependency-groups]
+test = ["cbor2", "pytest>=8"]
+docs = ["mkdocs-material", "mkdocstrings[python]", "interrogate"]
+dev = [
+    {include-group = "test"},
+    {include-group = "docs"},
+    "ruff",
+    "mypy",
+    "cryptography>=49.0.0",
+    "types-cffi>=2.0.0.20260518",
+    "pytest-cov>=7.1.0",
+]
+
+[tool.scikit-build]
+minimum-version = "build-system.requires"
+wheel.packages = ["src/pylongfellow"]
+cmake.version = ">=3.15"
+build-dir = "build/{wheel_tag}"
+build.targets = ["_longfellow"]
+
+[tool.scikit-build.cmake.define]
+# Internal upstream object libs (ec/algebra/...) aren't PIC by default; the
+# extension links them into one shared object, so force PIC globally.
+CMAKE_POSITION_INDEPENDENT_CODE = "ON"
+CMAKE_BUILD_TYPE = "Release"
+
+# Fast suite by default; the one real circuit-gen test is marked `slow` and
+# excluded. Run it with `-m slow`, or everything with `-m "slow or not slow"`.
+[tool.pytest.ini_options]
+markers = ["slow: real circuit generation (~15s); excluded by default, run with -m slow"]
+addopts = "-m 'not slow'"
+
+# Branch coverage, gated at 100%. The gate is only reachable with the slow test
+# run (generate_circuit's path is slow-only): `pytest -m "slow or not slow" --cov`.
+[tool.coverage.run]
+branch = true
+source = ["pylongfellow"]
+# _ffibuild.py runs inside the CMake build (emits the extension C source), not
+# under pytest — exclude it so coverage reflects the runtime package.
+omit = ["*/_ffibuild.py"]
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true
+exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError"]
+
+# Lint + format, line length 100. vendor/ (upstream submodule) is not ours to lint.
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+extend-exclude = ["vendor"]
+
+# Rule families beyond ruff's defaults: I=imports, UP=pyupgrade, B=bugbear,
+# S=bandit (security), RUF=ruff-native, SIM=simplify, C4=comprehensions,
+# PT=pytest-style, PERF=perf, D=pydocstyle.
+[tool.ruff.lint]
+extend-select = ["I", "UP", "B", "S", "RUF", "SIM", "C4", "PT", "PERF", "D"]
+ignore = ["D107"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "D"]
+"scripts/*" = ["D"]
+"src/_cffi_src/*" = ["D"]
+
+# Strict over the package and tests (scripts/ excluded; see override below).
+# python_version is the support floor, so mypy flags any newer-only feature.
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src/pylongfellow", "src/_cffi_src", "tests"]
+
+# Tests are checked for real errors but not required to annotate every function;
+# scripts/ stay out of the check (not in `files`).
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_calls = false
+
+[tool.interrogate]
+fail-under = 100
+ignore-init-method = true
+ignore-private = true
+ignore-semiprivate = true
+ignore-magic = true
+ignore-nested-functions = true
+exclude = ["tests", "scripts", "src/_cffi_src", "build", "vendor"]
+
+# before-all installs gtest + benchmark because upstream's CMake REQUIREs them at
+# configure time, even though we build only the library.
+[tool.cibuildwheel]
+build = "cp311-* cp312-* cp313-* cp314-*"
+build-frontend = "build[uv]"
+build-verbosity = 1
+test-groups = ["test"]
+test-command = 'pytest {project}/tests -m "slow or not slow"'
+
+[tool.cibuildwheel.linux]
+manylinux-x86_64-image = "manylinux_2_28"
+before-all = "dnf install -y epel-release && dnf install -y openssl-devel libzstd-devel gtest-devel google-benchmark-devel"
+
+# musllinux is Alpine — override the dnf before-all with apk.
+[[tool.cibuildwheel.overrides]]
+select = "*-musllinux*"
+before-all = "apk add --no-cache openssl-dev zstd-dev gtest-dev benchmark-dev"
