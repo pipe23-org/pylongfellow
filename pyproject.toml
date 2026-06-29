@@ -27,6 +27,10 @@ classifiers = [
 dependencies = ["cffi>=2.0"]
 
 [project.urls]
+Homepage = "https://github.com/pipe23-org/pylongfellow"
+Documentation = "https://pylongfellow.readthedocs.io/"
+Repository = "https://github.com/pipe23-org/pylongfellow"
+Issues = "https://github.com/pipe23-org/pylongfellow/issues"
 Upstream = "https://github.com/google/longfellow-zk"
 
 # Test/dev only — not shipped in the wheel.
