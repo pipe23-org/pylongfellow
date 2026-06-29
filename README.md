@@ -1,8 +1,17 @@
 # pylongfellow
 
+[![CI](https://github.com/pipe23-org/pylongfellow/actions/workflows/ci.yml/badge.svg)](https://github.com/pipe23-org/pylongfellow/actions/workflows/ci.yml)
+[![Docs](https://app.readthedocs.org/projects/pylongfellow/badge/?version=latest)](https://pylongfellow.readthedocs.io/en/latest/)
+[![PyPI](https://img.shields.io/pypi/v/pylongfellow)](https://pypi.org/project/pylongfellow/)
+[![Python](https://img.shields.io/pypi/pyversions/pylongfellow)](https://pypi.org/project/pylongfellow/)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+
+## Overview
+
 A thin Python binding to [`google/longfellow-zk`](https://github.com/google/longfellow-zk),
 the zero-knowledge library that ISO 18013-5 / EUDI mdoc wallets use to prove attributes of a
-credential without revealing the credential.
+credential without revealing the credential. The underlying scheme is described in
+[*Anonymous credentials from ECDSA*](https://eprint.iacr.org/2024/2010).
 
 `pylongfellow` is a [cffi](https://cffi.readthedocs.io/) wrapper over the library's
 `extern "C"` mdoc ABI (`lib/circuits/mdoc/mdoc_zk.h`). It binds the prove and verify calls and
