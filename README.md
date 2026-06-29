@@ -21,7 +21,7 @@ site (mkdocstrings + MkDocs-Material).
 ## Install
 
 ```
-uv add pylongfellow
+pip install pylongfellow
 ```
 
 Wheels are published for **CPython 3.11–3.14 on Linux x86_64** (manylinux and musllinux). On
