@@ -21,15 +21,14 @@ site (mkdocstrings + MkDocs-Material).
 ## Install
 
 ```
-pip install pylongfellow
+uv add pylongfellow
 ```
 
 Wheels are published for **CPython 3.11–3.14 on Linux x86_64** (manylinux and musllinux). On
 any other platform `pip` falls back to the source distribution, which builds the vendored C++
 locally and needs a C++ toolchain — see [Build from source](#build-from-source).
 
-The wheel's only runtime dependency is **`cffi`**: an API-mode extension imports
-`_cffi_backend` at runtime, the same as `cryptography`, `bcrypt`, and `PyNaCl`.
+The wheel's only runtime dependency is **`cffi`**.
 
 ## What it binds
 
