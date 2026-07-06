@@ -73,6 +73,18 @@ def _build_spec(ffi: Any, spec: ZkSpec) -> tuple[Any, Any]:
     return c_spec, system_buf
 
 
+def _require_attrs_match_spec(attrs: list[RequestedAttribute], spec: ZkSpec) -> None:
+    # The C entry points never read spec.num_attributes; the invariant is
+    # attrs_len == the circuit's attribute count, for which the spec field is the
+    # proxy (tied to the circuit by the hash check below). A mismatch hard-aborts
+    # in C (DenseFiller overfill on too many; the Ligero subfield check on too
+    # few, prover side) — only verify-with-too-few returns a clean status.
+    if len(attrs) != spec.num_attributes:
+        raise ValueError(
+            f"len(attrs) ({len(attrs)}) does not match spec.num_attributes ({spec.num_attributes})"
+        )
+
+
 def _require_spec_matches_circuit(circuit: bytes, spec: ZkSpec) -> None:
     # The C prover hard-aborts (SIGABRT — a paranoid subfield check in the Ligero
     # prover) on a spec/circuit mismatch, with no error return; refuse it here as
@@ -108,11 +120,13 @@ def prove(
         Proof bytes.
 
     Raises:
-        ValueError: `spec` names a different circuit than `circuit`.
+        ValueError: `spec` names a different circuit than `circuit`, or
+            `len(attrs)` does not match `spec.num_attributes`.
         ProverError: The prover rejected the inputs.
     """
     ffi, lib = _load()
     _require_spec_matches_circuit(circuit, spec)
+    _require_attrs_match_spec(attrs, spec)
     pk_x, pk_y = issuer_pk
     c_attrs = _fill_attrs(ffi, attrs)
     c_spec, _keepalive = _build_spec(ffi, spec)
@@ -169,11 +183,13 @@ def verify(
         spec: ZkSpec naming the circuit.
 
     Raises:
-        ValueError: `spec` names a different circuit than `circuit`.
+        ValueError: `spec` names a different circuit than `circuit`, or
+            `len(attrs)` does not match `spec.num_attributes`.
         VerifierError: The proof does not hold.
     """
     ffi, lib = _load()
     _require_spec_matches_circuit(circuit, spec)
+    _require_attrs_match_spec(attrs, spec)
     pk_x, pk_y = issuer_pk
     c_attrs = _fill_attrs(ffi, attrs)
     c_spec, _keepalive = _build_spec(ffi, spec)

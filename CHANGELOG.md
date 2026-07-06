@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.1
+
+- `prove` and `verify` now raise `ValueError` when `len(attrs) != spec.num_attributes`,
+  before any C call. Previously three of the four mismatch cases killed the process with
+  SIGABRT inside the C library (array overfill on too many attributes; the Ligero subfield
+  check on too few, prover side); only verify-with-too-few returned a clean error. The C
+  entry points never read `spec.num_attributes` — the invariant is the circuit's attribute
+  count, for which the spec field is the hash-pinned proxy. Behaviour change: an empty
+  `attrs` list on `verify` now raises `ValueError` instead of
+  `VerifierError(MDOC_VERIFIER_ARGUMENTS_TOO_SMALL)`.
+
 ## 0.2.0
 
 Breaking. The mdoc functions, types, and errors moved into the `pylongfellow.mdoc`

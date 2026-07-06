@@ -59,6 +59,13 @@ def test_verify_rejects(proof_age_over_18, mutate):
         _verify(mutate(proof_age_over_18))
 
 
+@pytest.mark.parametrize("resize", [lambda a: a + a, lambda a: []], ids=["over", "under"])
+def test_verify_rejects_attr_count_mismatch(proof_age_over_18, resize):
+    inputs = proof_age_over_18
+    with pytest.raises(ValueError, match="num_attributes"):
+        _verify(dataclasses.replace(inputs, attrs=resize(inputs.attrs)))
+
+
 def test_verify_rejects_spec_for_wrong_circuit(proof_age_over_18):
     # A spec naming a different circuit must be a clean ValueError (spec<->circuit guard).
     wrong = mdoc.find_zk_spec(
