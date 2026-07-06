@@ -228,8 +228,8 @@ def generate_circuit(spec: ZkSpec) -> bytes:
 def circuit_id(circuit: bytes) -> str:
     """Recompute a circuit's canonical id from its compressed bytes.
 
-    Binds `circuit_id`. The id is the 64-char hex a [`ZkSpec`][pylongfellow.mdoc.ZkSpec]
-    carries as `circuit_hash`.
+    Binds `circuit_id`. The id is 64 hex chars and equals
+    [`ZkSpec.circuit_hash`][pylongfellow.mdoc.ZkSpec].
 
     Args:
         circuit: Compressed circuit bytes.
