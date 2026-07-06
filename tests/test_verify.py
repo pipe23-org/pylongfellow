@@ -5,11 +5,11 @@ import dataclasses
 import cbor2
 import pytest
 
-import pylongfellow as lf
+from pylongfellow import mdoc
 
 
 def _verify(inputs):
-    lf.verify(
+    mdoc.verify(
         inputs.circuit,
         inputs.issuer_pk,
         inputs.transcript,
@@ -55,13 +55,13 @@ def _attr(inputs, **changes):
     ids=["proof", "pubkey", "transcript", "timestamp", "value", "id", "spec"],
 )
 def test_verify_rejects(proof_age_over_18, mutate):
-    with pytest.raises(lf.VerifierError):
+    with pytest.raises(mdoc.VerifierError):
         _verify(mutate(proof_age_over_18))
 
 
 def test_verify_rejects_spec_for_wrong_circuit(proof_age_over_18):
     # A spec naming a different circuit must be a clean ValueError (spec<->circuit guard).
-    wrong = lf.find_zk_spec(
+    wrong = mdoc.find_zk_spec(
         "longfellow-libzk-v1",
         "8d079211715200ff06c5109639245502bfe94aa869908d31176aae4016182121",  # v7, not the v6 circuit
     )

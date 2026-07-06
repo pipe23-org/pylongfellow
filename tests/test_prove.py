@@ -5,13 +5,13 @@ import dataclasses
 import cbor2
 import pytest
 
-import pylongfellow as lf
+from pylongfellow import mdoc
 
 
 def _prove(inputs):
-    return lf.prove(
+    return mdoc.prove(
         inputs.circuit,
-        inputs.mdoc,
+        inputs.mdoc_bytes,
         inputs.issuer_pk,
         inputs.transcript,
         inputs.attrs,
@@ -29,7 +29,7 @@ def test_prove_then_verify(mdoc_eu_av):
     proof = _prove(inputs)
     assert proof
     # The proof we just made must verify against the same inputs.
-    lf.verify(
+    mdoc.verify(
         inputs.circuit,
         inputs.issuer_pk,
         inputs.transcript,
@@ -48,7 +48,7 @@ def test_prove_then_verify(mdoc_eu_av):
     "mutate",
     [
         lambda inputs: dataclasses.replace(
-            inputs, mdoc=inputs.mdoc[: len(inputs.mdoc) // 2]
+            inputs, mdoc_bytes=inputs.mdoc_bytes[: len(inputs.mdoc_bytes) // 2]
         ),  # truncated
         lambda inputs: dataclasses.replace(
             inputs, issuer_pk=(inputs.issuer_pk[1], inputs.issuer_pk[0])
@@ -60,14 +60,14 @@ def test_prove_then_verify(mdoc_eu_av):
     ids=["mdoc", "pubkey", "timestamp", "id", "value"],
 )
 def test_prove_rejects(mdoc_eu_av, mutate):
-    with pytest.raises(lf.ProverError):
+    with pytest.raises(mdoc.ProverError):
         _prove(mutate(mdoc_eu_av))
 
 
 def test_prove_rejects_spec_for_wrong_circuit(mdoc_eu_av):
     # A spec naming a different circuit must be a clean ValueError, not the
     # upstream SIGABRT (the binding's spec<->circuit guard).
-    wrong = lf.find_zk_spec(
+    wrong = mdoc.find_zk_spec(
         "longfellow-libzk-v1",
         "137e5a75ce72735a37c8a72da1a8a0a5df8d13365c2ae3d2c2bd6a0e7197c7c6",  # v6, not the v7 circuit
     )
