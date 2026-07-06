@@ -24,9 +24,9 @@ with the data types they take and the errors they raise.
 
 ### Errors
 
-Each function raises its own exception on a non-success C return code — `ProverError`,
-`VerifierError`, or `CircuitError`. The return code is in the exception's `.code`, typed as
-the corresponding enum. All three are subclasses of `mdoc.Error`, which is a subclass of
+Each function raises its own exception on a non-success C return code. The return code is in
+the exception's `.code`, typed as the corresponding enum. The exceptions are subclasses of
+[`mdoc.Error`][pylongfellow.mdoc.Error], which is a subclass of
 [`LongfellowError`][pylongfellow.LongfellowError]:
 
 ```
