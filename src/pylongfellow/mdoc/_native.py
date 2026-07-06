@@ -4,14 +4,14 @@ import functools
 from datetime import UTC, datetime
 from typing import Any
 
+from .._errors import LongfellowError
 from ._errors import (
     CircuitError,
     CircuitGenerationErrorCode,
-    LongfellowError,
-    MdocProverErrorCode,
-    MdocVerifierErrorCode,
     ProverError,
+    ProverErrorCode,
     VerifierError,
+    VerifierErrorCode,
 )
 from ._types import RequestedAttribute, ZkSpec
 
@@ -21,7 +21,7 @@ _NAMESPACE_MAX, _ID_MAX, _VALUE_MAX = 64, 32, 64
 
 def _load() -> tuple[Any, Any]:
     try:
-        from ._longfellow import ffi, lib
+        from .._longfellow import ffi, lib
     except ImportError as e:  # pragma: no cover - depends on the build
         raise ImportError(
             "pylongfellow native extension is not built; build the package first"
@@ -96,7 +96,7 @@ def prove(
 
     Args:
         circuit: Compressed circuit bytes, as from
-            [`generate_circuit`][pylongfellow.generate_circuit].
+            [`generate_circuit`][pylongfellow.mdoc.generate_circuit].
         mdoc: CBOR-encoded mdoc credential.
         issuer_pk: Issuer public key, as `(x, y)`.
         transcript: Session transcript the proof is bound to.
@@ -135,7 +135,7 @@ def prove(
         c_spec,
     )
     if status != lib.MDOC_PROVER_SUCCESS:
-        raise ProverError(MdocProverErrorCode(status))
+        raise ProverError(ProverErrorCode(status))
     try:
         return bytes(ffi.buffer(proof_ptr[0], proof_len[0]))
     finally:
@@ -164,7 +164,7 @@ def verify(
         attrs: Attributes the proof claims; `len(attrs)` must equal
             `spec.num_attributes`.
         timestamp: Timezone-aware verification time.
-        proof: Proof bytes from [`prove`][pylongfellow.prove].
+        proof: Proof bytes from [`prove`][pylongfellow.mdoc.prove].
         doctype: mdoc doctype the proof is scoped to.
         spec: ZkSpec naming the circuit.
 
@@ -193,7 +193,7 @@ def verify(
         c_spec,
     )
     if status != lib.MDOC_VERIFIER_SUCCESS:
-        raise VerifierError(MdocVerifierErrorCode(status))
+        raise VerifierError(VerifierErrorCode(status))
 
 
 def generate_circuit(spec: ZkSpec) -> bytes:
@@ -228,7 +228,7 @@ def generate_circuit(spec: ZkSpec) -> bytes:
 def circuit_id(circuit: bytes) -> str:
     """Recompute a circuit's canonical id from its compressed bytes.
 
-    Binds `circuit_id`. The id is the 64-char hex a [`ZkSpec`][pylongfellow.ZkSpec]
+    Binds `circuit_id`. The id is the 64-char hex a [`ZkSpec`][pylongfellow.mdoc.ZkSpec]
     carries as `circuit_hash`.
 
     Args:
@@ -258,7 +258,7 @@ def find_zk_spec(system: str, circuit_hash: str) -> ZkSpec | None:
     Args:
         system: Proof-system identifier the spec is registered under.
         circuit_hash: Canonical circuit id, as from
-            [`circuit_id`][pylongfellow.circuit_id].
+            [`circuit_id`][pylongfellow.mdoc.circuit_id].
 
     Returns:
         The matching ZkSpec, or None if the build has no spec for that pair.
