@@ -2,11 +2,7 @@
 
 The package is organised into submodules, one per part of the upstream library. Currently the
 mdoc-specific functions — proving, verifying, and circuit generation — are implemented, in
-`pylongfellow.mdoc`:
-
-    from pylongfellow import mdoc
-
-    mdoc.verify(...)
+`pylongfellow.mdoc`.
 """
 
 from importlib.metadata import version

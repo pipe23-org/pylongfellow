@@ -9,12 +9,6 @@
 The mdoc-specific functions from longfellow-zk — `prove`, `verify`, and circuit generation —
 with the data types they take and the errors they raise.
 
-```python
-from pylongfellow import mdoc
-
-mdoc.verify(...)
-```
-
 ### Functions
 
 ::: pylongfellow.mdoc.prove
