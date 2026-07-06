@@ -4,11 +4,11 @@
 
 Breaking. The mdoc functions, types, and errors moved into the `pylongfellow.mdoc`
 submodule. This
-is a clean break — no deprecation shims, no top-level re-exports of the moved names. The old
+is a clean break: no deprecation shims, no top-level re-exports of the moved names. The old
 `import pylongfellow as lf; lf.verify(...)` becomes `from pylongfellow import mdoc;
 mdoc.verify(...)`.
 
-### Moved (mechanical rename — new address, same object)
+### Moved (new address, same object)
 
 - `pylongfellow.prove` → `pylongfellow.mdoc.prove`
 - `pylongfellow.verify` → `pylongfellow.mdoc.verify`
@@ -21,7 +21,7 @@ mdoc.verify(...)`.
 - `pylongfellow.VerifierError` → `pylongfellow.mdoc.VerifierError`
 - `pylongfellow.CircuitError` → `pylongfellow.mdoc.CircuitError`
 
-### Renamed (the `Mdoc` prefix is gone — it's in the module path now)
+### Renamed (`Mdoc` prefix removed)
 
 - `pylongfellow.MdocProverErrorCode` → `pylongfellow.mdoc.ProverErrorCode`
 - `pylongfellow.MdocVerifierErrorCode` → `pylongfellow.mdoc.VerifierErrorCode`
@@ -40,5 +40,5 @@ mdoc.verify(...)`.
 ### Unchanged
 
 - `pylongfellow.LongfellowError` and `pylongfellow.__version__` stay at the top level.
-- No function signatures, error behaviour, or native code changed — byte-for-byte the same
+- No function signatures, error behaviour, or native code changed: byte-for-byte the same
   functions at a new address. The vendored upstream longfellow revision is unchanged.
