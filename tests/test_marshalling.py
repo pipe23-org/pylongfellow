@@ -4,8 +4,8 @@ from datetime import UTC, datetime, timedelta, timezone
 
 import pytest
 
-import pylongfellow as lf
-from pylongfellow._native import _fmt_timestamp
+from pylongfellow import mdoc
+from pylongfellow.mdoc._native import _fmt_timestamp
 
 
 def test_timestamp_canonical_20_bytes():
@@ -34,15 +34,15 @@ def test_timestamp_rejects_naive():
 @pytest.mark.parametrize(
     "attr",
     [
-        lf.RequestedAttribute("a" * 65, "age_over_18", b"\xf5"),
-        lf.RequestedAttribute("org.iso.18013.5.1", "a" * 33, b"\xf5"),
-        lf.RequestedAttribute("org.iso.18013.5.1", "age_over_18", b"\x00" * 65),
+        mdoc.RequestedAttribute("a" * 65, "age_over_18", b"\xf5"),
+        mdoc.RequestedAttribute("org.iso.18013.5.1", "a" * 33, b"\xf5"),
+        mdoc.RequestedAttribute("org.iso.18013.5.1", "age_over_18", b"\x00" * 65),
     ],
     ids=["namespace", "id", "cbor_value"],
 )
 def test_fill_attrs_rejects_oversize(attr):
     from pylongfellow._longfellow import ffi
-    from pylongfellow._native import _fill_attrs
+    from pylongfellow.mdoc._native import _fill_attrs
 
     with pytest.raises(ValueError, match="too long"):
         _fill_attrs(ffi, [attr])
@@ -50,11 +50,11 @@ def test_fill_attrs_rejects_oversize(attr):
 
 def test_fill_attrs_fills_each_entry():
     from pylongfellow._longfellow import ffi
-    from pylongfellow._native import _fill_attrs
+    from pylongfellow.mdoc._native import _fill_attrs
 
     attrs = [
-        lf.RequestedAttribute("org.iso.18013.5.1", "age_over_18", b"\xf5"),
-        lf.RequestedAttribute("eu.europa.ec.av.1", "age_over_21", b"\xf4"),
+        mdoc.RequestedAttribute("org.iso.18013.5.1", "age_over_18", b"\xf5"),
+        mdoc.RequestedAttribute("eu.europa.ec.av.1", "age_over_21", b"\xf4"),
     ]
     c_attrs = _fill_attrs(ffi, attrs)
     for i, attr in enumerate(attrs):

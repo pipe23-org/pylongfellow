@@ -13,7 +13,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-import pylongfellow as lf
+from pylongfellow import mdoc
 
 
 def _stderr(level: str | None) -> str:
@@ -40,13 +40,13 @@ if __name__ == "__main__":
     # verify, which logs at INFO.
     data = Path(__file__).parent / "data"
     fx = json.loads((data / "proof_age_over_18.json").read_text())
-    spec = lf.find_zk_spec(fx["system"], fx["circuit_hash"])
+    spec = mdoc.find_zk_spec(fx["system"], fx["circuit_hash"])
     assert spec is not None
     attrs = [
-        lf.RequestedAttribute(a["namespace"], a["id"], bytes.fromhex(a["cbor_value_hex"]))
+        mdoc.RequestedAttribute(a["namespace"], a["id"], bytes.fromhex(a["cbor_value_hex"]))
         for a in fx["attrs"]
     ]
-    lf.verify(
+    mdoc.verify(
         (data / "circuits" / fx["circuit_hash"]).read_bytes(),
         (int(fx["issuer_pk_x"], 16), int(fx["issuer_pk_y"], 16)),
         base64.b64decode(fx["transcript_b64"]),

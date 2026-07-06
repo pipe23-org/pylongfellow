@@ -41,8 +41,9 @@ The wheel's only runtime dependency is **`cffi`**.
 
 ## What it binds
 
-Each function wraps one C entry point. The wrappers marshal inputs, copy results out, and turn
-non-success return codes into typed exceptions.
+Everything is in the `pylongfellow.mdoc` submodule: `from pylongfellow import mdoc`, then
+call `mdoc.verify(...)`. Each function wraps one C entry point. The wrappers marshal
+inputs, copy results out, and turn non-success return codes into typed exceptions.
 
 | Python | C entry point | Role |
 |---|---|---|
@@ -55,7 +56,7 @@ non-success return codes into typed exceptions.
 A circuit is just bytes: get them from `generate_circuit`, or read a committed blob from disk.
 There is no `load_circuit` — `pathlib.Path(...).read_bytes()` is the loader.
 
-Two C structs surface as frozen dataclasses:
+Two C structs are exposed as frozen dataclasses:
 
 - **`RequestedAttribute(namespace, id, cbor_value)`** — "attribute `(namespace, id)` holds this
   value." `cbor_value` is **raw CBOR bytes** (e.g. `b"\xf5"` is CBOR `true`); the binding does
@@ -65,18 +66,21 @@ Two C structs surface as frozen dataclasses:
   `circuit_hash` (SHA-256 hex) pins which circuit it is. `len(attrs)` must equal
   `num_attributes`.
 
-Non-success C return codes raise under a single base:
+A non-success C return code raises `mdoc.ProverError`, `mdoc.VerifierError`, or
+`mdoc.CircuitError`. All three are subclasses of `mdoc.Error`, which is a subclass of
+`LongfellowError`:
 
 ```
 LongfellowError
-├── ProverError      # .code is an MdocProverErrorCode
-├── VerifierError    # .code is an MdocVerifierErrorCode
-└── CircuitError     # .code is a CircuitGenerationErrorCode
+└── mdoc.Error
+    ├── mdoc.ProverError      # .code is a mdoc.ProverErrorCode
+    ├── mdoc.VerifierError    # .code is a mdoc.VerifierErrorCode
+    └── mdoc.CircuitError     # .code is a mdoc.CircuitGenerationErrorCode
 ```
 
-Catch by class; read `.code` for the specific failure. The classes do not collapse to one: the
-code enums mirror C ints and overlap, so only the exception class says which enum a code is
-from.
+Catch by class; read `.code` for the specific failure. The classes do not collapse to one:
+the code enums mirror C ints and overlap, so only the exception class says which enum a code
+is from.
 
 ## Usage
 
@@ -85,15 +89,15 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-import pylongfellow as lf
+from pylongfellow import mdoc
 
-spec = lf.find_zk_spec("longfellow-libzk-v1", circuit_hash)
-circuit = lf.generate_circuit(spec)          # or Path(...).read_bytes()
+spec = mdoc.find_zk_spec("longfellow-libzk-v1", circuit_hash)
+circuit = mdoc.generate_circuit(spec)          # or Path(...).read_bytes()
 
-attrs = [lf.RequestedAttribute("org.iso.18013.5.1", "age_over_18", b"\xf5")]  # CBOR true
+attrs = [mdoc.RequestedAttribute("org.iso.18013.5.1", "age_over_18", b"\xf5")]  # CBOR true
 
-proof = lf.prove(circuit, mdoc, issuer_pk, transcript, attrs, now, spec)
-lf.verify(circuit, issuer_pk, transcript, attrs, now, proof, doctype, spec)   # raises on failure
+proof = mdoc.prove(circuit, credential, issuer_pk, transcript, attrs, now, spec)
+mdoc.verify(circuit, issuer_pk, transcript, attrs, now, proof, doctype, spec)   # raises on failure
 ```
 
 A complete, runnable version over a committed sample mdoc is in

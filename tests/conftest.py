@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-import pylongfellow as lf
+from pylongfellow import mdoc
 
 _DATA = Path(__file__).parent / "data"
 
@@ -22,35 +22,37 @@ class VerifyInputs:
     circuit: bytes
     issuer_pk: tuple[int, int]
     transcript: bytes
-    attrs: list[lf.RequestedAttribute]
+    attrs: list[mdoc.RequestedAttribute]
     timestamp: datetime
     proof: bytes
     doctype: str
-    spec: lf.ZkSpec
+    spec: mdoc.ZkSpec
 
 
 @dataclass(frozen=True)
 class ProveInputs:
     circuit: bytes
-    mdoc: bytes
+    mdoc_bytes: bytes
     issuer_pk: tuple[int, int]
     transcript: bytes
-    attrs: list[lf.RequestedAttribute]
+    attrs: list[mdoc.RequestedAttribute]
     timestamp: datetime
     doctype: str
-    spec: lf.ZkSpec
+    spec: mdoc.ZkSpec
 
 
-def _attrs(fixture) -> list[lf.RequestedAttribute]:
+def _attrs(fixture) -> list[mdoc.RequestedAttribute]:
     return [
-        lf.RequestedAttribute(attr["namespace"], attr["id"], bytes.fromhex(attr["cbor_value_hex"]))
+        mdoc.RequestedAttribute(
+            attr["namespace"], attr["id"], bytes.fromhex(attr["cbor_value_hex"])
+        )
         for attr in fixture["attrs"]
     ]
 
 
 def _load_verify(name: str) -> VerifyInputs:
     fixture = json.loads((_DATA / f"{name}.json").read_text())
-    spec = lf.find_zk_spec(fixture["system"], fixture["circuit_hash"])
+    spec = mdoc.find_zk_spec(fixture["system"], fixture["circuit_hash"])
     assert spec is not None, f"no spec for {fixture['circuit_hash']}"
     return VerifyInputs(
         circuit=(_DATA / "circuits" / fixture["circuit_hash"]).read_bytes(),
@@ -66,11 +68,11 @@ def _load_verify(name: str) -> VerifyInputs:
 
 def _load_prove(name: str) -> ProveInputs:
     fixture = json.loads((_DATA / f"{name}.json").read_text())
-    spec = lf.find_zk_spec(fixture["system"], fixture["circuit_hash"])
+    spec = mdoc.find_zk_spec(fixture["system"], fixture["circuit_hash"])
     assert spec is not None, f"no spec for {fixture['circuit_hash']}"
     return ProveInputs(
         circuit=(_DATA / "circuits" / fixture["circuit_hash"]).read_bytes(),
-        mdoc=bytes.fromhex(fixture["mdoc_hex"]),
+        mdoc_bytes=bytes.fromhex(fixture["mdoc_hex"]),
         issuer_pk=(int(fixture["issuer_pk_x"], 16), int(fixture["issuer_pk_y"], 16)),
         transcript=bytes.fromhex(fixture["transcript_hex"]),
         attrs=_attrs(fixture),
