@@ -2,14 +2,27 @@
 
 ## 0.2.1
 
-- `prove` and `verify` now raise `ValueError` when `len(attrs) != spec.num_attributes`,
-  before any C call. Previously three of the four mismatch cases killed the process with
-  SIGABRT inside the C library (array overfill on too many attributes; the Ligero subfield
-  check on too few, prover side); only verify-with-too-few returned a clean error. The C
-  entry points never read `spec.num_attributes` — the invariant is the circuit's attribute
-  count, for which the spec field is the hash-pinned proxy. Behaviour change: an empty
-  `attrs` list on `verify` now raises `ValueError` instead of
+Input-contract hardening: several caller-input violations that the C library handled by
+aborting the process (`SIGABRT`), silently misbehaving, or writing out of bounds are now
+rejected with `ValueError` before any C call. Found by a systematic sweep of every input
+crossing into C; guards added only where C did not already return a clean error.
+
+- **`len(attrs) == spec.num_attributes`** — three of the four mismatch cases killed the
+  process (array overfill on too many; Ligero subfield check on too few, prover side); only
+  verify-with-too-few returned a clean error. The C entry points never read
+  `spec.num_attributes`; the invariant is the circuit's attribute count, hash-pinned via the
+  spec. Behaviour change: an empty `attrs` on `verify` now raises `ValueError` instead of
   `VerifierError(MDOC_VERIFIER_ARGUMENTS_TOO_SMALL)`.
+- **Canonical spec** — `prove`, `verify`, and `generate_circuit` now reject a `ZkSpec` that is
+  not the registered spec for its `(system, circuit_hash)`. The C code reads `version` and
+  `block_enc_*` straight from the struct and aborted on non-canonical values even when the
+  hash matched; a lying spec is now checked against the library's own table.
+- **`circuit_hash` length** — a `circuit_hash` longer than the 65-byte C field was an
+  out-of-bounds heap write (silent at 66–80 bytes, allocator abort beyond); now rejected in
+  spec marshalling.
+- **`doctype` length (`verify`)** — a doctype of 256 bytes or more was silently discarded and
+  replaced by a default, verifying the proof against the wrong scope with no error; now
+  rejected.
 
 ## 0.2.0
 

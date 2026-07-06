@@ -48,15 +48,29 @@ def _attr(inputs, **changes):
         lambda inputs: dataclasses.replace(inputs, timestamp=inputs.timestamp.replace(year=2024)),
         lambda inputs: _attr(inputs, cbor_value=cbor2.dumps(False)),
         lambda inputs: _attr(inputs, id="age_over_21"),
-        lambda inputs: dataclasses.replace(
-            inputs, spec=dataclasses.replace(inputs.spec, version=7)
-        ),
     ],
-    ids=["proof", "pubkey", "transcript", "timestamp", "value", "id", "spec"],
+    ids=["proof", "pubkey", "transcript", "timestamp", "value", "id"],
 )
 def test_verify_rejects(proof_age_over_18, mutate):
+    # A tampered Zk statement the C verifier rejects with VerifierError. (A
+    # tampered *spec* is caught earlier by the canonical guard — see
+    # test_verify_rejects_noncanonical_spec — so it is not exercised here.)
     with pytest.raises(mdoc.VerifierError):
         _verify(mutate(proof_age_over_18))
+
+
+def test_verify_rejects_long_doctype(proof_age_over_18):
+    # C silently substitutes a default doctype at >= 256 bytes; refuse instead.
+    with pytest.raises(ValueError, match="doctype too long"):
+        _verify(dataclasses.replace(proof_age_over_18, doctype="x" * 256))
+
+
+def test_verify_rejects_noncanonical_spec(proof_age_over_18):
+    # A lying block_enc with a matching hash would SIGABRT in C; caught here.
+    inputs = proof_age_over_18
+    bad = dataclasses.replace(inputs.spec, block_enc_sig=inputs.spec.block_enc_sig + 1)
+    with pytest.raises(ValueError, match="registered ZkSpec"):
+        _verify(dataclasses.replace(inputs, spec=bad))
 
 
 @pytest.mark.parametrize("resize", [lambda a: a + a, lambda a: []], ids=["over", "under"])
