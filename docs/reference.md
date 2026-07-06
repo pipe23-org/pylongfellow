@@ -6,8 +6,7 @@
 
 ## `pylongfellow.mdoc`
 
-The mdoc-specific functions from longfellow-zk — `prove`, `verify`, and circuit generation —
-with the data types they take and the errors they raise.
+The mdoc-specific functions, data types, and errors from longfellow-zk.
 
 ### Functions
 

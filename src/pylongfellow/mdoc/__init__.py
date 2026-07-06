@@ -1,7 +1,4 @@
-"""The mdoc-specific functions from longfellow-zk — proving, verifying, circuit generation.
-
-Also the data types they take and the errors they raise.
-"""
+"""The mdoc-specific functions, data types, and errors from longfellow-zk."""
 
 from ._errors import (
     CircuitError,
