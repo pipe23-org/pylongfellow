@@ -37,6 +37,12 @@ mdoc.verify(...)`.
   `pylongfellow.mdoc`, or a concrete class for one call. `.code` exists only on the concrete
   classes, typed as the matching enum.
 
+### Changed
+
+- `circuit_id` on unparseable bytes now raises `mdoc.Error` (previously the bare
+  `LongfellowError`), so `except mdoc.Error` catches every failure an mdoc function raises.
+  Code catching `LongfellowError` is unaffected.
+
 ### Unchanged
 
 - `pylongfellow.LongfellowError` and `pylongfellow.__version__` stay at the top level.

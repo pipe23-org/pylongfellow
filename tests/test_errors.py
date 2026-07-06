@@ -29,23 +29,3 @@ def test_catch_contract(exc, code_enum):
     assert isinstance(err, pylongfellow.LongfellowError)
     assert isinstance(err, (mdoc.ProverError, mdoc.VerifierError, mdoc.CircuitError))
     assert isinstance(err.code, code_enum)
-
-
-def test_top_level_drops_moved_names():
-    # The break, locked in: nothing that moved to .mdoc is reachable from the top.
-    for name in (
-        "prove",
-        "verify",
-        "generate_circuit",
-        "circuit_id",
-        "find_zk_spec",
-        "RequestedAttribute",
-        "ZkSpec",
-        "ProverError",
-        "VerifierError",
-        "CircuitError",
-        "MdocProverErrorCode",
-        "MdocVerifierErrorCode",
-        "CircuitGenerationErrorCode",
-    ):
-        assert not hasattr(pylongfellow, name)

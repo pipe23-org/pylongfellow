@@ -4,10 +4,10 @@ import functools
 from datetime import UTC, datetime
 from typing import Any
 
-from .._errors import LongfellowError
 from ._errors import (
     CircuitError,
     CircuitGenerationErrorCode,
+    Error,
     ProverError,
     ProverErrorCode,
     VerifierError,
@@ -238,7 +238,7 @@ def circuit_id(circuit: bytes) -> str:
         The canonical id, as 64-char hex.
 
     Raises:
-        LongfellowError: The bytes could not be parsed.
+        Error: The bytes could not be parsed.
     """
     ffi, lib = _load()
     # v0.9 circuit_id only null-checks the spec; the id is a pure function of the circuit.
@@ -246,7 +246,7 @@ def circuit_id(circuit: bytes) -> str:
     c_spec, _keepalive = _build_spec(ffi, dummy_spec)
     out = ffi.new("uint8_t[32]")
     if lib.circuit_id(out, circuit, len(circuit), c_spec) != 1:
-        raise LongfellowError("circuit_id failed (unparseable circuit bytes)")
+        raise Error("circuit_id failed (unparseable circuit bytes)")
     return bytes(ffi.buffer(out, 32)).hex()
 
 

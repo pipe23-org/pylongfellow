@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from pylongfellow import LongfellowError, mdoc
+from pylongfellow import mdoc
 
 _SYSTEM = "longfellow-libzk-v1"
 _CIRCUITS = Path(__file__).parent / "data" / "circuits"
@@ -23,7 +23,7 @@ def test_circuit_id_matches_hash(circuit_hash):
 
 
 def test_circuit_id_rejects_garbage():
-    with pytest.raises(LongfellowError):
+    with pytest.raises(mdoc.Error):
         mdoc.circuit_id(b"not a circuit" * 20)
 
 
