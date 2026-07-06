@@ -31,8 +31,8 @@ mdoc.verify(...)
 ### Errors
 
 Each function raises its own exception on a non-success C return code — `ProverError`,
-`VerifierError`, or `CircuitError` — carrying the matching error-code enum in `.code`. All
-three are subclasses of `mdoc.Error`, which is a subclass of
+`VerifierError`, or `CircuitError`. The return code is in the exception's `.code`, typed as
+the corresponding enum. All three are subclasses of `mdoc.Error`, which is a subclass of
 [`LongfellowError`][pylongfellow.LongfellowError]:
 
 ```
