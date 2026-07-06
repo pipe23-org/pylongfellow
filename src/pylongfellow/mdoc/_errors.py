@@ -1,4 +1,4 @@
-"""The mdoc surface's errors: the namespace base, the concrete exceptions, and their code enums."""
+"""Exceptions and error-code enums for `pylongfellow.mdoc`."""
 
 from enum import IntEnum
 
@@ -74,7 +74,7 @@ class CircuitGenerationErrorCode(IntEnum):
 
 
 class Error(LongfellowError):
-    """Base class for errors raised by the mdoc surface."""
+    """Base class for exceptions raised by `pylongfellow.mdoc`."""
 
 
 class ProverError(Error):

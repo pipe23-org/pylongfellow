@@ -197,7 +197,7 @@ def verify(
 
 
 def generate_circuit(spec: ZkSpec) -> bytes:
-    """Generate the compressed circuit blob a spec names.
+    """Generate a circuit blob.
 
     Binds `generate_circuit`. Only the latest circuit version is generated.
 

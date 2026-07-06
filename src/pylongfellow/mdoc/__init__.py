@@ -1,4 +1,7 @@
-"""The mdoc prover and verifier surface: functions, the structs they take, and their errors."""
+"""The mdoc-specific functions from longfellow-zk — proving, verifying, circuit generation.
+
+Also the data types they take and the errors they raise.
+"""
 
 from ._errors import (
     CircuitError,

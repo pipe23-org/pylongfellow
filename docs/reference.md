@@ -2,14 +2,12 @@
 
 ## `pylongfellow`
 
-The top level holds only the root exception and the version. Everything bound lives in a
-namespace under it.
-
 ::: pylongfellow.LongfellowError
 
 ## `pylongfellow.mdoc`
 
-The prover and verifier surface. Import it and call through it:
+The mdoc-specific functions from longfellow-zk — `prove`, `verify`, and circuit generation —
+with the data types they take and the errors they raise.
 
 ```python
 from pylongfellow import mdoc
@@ -32,9 +30,10 @@ mdoc.verify(...)
 
 ### Errors
 
-Non-success C return codes raise a concrete exception whose `.code` is the matching enum. The
-hierarchy hangs off the root [`LongfellowError`][pylongfellow.LongfellowError] via the
-namespace base `mdoc.Error`, so a caller can catch broadly or narrowly:
+Each function raises its own exception on a non-success C return code — `ProverError`,
+`VerifierError`, or `CircuitError` — carrying the matching error-code enum in `.code`. All
+three are subclasses of `mdoc.Error`, which is a subclass of
+[`LongfellowError`][pylongfellow.LongfellowError]:
 
 ```
 LongfellowError

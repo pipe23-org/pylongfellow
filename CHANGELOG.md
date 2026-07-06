@@ -2,7 +2,8 @@
 
 ## 0.2.0
 
-Breaking. The mdoc prover and verifier surface moved into a `pylongfellow.mdoc` namespace. This
+Breaking. The mdoc functions, types, and errors moved into the `pylongfellow.mdoc`
+submodule. This
 is a clean break — no deprecation shims, no top-level re-exports of the moved names. The old
 `import pylongfellow as lf; lf.verify(...)` becomes `from pylongfellow import mdoc;
 mdoc.verify(...)`.
@@ -20,7 +21,7 @@ mdoc.verify(...)`.
 - `pylongfellow.VerifierError` → `pylongfellow.mdoc.VerifierError`
 - `pylongfellow.CircuitError` → `pylongfellow.mdoc.CircuitError`
 
-### Renamed (the `Mdoc` prefix dies — the namespace carries it now)
+### Renamed (the `Mdoc` prefix is gone — it's in the module path now)
 
 - `pylongfellow.MdocProverErrorCode` → `pylongfellow.mdoc.ProverErrorCode`
 - `pylongfellow.MdocVerifierErrorCode` → `pylongfellow.mdoc.VerifierErrorCode`
@@ -29,11 +30,12 @@ mdoc.verify(...)`.
 
 ### Added
 
-- `pylongfellow.mdoc.Error` — a contract-free namespace base subclassing `LongfellowError`, one
-  per namespace. The error hierarchy is now
+- `pylongfellow.mdoc.Error` — base class for exceptions raised by `pylongfellow.mdoc`; a
+  subclass of `LongfellowError`. The hierarchy is
   `LongfellowError` → `mdoc.Error` → {`ProverError`, `VerifierError`, `CircuitError`}. Catch
-  `LongfellowError` across every namespace, `mdoc.Error` for the mdoc surface, or a concrete for
-  one call. `.code` exists only on the concretes, typed as the matching enum.
+  `LongfellowError` for anything from the package, `mdoc.Error` for anything from
+  `pylongfellow.mdoc`, or a concrete class for one call. `.code` exists only on the concrete
+  classes, typed as the matching enum.
 
 ### Unchanged
 

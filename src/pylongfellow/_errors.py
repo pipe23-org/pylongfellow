@@ -2,4 +2,4 @@
 
 
 class LongfellowError(Exception):
-    """Base class for every error the binding raises, across all surfaces."""
+    """Base class for all exceptions raised by pylongfellow."""
