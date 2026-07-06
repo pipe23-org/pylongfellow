@@ -1,8 +1,7 @@
 """Python bindings for the [longfellow-zk](https://github.com/google/longfellow-zk) library.
 
-The package is organised into submodules, one per part of the upstream library. Currently the
-mdoc-specific functions — proving, verifying, and circuit generation — are implemented, in
-`pylongfellow.mdoc`.
+Currently `pylongfellow.mdoc` implements the mdoc-specific functions: proving, verifying,
+and circuit generation.
 """
 
 from importlib.metadata import version
