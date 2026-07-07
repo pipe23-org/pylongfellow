@@ -65,12 +65,40 @@ def _build_spec(ffi: Any, spec: ZkSpec) -> tuple[Any, Any]:
     c_spec = ffi.new("ZkSpecStruct*")
     system_buf = ffi.new("char[]", spec.system.encode())
     c_spec.system = system_buf
-    ffi.memmove(c_spec.circuit_hash, spec.circuit_hash.encode(), len(spec.circuit_hash))
+    hash_bytes = spec.circuit_hash.encode()
+    # The C field is char[65]; memmove of anything longer is an out-of-bounds
+    # heap write (silent at 66-80 bytes, allocator abort beyond). Refuse here.
+    if len(hash_bytes) > 64:
+        raise ValueError(f"circuit_hash too long ({len(hash_bytes)} > 64 bytes)")
+    ffi.memmove(c_spec.circuit_hash, hash_bytes, len(hash_bytes))
     c_spec.num_attributes = spec.num_attributes
     c_spec.version = spec.version
     c_spec.block_enc_hash = spec.block_enc_hash
     c_spec.block_enc_sig = spec.block_enc_sig
     return c_spec, system_buf
+
+
+def _require_attrs_match_spec(attrs: list[RequestedAttribute], spec: ZkSpec) -> None:
+    # The C entry points never read spec.num_attributes; the invariant is
+    # attrs_len == the circuit's attribute count, for which the spec field is the
+    # proxy (tied to the circuit by the hash check below). A mismatch hard-aborts
+    # in C (DenseFiller overfill on too many; the Ligero subfield check on too
+    # few, prover side) — only verify-with-too-few returns a clean status.
+    if len(attrs) != spec.num_attributes:
+        raise ValueError(
+            f"len(attrs) ({len(attrs)}) does not match spec.num_attributes ({spec.num_attributes})"
+        )
+
+
+def _require_canonical_spec(spec: ZkSpec) -> None:
+    # The C entry points read version and block_enc_* straight from the struct
+    # and SIGABRT on non-canonical values even when the hash matches (Ligero
+    # subfield / block_enc checks). num_attributes/system/circuit_hash are the
+    # only fields C does *not* read, so the spec's self-report is otherwise
+    # unchecked. Pin the whole tuple to the library's own table: a registered
+    # (system, circuit_hash) has one canonical spec, and any deviation is a lie.
+    if spec != find_zk_spec(spec.system, spec.circuit_hash):
+        raise ValueError("spec is not a registered ZkSpec")
 
 
 def _require_spec_matches_circuit(circuit: bytes, spec: ZkSpec) -> None:
@@ -108,11 +136,15 @@ def prove(
         Proof bytes.
 
     Raises:
-        ValueError: `spec` names a different circuit than `circuit`.
+        ValueError: `spec` is not a registered ZkSpec, names a different
+            circuit than `circuit`, or `len(attrs)` does not match
+            `spec.num_attributes`.
         ProverError: The prover rejected the inputs.
     """
     ffi, lib = _load()
+    _require_canonical_spec(spec)
     _require_spec_matches_circuit(circuit, spec)
+    _require_attrs_match_spec(attrs, spec)
     pk_x, pk_y = issuer_pk
     c_attrs = _fill_attrs(ffi, attrs)
     c_spec, _keepalive = _build_spec(ffi, spec)
@@ -169,11 +201,19 @@ def verify(
         spec: ZkSpec naming the circuit.
 
     Raises:
-        ValueError: `spec` names a different circuit than `circuit`.
+        ValueError: `spec` is not a registered ZkSpec, names a different
+            circuit than `circuit`, `len(attrs)` does not match
+            `spec.num_attributes`, or `doctype` is 256 bytes or longer.
         VerifierError: The proof does not hold.
     """
     ffi, lib = _load()
+    _require_canonical_spec(spec)
     _require_spec_matches_circuit(circuit, spec)
+    _require_attrs_match_spec(attrs, spec)
+    # C silently substitutes a default doctype at >= 256 bytes, verifying the
+    # proof against the wrong scope with no error. Refuse rather than mislead.
+    if len(doctype.encode()) >= 256:
+        raise ValueError(f"doctype too long ({len(doctype.encode())} >= 256 bytes)")
     pk_x, pk_y = issuer_pk
     c_attrs = _fill_attrs(ffi, attrs)
     c_spec, _keepalive = _build_spec(ffi, spec)
@@ -208,9 +248,11 @@ def generate_circuit(spec: ZkSpec) -> bytes:
         Compressed circuit bytes.
 
     Raises:
+        ValueError: `spec` is not a registered ZkSpec.
         CircuitError: Generation failed, e.g. an unsupported spec version.
     """
     ffi, lib = _load()
+    _require_canonical_spec(spec)
     c_spec, _keepalive = _build_spec(ffi, spec)
     circuit_ptr = ffi.new("uint8_t**")
     circuit_len = ffi.new("size_t*")

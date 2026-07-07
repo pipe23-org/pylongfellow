@@ -64,6 +64,15 @@ def test_prove_rejects(mdoc_eu_av, mutate):
         _prove(mutate(mdoc_eu_av))
 
 
+@pytest.mark.parametrize("resize", [lambda a: a + a, lambda a: []], ids=["over", "under"])
+def test_prove_rejects_attr_count_mismatch(mdoc_eu_av, resize):
+    # 3 of the 4 count-mismatch quadrants SIGABRT in C (DenseFiller overfill /
+    # Ligero subfield check); the guard keeps them out of C entirely.
+    inputs = mdoc_eu_av
+    with pytest.raises(ValueError, match="num_attributes"):
+        _prove(dataclasses.replace(inputs, attrs=resize(inputs.attrs)))
+
+
 def test_prove_rejects_spec_for_wrong_circuit(mdoc_eu_av):
     # A spec naming a different circuit must be a clean ValueError, not the
     # upstream SIGABRT (the binding's spec<->circuit guard).

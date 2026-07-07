@@ -1,5 +1,6 @@
 """circuit_id and find_zk_spec — circuit/spec identity."""
 
+import dataclasses
 from pathlib import Path
 
 import pytest
@@ -50,6 +51,29 @@ def test_generate_circuit_rejects_old_version():
 
 
 @pytest.mark.slow
+def test_generate_circuit_rejects_noncanonical_spec():
+    # A hand-built spec that isn't in the library's table must be refused before
+    # reaching C (block_enc/version SIGABRT; oversize hash is a heap overflow).
+    spec = mdoc.find_zk_spec(_SYSTEM, _KNOWN[1][0])
+    assert spec is not None
+    with pytest.raises(ValueError, match="registered ZkSpec"):
+        mdoc.generate_circuit(dataclasses.replace(spec, block_enc_hash=spec.block_enc_hash + 1))
+
+
+def test_build_spec_rejects_oversize_hash():
+    # Direct protection on the marshalling primitive: a circuit_hash longer than
+    # the 65-byte C field is an out-of-bounds write. Callers via prove/verify/
+    # generate_circuit are shielded earlier by the canonical guard; this covers
+    # the primitive itself.
+    from pylongfellow._longfellow import ffi
+    from pylongfellow.mdoc._native import _build_spec
+
+    spec = mdoc.find_zk_spec(_SYSTEM, _KNOWN[1][0])
+    assert spec is not None
+    with pytest.raises(ValueError, match="circuit_hash too long"):
+        _build_spec(ffi, dataclasses.replace(spec, circuit_hash="a" * 200))
+
+
 def test_generate_circuit_self_validates():
     # Generation must reproduce the canonical id — the interoperable circuit,
     # not merely a valid one.
