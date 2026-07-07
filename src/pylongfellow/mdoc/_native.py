@@ -292,6 +292,18 @@ def circuit_id(circuit: bytes) -> str:
     return bytes(ffi.buffer(out, 32)).hex()
 
 
+def _spec_from_struct(ffi: Any, c_spec: Any) -> ZkSpec:
+    """Convert a ZkSpecStruct (pointer or array element) to a ZkSpec."""
+    return ZkSpec(
+        system=ffi.string(c_spec.system).decode(),
+        circuit_hash=ffi.string(c_spec.circuit_hash).decode(),
+        num_attributes=c_spec.num_attributes,
+        version=c_spec.version,
+        block_enc_hash=c_spec.block_enc_hash,
+        block_enc_sig=c_spec.block_enc_sig,
+    )
+
+
 def find_zk_spec(system: str, circuit_hash: str) -> ZkSpec | None:
     """Look up the built-in ZkSpec for a (system, circuit_hash) pair.
 
@@ -309,11 +321,20 @@ def find_zk_spec(system: str, circuit_hash: str) -> ZkSpec | None:
     spec_ptr = lib.find_zk_spec(system.encode(), circuit_hash.encode())
     if spec_ptr == ffi.NULL:
         return None
-    return ZkSpec(
-        system=ffi.string(spec_ptr.system).decode(),
-        circuit_hash=ffi.string(spec_ptr.circuit_hash).decode(),
-        num_attributes=spec_ptr.num_attributes,
-        version=spec_ptr.version,
-        block_enc_hash=spec_ptr.block_enc_hash,
-        block_enc_sig=spec_ptr.block_enc_sig,
-    )
+    return _spec_from_struct(ffi, spec_ptr)
+
+
+@functools.cache
+def zk_specs() -> tuple[ZkSpec, ...]:
+    """Return every ZkSpec compiled into the linked library, in table order.
+
+    Binds the `kZkSpecs` table. Entries include superseded circuit versions:
+    for a given `num_attributes`, several `(version, circuit_hash)` rows may be
+    present. `generate_circuit` accepts only the highest version for a given
+    `num_attributes`.
+
+    Returns:
+        The table's ZkSpec entries, in table order.
+    """
+    ffi, lib = _load()
+    return tuple(_spec_from_struct(ffi, c_spec) for c_spec in lib.kZkSpecs)

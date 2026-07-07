@@ -81,3 +81,33 @@ def test_generate_circuit_self_validates():
     spec = mdoc.find_zk_spec(_SYSTEM, circuit_hash)
     assert spec is not None
     assert mdoc.circuit_id(mdoc.generate_circuit(spec)) == circuit_hash
+
+
+def test_zk_specs_length():
+    assert len(mdoc.zk_specs()) == 12
+
+
+def test_zk_specs_round_trip():
+    # Every table entry resolves back to itself through find_zk_spec.
+    for spec in mdoc.zk_specs():
+        assert mdoc.find_zk_spec(spec.system, spec.circuit_hash) == spec
+
+
+def test_zk_specs_versions_unique_per_group():
+    # generate_circuit's latest-only rule keys on the max version within a
+    # (system, num_attributes) group, so the versions in each group must be unique.
+    groups: dict[tuple[str, int], list[int]] = {}
+    for spec in mdoc.zk_specs():
+        groups.setdefault((spec.system, spec.num_attributes), []).append(spec.version)
+    for versions in groups.values():
+        assert len(versions) == len(set(versions))
+
+
+@pytest.mark.parametrize(("circuit_hash", "version", "num_attributes"), _KNOWN, ids=["v6", "v7"])
+def test_known_blobs_present_in_table(circuit_hash, version, num_attributes):
+    # Ties the hand-maintained _KNOWN list (committed circuit blobs by filename)
+    # to the compiled-in table.
+    matches = [s for s in mdoc.zk_specs() if s.circuit_hash == circuit_hash]
+    assert len(matches) == 1
+    assert matches[0].version == version
+    assert matches[0].num_attributes == num_attributes
