@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.2
+
+- **`mdoc.zk_specs()`** — returns every ZkSpec compiled into the linked library, in table
+  order, binding the `kZkSpecs` table. Consumers that select a spec by policy (system,
+  version, num_attributes) can now enumerate what the build holds instead of resolving a
+  known `circuit_hash` through `find_zk_spec`. The table includes superseded circuit
+  versions; `generate_circuit` accepts only the highest version for a given
+  `num_attributes`.
+
 ## 0.2.1
 
 Input-contract hardening: several caller-input violations that the C library handled by

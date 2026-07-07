@@ -9,7 +9,7 @@ from ._errors import (
     VerifierError,
     VerifierErrorCode,
 )
-from ._native import circuit_id, find_zk_spec, generate_circuit, prove, verify
+from ._native import circuit_id, find_zk_spec, generate_circuit, prove, verify, zk_specs
 from ._types import RequestedAttribute, ZkSpec
 
 __all__ = [
@@ -27,4 +27,5 @@ __all__ = [
     "generate_circuit",
     "prove",
     "verify",
+    "zk_specs",
 ]
