@@ -15,6 +15,7 @@ The mdoc-specific functions, data types, and errors from longfellow-zk.
 ::: pylongfellow.mdoc.generate_circuit
 ::: pylongfellow.mdoc.circuit_id
 ::: pylongfellow.mdoc.find_zk_spec
+::: pylongfellow.mdoc.zk_specs
 
 ### Data types
 
