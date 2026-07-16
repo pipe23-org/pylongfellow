@@ -1,4 +1,4 @@
-"""The C++/cffi backend: longfellow-zk's C ABI behind the Backend protocol."""
+"""The google/longfellow-zk backend: the vendored C++ library's C ABI behind the Backend protocol."""
 
 import functools
 from datetime import UTC, datetime
@@ -184,10 +184,10 @@ def zk_specs() -> tuple[ZkSpec, ...]:
     return tuple(_spec_from_struct(ffi, c_spec) for c_spec in lib.kZkSpecs)
 
 
-class _CppBackend:
-    """longfellow-zk's C ABI as a Backend; the C calls are stateless per handle."""
+class _GoogleBackend:
+    """google/longfellow-zk's C ABI as a Backend; the C calls are stateless per handle."""
 
-    name: str = "cpp"
+    name: str = "google/longfellow-zk"
     can_generate: bool = True
 
     def load_circuit(self, spec: ZkSpec, compressed: bytes) -> CircuitHandle:
@@ -363,4 +363,4 @@ class _CppBackend:
             raise VerifierError(VerifierErrorCode(status))
 
 
-BACKEND = _CppBackend()
+BACKEND = _GoogleBackend()

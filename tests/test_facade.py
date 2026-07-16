@@ -1,9 +1,9 @@
-"""The mdoc facade: handles, backend resolution, and cpp error surfacing."""
+"""The mdoc facade: handles, backend resolution, and google error surfacing."""
 
 import pytest
 
 from pylongfellow import mdoc
-from pylongfellow.backends import cpp
+from pylongfellow.backends import google
 
 
 def test_handle_carries_spec(mdoc_eu_av):
@@ -12,11 +12,11 @@ def test_handle_carries_spec(mdoc_eu_av):
     assert handle.state == mdoc_eu_av.circuit
 
 
-def test_default_backend_is_cpp(mdoc_eu_av):
+def test_default_backend_is_google(mdoc_eu_av):
     default = mdoc.load_circuit(mdoc_eu_av.spec, mdoc_eu_av.circuit)
-    explicit = mdoc.load_circuit(mdoc_eu_av.spec, mdoc_eu_av.circuit, backend=cpp.BACKEND)
-    assert default.backend is cpp.BACKEND
-    assert explicit.backend is cpp.BACKEND
+    explicit = mdoc.load_circuit(mdoc_eu_av.spec, mdoc_eu_av.circuit, backend=google.BACKEND)
+    assert default.backend is google.BACKEND
+    assert explicit.backend is google.BACKEND
 
 
 def test_load_circuit_rejects_hash_spec_mismatch(mdoc_eu_av):
@@ -30,7 +30,7 @@ def test_load_circuit_rejects_hash_spec_mismatch(mdoc_eu_av):
         mdoc.load_circuit(wrong, mdoc_eu_av.circuit)
 
 
-def test_cpp_error_populates_code(proof_age_over_18):
+def test_google_error_populates_code(proof_age_over_18):
     inputs = proof_age_over_18
     handle = mdoc.load_circuit(inputs.spec, inputs.circuit)
     bad_proof = bytearray(inputs.proof)
@@ -48,7 +48,7 @@ def test_cpp_error_populates_code(proof_age_over_18):
     assert isinstance(excinfo.value.code, mdoc.VerifierErrorCode)
 
 
-def test_device_namespaces_ignored_on_cpp_verify(proof_age_over_18):
+def test_device_namespaces_ignored_on_google_verify(proof_age_over_18):
     inputs = proof_age_over_18
     handle = mdoc.load_circuit(inputs.spec, inputs.circuit)
     mdoc.verify(

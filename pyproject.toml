@@ -27,10 +27,10 @@ classifiers = [
 # cbor2 carry mdoc.create_credential and its companions.
 dependencies = ["cffi>=2.0", "cbor2>=6", "cryptography>=49"]
 
-# The rust backend decompresses circuit blobs with zstandard; install with
-# `pip install pylongfellow[rust]` after building the backend (scripts/build_rust_backend.py).
+# The isrg backend decompresses circuit blobs with zstandard; install with
+# `pip install pylongfellow[isrg]` after building the backend (scripts/build_isrg_backend.py).
 [project.optional-dependencies]
-rust = ["zstandard"]
+isrg = ["zstandard"]
 
 [project.urls]
 Homepage = "https://github.com/pipe23-org/pylongfellow"
@@ -116,7 +116,7 @@ strict = true
 files = ["src/pylongfellow", "src/_cffi_src", "tests"]
 exclude = ["src/pylongfellow/backends/_zk_cred"]
 
-# The generated bindings are untyped and not always built; rust.py imports them lazily.
+# The generated bindings are untyped and not always built; isrg.py imports them lazily.
 [[tool.mypy.overrides]]
 module = "pylongfellow.backends._zk_cred.*"
 ignore_missing_imports = true

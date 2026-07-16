@@ -66,7 +66,7 @@ def test_build_spec_rejects_oversize_hash():
     # generate_circuit are shielded earlier by the canonical guard; this covers
     # the primitive itself.
     from pylongfellow._longfellow import ffi
-    from pylongfellow.backends.cpp import _build_spec
+    from pylongfellow.backends.google import _build_spec
 
     spec = mdoc.find_zk_spec(_SYSTEM, _KNOWN[1][0])
     assert spec is not None

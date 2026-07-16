@@ -38,11 +38,12 @@ any other platform `pip` falls back to the source distribution, which builds the
 locally and needs a C++ toolchain — see [Build from source](#build-from-source).
 
 The wheel's runtime dependencies are **`cffi`**, **`cryptography`**, and **`cbor2`**. It ships
-the cpp backend. The rust backend is not in any wheel: it is source-build only (see
-[Backends](#backends)), and its `zstandard` runtime dependency comes from the `rust` extra:
+the google/longfellow-zk backend. The abetterinternet/zk-cred-longfellow (ISRG) backend is not
+in any wheel: it is source-build only (see [Backends](#backends)), and its `zstandard` runtime
+dependency comes from the `isrg` extra:
 
 ```
-pip install pylongfellow[rust]
+pip install pylongfellow[isrg]
 ```
 
 ## What it binds
@@ -63,7 +64,7 @@ inputs, copy results out, and turn non-success return codes into typed exception
 A compressed circuit is bytes: get them from `generate_circuit`, or read a committed blob from
 disk. `prove` and `verify` do not take the bytes directly. Pass them once to `load_circuit`,
 which returns a `CircuitHandle` bound to a backend, and pass the handle to every `prove` and
-`verify` call. `backend` defaults to the cpp backend; see [Backends](#backends).
+`verify` call. `backend` defaults to the google/longfellow-zk backend; see [Backends](#backends).
 
 Two C structs are exposed as frozen dataclasses:
 
@@ -87,8 +88,9 @@ LongfellowError
     └── mdoc.CircuitError     # .code: mdoc.CircuitGenerationErrorCode or None
 ```
 
-Catch by class. `.code` carries the specific failure when the backend supplies one: the cpp
-backend always does, the rust backend leaves it `None`. Do not branch on the code. The code
+Catch by class. `.code` carries the specific failure when the backend supplies one: the
+google/longfellow-zk backend always does, the abetterinternet/zk-cred-longfellow (ISRG) backend
+leaves it `None`. Do not branch on the code. The code
 enums mirror C ints and overlap, so only the exception class says which enum a code is from.
 
 Four functions in `pylongfellow.mdoc` bind no C entry point: `create_credential` assembles
@@ -105,7 +107,7 @@ from pylongfellow import mdoc
 
 spec = mdoc.find_zk_spec("longfellow-libzk-v1", circuit_hash)
 compressed = mdoc.generate_circuit(spec)       # or Path(...).read_bytes()
-handle = mdoc.load_circuit(spec, compressed)   # cpp backend by default
+handle = mdoc.load_circuit(spec, compressed)   # google backend by default
 
 attrs = [mdoc.RequestedAttribute("org.iso.18013.5.1", "age_over_18", b"\xf5")]  # CBOR true
 
@@ -135,45 +137,45 @@ package and the bundled fixture; circuit generation takes ~15s.
 `generate_circuit` take a keyword-only `backend`; the returned `CircuitHandle` carries it, so
 `prove` and `verify` need no backend argument. Two backends ship in the source tree.
 
-**cpp** (`pylongfellow.backends.cpp.BACKEND`) is the default and is in every wheel. It wraps the
-vendored longfellow C++ library. `can_generate` is `True`. It populates `.code` on the
-exceptions it raises and ignores `device_namespaces` on `verify`.
+**google/longfellow-zk** (`pylongfellow.backends.google.BACKEND`) is the default and is in every
+wheel. It binds the vendored longfellow-zk C++ library. `can_generate` is `True`. It populates
+`.code` on the exceptions it raises and ignores `device_namespaces` on `verify`.
 
-**rust** (`pylongfellow.backends.rust.BACKEND`) wraps
+**abetterinternet/zk-cred-longfellow (ISRG)** (`pylongfellow.backends.isrg.BACKEND`) binds
 [abetterinternet/zk-cred-longfellow](https://github.com/abetterinternet/zk-cred-longfellow)
 through its UniFFI bindings. `can_generate` is `False`; it raises `GenerationUnsupportedError`
-from `generate_circuit`, so circuits come from `generate_circuit` on the cpp backend or from
+from `generate_circuit`, so circuits come from `generate_circuit` on the google backend or from
 disk. `verify` requires `device_namespaces` (the inner bytes of the tag-24
 `DeviceNameSpacesBytes`) and raises `ValueError` without it. It leaves `.code` as `None`.
 
 Select it by passing `backend=` to `load_circuit`:
 
 ```python
-from pylongfellow.backends import rust
+from pylongfellow.backends import isrg
 
-handle = mdoc.load_circuit(spec, compressed, backend=rust.BACKEND)
+handle = mdoc.load_circuit(spec, compressed, backend=isrg.BACKEND)
 ```
 
-The rust backend is not in any wheel. Build it from source:
+The isrg backend is not in any wheel. Build it from source:
 
 ```
 git submodule update --init vendor/zk-cred-longfellow
-uv run python scripts/build_rust_backend.py     # needs cargo 1.85+; ~4 min cold build
-pip install pylongfellow[rust]                  # zstandard runtime dependency
+uv run python scripts/build_isrg_backend.py     # needs cargo 1.85+; ~4 min cold build
+pip install pylongfellow[isrg]                  # zstandard runtime dependency
 ```
 
-`build_rust_backend.py` stages the UniFFI-generated Python module and the cdylib into
+`build_isrg_backend.py` stages the UniFFI-generated Python module and the cdylib into
 `src/pylongfellow/backends/_zk_cred/` (gitignored). If the module is not built or `zstandard` is
 not installed, the backend raises `BackendUnavailableError`.
 
-Engine init on the rust backend takes about 18 seconds per role and about 740 MB resident for a
+Engine init on the isrg backend takes about 18 seconds per role and about 740 MB resident for a
 v6 1-attribute circuit. Init is lazy and cached on the handle. `prove` then takes about 1.3
 seconds and `verify` about 0.8 seconds on the reference machine.
 
 The differential tests exchange proofs between the two backends in both directions over the
-vendored v6 1-attribute circuit, and both backends verify zk-cred-longfellow's committed
-C++-generated interop proof. For the same statement the rust proof is larger than the cpp proof
-(562228 versus 323868 bytes).
+vendored v6 1-attribute circuit, and both backends verify zk-cred-longfellow's committed interop
+proof, which google/longfellow-zk generated. For the same statement the isrg proof is larger than
+the google proof (562228 versus 323868 bytes).
 
 zk-cred-longfellow is licensed MPL-2.0. `pylongfellow` remains Apache-2.0.
 
@@ -235,8 +237,8 @@ specific commit (currently **v0.9**, `fe83ec6`) and built from source into each 
 not float: the upstream ABI and circuits can change between releases, and the test fixtures are
 pinned to a particular circuit and version.
 
-The rust backend vendors `abetterinternet/zk-cred-longfellow` (MPL-2.0) as a second git
-submodule, hard-pinned to `4f3d1b3`. It is built on demand by `scripts/build_rust_backend.py`
+The isrg backend vendors `abetterinternet/zk-cred-longfellow` (ISRG, MPL-2.0) as a second git
+submodule, hard-pinned to `4f3d1b3`. It is built on demand by `scripts/build_isrg_backend.py`
 and is not built into any wheel. `pylongfellow` itself is Apache-2.0.
 
 Not affiliated with Google or the European Commission — an independent binding to a public

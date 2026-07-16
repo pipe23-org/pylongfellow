@@ -4,13 +4,13 @@
 
 Breaking. `prove` and `verify` no longer take circuit bytes and a spec. Load a circuit into a
 backend with `load_circuit`, then pass the returned `CircuitHandle`. Adds the
-`pylongfellow.backends` submodule and a second backend over zk-cred-longfellow. Wheels ship the
-cpp backend only.
+`pylongfellow.backends` submodule and a second backend over abetterinternet/zk-cred-longfellow
+(ISRG). Wheels ship the google/longfellow-zk backend only.
 
 ### Breaking
 
 - **`load_circuit(spec, compressed, *, backend=None)`** — new. Loads a compressed circuit into a
-  backend and returns a `CircuitHandle`. `backend` defaults to the cpp backend.
+  backend and returns a `CircuitHandle`. `backend` defaults to the google/longfellow-zk backend.
 - **`prove(handle, mdoc, issuer_pk, transcript, attrs, timestamp)`** — was
   `prove(circuit, mdoc, issuer_pk, transcript, attrs, timestamp, spec)`. The leading `circuit`
   bytes and trailing `spec` are replaced by `handle`.
@@ -18,24 +18,25 @@ cpp backend only.
   — was `verify(circuit, issuer_pk, transcript, attrs, timestamp, proof, doctype, spec)`. The
   leading `circuit` bytes and trailing `spec` are replaced by `handle`. `device_namespaces`
   (`bytes | None`) is new and keyword-only: the inner bytes of the tag-24
-  `DeviceNameSpacesBytes`, required by the rust backend and ignored by the cpp backend.
+  `DeviceNameSpacesBytes`, required by the abetterinternet/zk-cred-longfellow (ISRG) backend and
+  ignored by the google backend.
 - **`generate_circuit(spec, *, backend=None)`** — gained the keyword-only `backend`.
-- **`ProverError.code`, `VerifierError.code`** — now `Optional`. The cpp backend populates the
-  code; the rust backend leaves it `None`. Catch by class. Both exceptions accept a keyword-only
+- **`ProverError.code`, `VerifierError.code`** — now `Optional`. The google backend populates the
+  code; the isrg backend leaves it `None`. Catch by class. Both exceptions accept a keyword-only
   `message`.
 
 ### Added
 
 - **`pylongfellow.backends`** — the `Backend` protocol, `CircuitHandle`,
   `GenerationUnsupportedError`, and `BackendUnavailableError`.
-- **`backends.cpp.BACKEND`** — the default backend over the vendored longfellow C++ library.
-  `can_generate` is `True`.
-- **`backends.rust.BACKEND`** — a backend over
+- **`backends.google.BACKEND`** — the default backend over the vendored google/longfellow-zk
+  library. `can_generate` is `True`.
+- **`backends.isrg.BACKEND`** — a backend over
   [abetterinternet/zk-cred-longfellow](https://github.com/abetterinternet/zk-cred-longfellow)
-  (vendored submodule, MPL-2.0). `can_generate` is `False`: circuits come from `generate_circuit`
-  on the cpp backend or from disk. Source-build only; run
-  `uv run python scripts/build_rust_backend.py` (needs cargo 1.85 or newer for edition 2024). The
-  `rust` extra (`pip install pylongfellow[rust]`) adds `zstandard`. Not shipped in wheels.
+  (ISRG; vendored submodule, MPL-2.0). `can_generate` is `False`: circuits come from
+  `generate_circuit` on the google backend or from disk. Source-build only; run
+  `uv run python scripts/build_isrg_backend.py` (needs cargo 1.85 or newer for edition 2024). The
+  `isrg` extra (`pip install pylongfellow[isrg]`) adds `zstandard`. Not shipped in wheels.
 
 ### Unchanged
 

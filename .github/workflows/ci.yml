@@ -85,5 +85,5 @@ jobs:
         with:
           workspaces: vendor/zk-cred-longfellow
           shared-key: zk-cred
-      - run: uv run --no-sync python scripts/build_rust_backend.py
+      - run: uv run --no-sync python scripts/build_isrg_backend.py
       - run: uv run --no-sync pytest -m "slow or not slow" --cov

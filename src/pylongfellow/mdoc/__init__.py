@@ -5,7 +5,7 @@ without touching longfellow-zk; they run on `cryptography` and `cbor2` alone.
 """
 
 from ..backends import CircuitHandle
-from ..backends.cpp import circuit_id, find_zk_spec, zk_specs
+from ..backends.google import circuit_id, find_zk_spec, zk_specs
 from ._credential import (
     CreatedCredential,
     create_certificate,

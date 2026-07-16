@@ -1,10 +1,10 @@
-"""Build the zk-cred-longfellow Rust backend and stage its bindings into the package.
+"""Build the abetterinternet/zk-cred-longfellow (ISRG) backend and stage its bindings.
 
 Runs `cargo build` and `uniffi-bindgen` against the vendored submodule, then copies
 the generated `zk_cred_longfellow.py` and `libzk_cred_longfellow.so` into
 `src/pylongfellow/backends/_zk_cred/`. Idempotent.
 
-Run: uv run python scripts/build_rust_backend.py
+Run: uv run python scripts/build_isrg_backend.py
 """
 
 import shutil
@@ -21,7 +21,7 @@ TARGET_SO = SUBMODULE / "target" / "release" / LIB
 OUT = SUBMODULE / "out"
 DEST = REPO / "src" / "pylongfellow" / "backends" / "_zk_cred"
 
-_INIT = '"""Generated UniFFI bindings for the zk-cred-longfellow Rust backend."""\n'
+_INIT = '"""Generated UniFFI bindings for abetterinternet/zk-cred-longfellow (ISRG)."""\n'
 
 
 def _require(condition: bool, message: str) -> None:

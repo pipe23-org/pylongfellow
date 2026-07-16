@@ -1,4 +1,4 @@
-"""The zk-cred-longfellow Rust backend: UniFFI bindings behind the Backend protocol."""
+"""UniFFI bindings to abetterinternet/zk-cred-longfellow (ISRG) behind the Backend protocol."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from ..mdoc._errors import ProverError, VerifierError
 from . import BackendUnavailableError, CircuitHandle, GenerationUnsupportedError
-from .cpp import circuit_id
+from .google import circuit_id
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -24,7 +24,7 @@ def _zk() -> Any:
         from ._zk_cred import zk_cred_longfellow
     except ImportError as e:
         raise BackendUnavailableError(
-            "the rust backend is not built; run scripts/build_rust_backend.py"
+            "the isrg backend is not built; run scripts/build_isrg_backend.py"
         ) from e
     return zk_cred_longfellow
 
@@ -34,7 +34,7 @@ def _decompress(compressed: bytes) -> bytes:
         import zstandard
     except ImportError as e:
         raise BackendUnavailableError(
-            "the zstandard package is required by the rust backend; install pylongfellow[rust]"
+            "the zstandard package is required by the isrg backend; install pylongfellow[isrg]"
         ) from e
     return zstandard.ZstdDecompressor().stream_reader(io.BytesIO(compressed)).read()
 
@@ -109,10 +109,10 @@ def _ensure_verifier(holder: _Circuit) -> tuple[Any, Any]:
     return zk, holder.verifier
 
 
-class _RustBackend:
-    """zk-cred-longfellow's UniFFI surface as a Backend; it cannot generate circuits."""
+class _IsrgBackend:
+    """abetterinternet/zk-cred-longfellow via UniFFI as a Backend; it cannot generate circuits."""
 
-    name: str = "rust"
+    name: str = "abetterinternet/zk-cred-longfellow"
     can_generate: bool = False
 
     def load_circuit(self, spec: ZkSpec, compressed: bytes) -> CircuitHandle:
@@ -147,7 +147,7 @@ class _RustBackend:
         Raises:
             GenerationUnsupportedError: always.
         """
-        raise GenerationUnsupportedError("the rust backend cannot generate circuits")
+        raise GenerationUnsupportedError("the isrg backend cannot generate circuits")
 
     def prove(
         self,
@@ -173,7 +173,7 @@ class _RustBackend:
 
         Raises:
             ValueError: `attrs` do not share one namespace, or `timestamp` is naive.
-            BackendUnavailableError: the rust backend is not built.
+            BackendUnavailableError: the isrg backend is not built.
             ProverError: the prover rejected the inputs.
         """
         holder = cast("_Circuit", handle.state)
@@ -211,7 +211,7 @@ class _RustBackend:
 
         Raises:
             ValueError: `device_namespaces` is None, or `timestamp` is naive.
-            BackendUnavailableError: the rust backend is not built.
+            BackendUnavailableError: the isrg backend is not built.
             VerifierError: the proof does not hold.
         """
         if device_namespaces is None:
@@ -239,4 +239,4 @@ class _RustBackend:
             raise VerifierError(message=str(e)) from e
 
 
-BACKEND = _RustBackend()
+BACKEND = _IsrgBackend()

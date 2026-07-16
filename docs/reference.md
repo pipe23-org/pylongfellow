@@ -32,8 +32,9 @@ The mdoc-specific functions, data types, and errors from longfellow-zk.
 ### Errors
 
 Each function raises its own exception on a failed call. When the backend supplies a return
-code it is in the exception's `.code`, typed as the corresponding enum or None; the cpp backend
-always supplies it, other backends may not. Catch by class; do not branch on the code. The
+code it is in the exception's `.code`, typed as the corresponding enum or None; the
+google/longfellow-zk backend always supplies it, other backends may not. Catch by class; do not
+branch on the code. The
 exceptions are subclasses of [`mdoc.Error`][pylongfellow.mdoc.Error], which is a subclass of
 [`LongfellowError`][pylongfellow.LongfellowError]:
 
@@ -53,17 +54,17 @@ LongfellowError
 ::: pylongfellow.mdoc.VerifierErrorCode
 ::: pylongfellow.mdoc.CircuitGenerationErrorCode
 
-## Rust backend
+## The isrg backend
 
-An alternative backend over [abetterinternet/zk-cred-longfellow](https://github.com/abetterinternet/zk-cred-longfellow),
-generated with UniFFI. It proves and verifies; it cannot generate circuits, so `generate_circuit`
+An alternative backend that binds [abetterinternet/zk-cred-longfellow](https://github.com/abetterinternet/zk-cred-longfellow)
+(ISRG) through UniFFI. It proves and verifies; it cannot generate circuits, so `generate_circuit`
 raises `GenerationUnsupportedError`. `verify` requires the `device_namespaces` argument.
 
-Build it before use: `uv run python scripts/build_rust_backend.py`. This needs the vendored
+Build it before use: `uv run python scripts/build_isrg_backend.py`. This needs the vendored
 `vendor/zk-cred-longfellow` submodule (`git submodule update --init`) and a Rust toolchain. Install
-the `zstandard` runtime dependency with `pip install pylongfellow[rust]`. If either is missing, the
+the `zstandard` runtime dependency with `pip install pylongfellow[isrg]`. If either is missing, the
 backend raises `BackendUnavailableError`.
 
-Select it by passing `backend=pylongfellow.backends.rust.BACKEND` to
+Select it by passing `backend=pylongfellow.backends.isrg.BACKEND` to
 [`load_circuit`][pylongfellow.mdoc.load_circuit]; `prove` and `verify` then dispatch through the
 returned handle.

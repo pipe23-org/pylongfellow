@@ -19,7 +19,7 @@ _DATA = Path(__file__).parent / "data"
 _VECTORS = Path(__file__).parents[1] / "vendor" / "zk-cred-longfellow" / "test-vectors" / "mdoc_zk"
 
 
-def _rust_available() -> bool:
+def _isrg_available() -> bool:
     try:
         return (
             importlib.util.find_spec("pylongfellow.backends._zk_cred.zk_cred_longfellow")
@@ -29,7 +29,7 @@ def _rust_available() -> bool:
         return False
 
 
-RUST_AVAILABLE = _rust_available()
+ISRG_AVAILABLE = _isrg_available()
 
 
 @dataclass(frozen=True)
@@ -130,7 +130,7 @@ class VendoredVector:
     issuer_pk_sec1: bytes
     doctype: str
     device_namespaces: bytes
-    cpp_interop_proof: bytes
+    google_interop_proof: bytes
 
 
 @pytest.fixture(scope="session")
@@ -157,29 +157,29 @@ def vendored_vector() -> VendoredVector:
         issuer_pk_sec1=_ISSUER_PK_SEC1,
         doctype=_DOCTYPE,
         device_namespaces=_DEVICE_NAMESPACES,
-        cpp_interop_proof=(_VECTORS / "v6_1attr_issue_date.proof").read_bytes(),
+        google_interop_proof=(_VECTORS / "v6_1attr_issue_date.proof").read_bytes(),
     )
 
 
 @pytest.fixture(scope="session")
-def cpp_handle(vendored_vector: VendoredVector) -> mdoc.CircuitHandle:
+def google_handle(vendored_vector: VendoredVector) -> mdoc.CircuitHandle:
     return mdoc.load_circuit(vendored_vector.spec, vendored_vector.compressed)
 
 
 @pytest.fixture(scope="session")
-def rust_handle(vendored_vector: VendoredVector) -> mdoc.CircuitHandle:
-    from pylongfellow.backends import rust
+def isrg_handle(vendored_vector: VendoredVector) -> mdoc.CircuitHandle:
+    from pylongfellow.backends import isrg
 
-    return mdoc.load_circuit(vendored_vector.spec, vendored_vector.compressed, backend=rust.BACKEND)
-
-
-@pytest.fixture(scope="session")
-def cpp_proof(cpp_handle: mdoc.CircuitHandle, vendored_vector: VendoredVector) -> bytes:
-    v = vendored_vector
-    return mdoc.prove(cpp_handle, v.mdoc_bytes, v.issuer_pk, v.transcript, v.attrs, v.timestamp)
+    return mdoc.load_circuit(vendored_vector.spec, vendored_vector.compressed, backend=isrg.BACKEND)
 
 
 @pytest.fixture(scope="session")
-def rust_proof(rust_handle: mdoc.CircuitHandle, vendored_vector: VendoredVector) -> bytes:
+def google_proof(google_handle: mdoc.CircuitHandle, vendored_vector: VendoredVector) -> bytes:
     v = vendored_vector
-    return mdoc.prove(rust_handle, v.mdoc_bytes, v.issuer_pk, v.transcript, v.attrs, v.timestamp)
+    return mdoc.prove(google_handle, v.mdoc_bytes, v.issuer_pk, v.transcript, v.attrs, v.timestamp)
+
+
+@pytest.fixture(scope="session")
+def isrg_proof(isrg_handle: mdoc.CircuitHandle, vendored_vector: VendoredVector) -> bytes:
+    v = vendored_vector
+    return mdoc.prove(isrg_handle, v.mdoc_bytes, v.issuer_pk, v.transcript, v.attrs, v.timestamp)

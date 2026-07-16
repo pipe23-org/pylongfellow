@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..backends import CircuitHandle, cpp
+from ..backends import CircuitHandle, google
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -22,7 +22,7 @@ def load_circuit(
         spec: ZkSpec naming the circuit.
         compressed: Compressed circuit bytes, as from
             [`generate_circuit`][pylongfellow.mdoc.generate_circuit].
-        backend: Backend to load into; the cpp backend by default.
+        backend: Backend to load into; the google/longfellow-zk backend by default.
 
     Returns:
         A CircuitHandle to pass to [`prove`][pylongfellow.mdoc.prove] and
@@ -30,9 +30,9 @@ def load_circuit(
 
     Raises:
         ValueError: `spec` is not registered on the backend, or names a
-            different circuit than `compressed` (cpp backend).
+            different circuit than `compressed` (google backend).
     """
-    resolved = cpp.BACKEND if backend is None else backend
+    resolved = google.BACKEND if backend is None else backend
     return resolved.load_circuit(spec, compressed)
 
 
@@ -90,11 +90,11 @@ def verify(
         proof: Proof bytes from [`prove`][pylongfellow.mdoc.prove].
         doctype: mdoc doctype the proof is scoped to.
         device_namespaces: Inner bytes of the tag-24 DeviceNameSpacesBytes,
-            required by some backends; ignored by the cpp backend.
+            required by some backends; ignored by the google backend.
 
     Raises:
         ValueError: `len(attrs)` does not match `handle.spec.num_attributes`,
-            or `doctype` is 256 bytes or longer (cpp backend).
+            or `doctype` is 256 bytes or longer (google backend).
         VerifierError: The proof does not hold.
     """
     handle.backend.verify(
@@ -107,7 +107,7 @@ def generate_circuit(spec: ZkSpec, *, backend: Backend | None = None) -> bytes:
 
     Args:
         spec: ZkSpec naming the circuit to generate.
-        backend: Backend to generate with; the cpp backend by default.
+        backend: Backend to generate with; the google backend by default.
 
     Returns:
         Compressed circuit bytes.
@@ -117,5 +117,5 @@ def generate_circuit(spec: ZkSpec, *, backend: Backend | None = None) -> bytes:
         CircuitError: Generation failed, e.g. an unsupported spec version.
         GenerationUnsupportedError: The backend cannot generate circuits.
     """
-    resolved = cpp.BACKEND if backend is None else backend
+    resolved = google.BACKEND if backend is None else backend
     return resolved.generate_circuit(spec)

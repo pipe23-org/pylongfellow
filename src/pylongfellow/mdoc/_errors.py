@@ -82,7 +82,7 @@ class ProverError(Error):
 
     Attributes:
         code: The `ProverErrorCode` when the backend supplies one, else None.
-            The cpp backend always supplies it; other backends may not. Catch by
+            The google/longfellow-zk backend always supplies it; other backends may not. Catch by
             class; do not branch on the code.
     """
 
@@ -101,7 +101,7 @@ class VerifierError(Error):
 
     Attributes:
         code: The `VerifierErrorCode` when the backend supplies one, else None.
-            The cpp backend always supplies it; other backends may not. Catch by
+            The google backend always supplies it; other backends may not. Catch by
             class; do not branch on the code.
     """
 
@@ -122,7 +122,7 @@ class CircuitError(Error):
 
     Attributes:
         code: The `CircuitGenerationErrorCode` when the backend supplies one,
-            else None. The cpp backend always supplies it; other backends may
+            else None. The google backend always supplies it; other backends may
             not. Catch by class; do not branch on the code.
     """
 
