@@ -46,13 +46,13 @@ if __name__ == "__main__":
         mdoc.RequestedAttribute(a["namespace"], a["id"], bytes.fromhex(a["cbor_value_hex"]))
         for a in fx["attrs"]
     ]
+    handle = mdoc.load_circuit(spec, (data / "circuits" / fx["circuit_hash"]).read_bytes())
     mdoc.verify(
-        (data / "circuits" / fx["circuit_hash"]).read_bytes(),
+        handle,
         (int(fx["issuer_pk_x"], 16), int(fx["issuer_pk_y"], 16)),
         base64.b64decode(fx["transcript_b64"]),
         attrs,
         datetime.fromisoformat(fx["timestamp"]),
         base64.b64decode(fx["proof_b64"]),
         fx["doctype"],
-        spec,
     )

@@ -9,14 +9,14 @@ from pylongfellow import mdoc
 
 
 def _prove(inputs):
+    handle = mdoc.load_circuit(inputs.spec, inputs.circuit)
     return mdoc.prove(
-        inputs.circuit,
+        handle,
         inputs.mdoc_bytes,
         inputs.issuer_pk,
         inputs.transcript,
         inputs.attrs,
         inputs.timestamp,
-        inputs.spec,
     )
 
 
@@ -29,15 +29,15 @@ def test_prove_then_verify(mdoc_eu_av):
     proof = _prove(inputs)
     assert proof
     # The proof we just made must verify against the same inputs.
+    handle = mdoc.load_circuit(inputs.spec, inputs.circuit)
     mdoc.verify(
-        inputs.circuit,
+        handle,
         inputs.issuer_pk,
         inputs.transcript,
         inputs.attrs,
         inputs.timestamp,
         proof,
         inputs.doctype,
-        inputs.spec,
     )
 
 

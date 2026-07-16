@@ -10,6 +10,7 @@ The mdoc-specific functions, data types, and errors from longfellow-zk.
 
 ### Functions
 
+::: pylongfellow.mdoc.load_circuit
 ::: pylongfellow.mdoc.prove
 ::: pylongfellow.mdoc.verify
 ::: pylongfellow.mdoc.generate_circuit
@@ -23,15 +24,17 @@ The mdoc-specific functions, data types, and errors from longfellow-zk.
 
 ### Data types
 
+::: pylongfellow.mdoc.CircuitHandle
 ::: pylongfellow.mdoc.RequestedAttribute
 ::: pylongfellow.mdoc.ZkSpec
 ::: pylongfellow.mdoc.CreatedCredential
 
 ### Errors
 
-Each function raises its own exception on a non-success C return code. The return code is in
-the exception's `.code`, typed as the corresponding enum. The exceptions are subclasses of
-[`mdoc.Error`][pylongfellow.mdoc.Error], which is a subclass of
+Each function raises its own exception on a failed call. When the backend supplies a return
+code it is in the exception's `.code`, typed as the corresponding enum or None; the cpp backend
+always supplies it, other backends may not. Catch by class; do not branch on the code. The
+exceptions are subclasses of [`mdoc.Error`][pylongfellow.mdoc.Error], which is a subclass of
 [`LongfellowError`][pylongfellow.LongfellowError]:
 
 ```

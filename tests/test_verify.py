@@ -9,15 +9,15 @@ from pylongfellow import mdoc
 
 
 def _verify(inputs):
+    handle = mdoc.load_circuit(inputs.spec, inputs.circuit)
     mdoc.verify(
-        inputs.circuit,
+        handle,
         inputs.issuer_pk,
         inputs.transcript,
         inputs.attrs,
         inputs.timestamp,
         inputs.proof,
         inputs.doctype,
-        inputs.spec,
     )
 
 

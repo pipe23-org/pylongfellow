@@ -23,6 +23,8 @@ circuit = mdoc.generate_circuit(spec)
 if mdoc.circuit_id(circuit) != spec.circuit_hash:
     raise SystemExit("generated circuit id does not match the spec")
 
+handle = mdoc.load_circuit(spec, circuit)
+
 attrs = [
     mdoc.RequestedAttribute(a["namespace"], a["id"], bytes.fromhex(a["cbor_value_hex"]))
     for a in credential["attrs"]
@@ -32,9 +34,9 @@ transcript = bytes.fromhex(credential["transcript_hex"])
 credential_mdoc = bytes.fromhex(credential["mdoc_hex"])
 timestamp = datetime.fromisoformat(credential["timestamp"])
 
-proof = mdoc.prove(circuit, credential_mdoc, issuer_pk, transcript, attrs, timestamp, spec)
+proof = mdoc.prove(handle, credential_mdoc, issuer_pk, transcript, attrs, timestamp)
 print(f"proved: {len(proof)} bytes")
 
 # verify() returns None on success and raises VerifierError otherwise.
-mdoc.verify(circuit, issuer_pk, transcript, attrs, timestamp, proof, credential["doctype"], spec)
+mdoc.verify(handle, issuer_pk, transcript, attrs, timestamp, proof, credential["doctype"])
 print("verified")
