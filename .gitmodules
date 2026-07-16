@@ -1,3 +1,6 @@
 [submodule "vendor/longfellow-zk"]
 	path = vendor/longfellow-zk
 	url = https://github.com/google/longfellow-zk.git
+[submodule "vendor/zk-cred-longfellow"]
+	path = vendor/zk-cred-longfellow
+	url = https://github.com/abetterinternet/zk-cred-longfellow.git

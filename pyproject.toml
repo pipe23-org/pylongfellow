@@ -27,6 +27,11 @@ classifiers = [
 # cbor2 carry mdoc.create_credential and its companions.
 dependencies = ["cffi>=2.0", "cbor2>=6", "cryptography>=49"]
 
+# The rust backend decompresses circuit blobs with zstandard; install with
+# `pip install pylongfellow[rust]` after building the backend (scripts/build_rust_backend.py).
+[project.optional-dependencies]
+rust = ["zstandard"]
+
 [project.urls]
 Homepage = "https://github.com/pipe23-org/pylongfellow"
 Documentation = "https://pylongfellow.readthedocs.io/"
@@ -45,6 +50,7 @@ dev = [
     "mypy",
     "types-cffi>=2.0.0.20260518",
     "pytest-cov>=7.1.0",
+    "zstandard",
 ]
 
 [tool.scikit-build]
@@ -72,8 +78,9 @@ addopts = "-m 'not slow'"
 branch = true
 source = ["pylongfellow"]
 # _ffibuild.py runs inside the CMake build (emits the extension C source), not
-# under pytest — exclude it so coverage reflects the runtime package.
-omit = ["*/_ffibuild.py"]
+# under pytest — exclude it so coverage reflects the runtime package. The
+# _zk_cred bindings are generated (never committed) and load a native library.
+omit = ["*/_ffibuild.py", "*/backends/_zk_cred/*"]
 
 [tool.coverage.report]
 fail_under = 100
@@ -84,7 +91,7 @@ exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError"]
 [tool.ruff]
 line-length = 100
 src = ["src", "tests"]
-extend-exclude = ["vendor"]
+extend-exclude = ["vendor", "src/pylongfellow/backends/_zk_cred"]
 
 # Rule families beyond ruff's defaults: I=imports, UP=pyupgrade, B=bugbear,
 # S=bandit (security), RUF=ruff-native, SIM=simplify, C4=comprehensions,
@@ -98,7 +105,7 @@ convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101", "D"]
-"scripts/*" = ["D"]
+"scripts/*" = ["D", "S603"]
 "src/_cffi_src/*" = ["D"]
 
 # Strict over the package and tests (scripts/ excluded; see override below).
@@ -107,6 +114,12 @@ convention = "google"
 python_version = "3.11"
 strict = true
 files = ["src/pylongfellow", "src/_cffi_src", "tests"]
+exclude = ["src/pylongfellow/backends/_zk_cred"]
+
+# The generated bindings are untyped and not always built; rust.py imports them lazily.
+[[tool.mypy.overrides]]
+module = "pylongfellow.backends._zk_cred.*"
+ignore_missing_imports = true
 
 # Tests are checked for real errors but not required to annotate every function;
 # scripts/ stay out of the check (not in `files`).
@@ -123,7 +136,7 @@ ignore-private = true
 ignore-semiprivate = true
 ignore-magic = true
 ignore-nested-functions = true
-exclude = ["tests", "scripts", "src/_cffi_src", "build", "vendor"]
+exclude = ["tests", "scripts", "scratch", "src/_cffi_src", "build", "vendor", "src/pylongfellow/backends/_zk_cred"]
 
 # before-all installs gtest + benchmark because upstream's CMake REQUIREs them at
 # configure time, even though we build only the library.

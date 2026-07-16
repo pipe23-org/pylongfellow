@@ -17,6 +17,10 @@ class GenerationUnsupportedError(LongfellowError):
     """A backend whose `can_generate` is False was asked to generate a circuit."""
 
 
+class BackendUnavailableError(LongfellowError):
+    """A backend's native dependency is not installed or built."""
+
+
 @dataclass(frozen=True)
 class CircuitHandle:
     """A circuit loaded by a backend, ready for prove and verify.
@@ -73,6 +77,7 @@ class Backend(Protocol):
 
 __all__ = [
     "Backend",
+    "BackendUnavailableError",
     "CircuitHandle",
     "GenerationUnsupportedError",
 ]

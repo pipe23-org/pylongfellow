@@ -86,11 +86,14 @@ class ProverError(Error):
             class; do not branch on the code.
     """
 
-    def __init__(self, code: ProverErrorCode | None = None) -> None:
+    def __init__(self, code: ProverErrorCode | None = None, *, message: str | None = None) -> None:
         self.code = code
-        super().__init__(
-            f"{code.name} ({code.value})" if code is not None else "prover call failed"
-        )
+        if message is not None:
+            super().__init__(message)
+        elif code is not None:
+            super().__init__(f"{code.name} ({code.value})")
+        else:
+            super().__init__("prover call failed")
 
 
 class VerifierError(Error):
@@ -102,11 +105,16 @@ class VerifierError(Error):
             class; do not branch on the code.
     """
 
-    def __init__(self, code: VerifierErrorCode | None = None) -> None:
+    def __init__(
+        self, code: VerifierErrorCode | None = None, *, message: str | None = None
+    ) -> None:
         self.code = code
-        super().__init__(
-            f"{code.name} ({code.value})" if code is not None else "verifier call failed"
-        )
+        if message is not None:
+            super().__init__(message)
+        elif code is not None:
+            super().__init__(f"{code.name} ({code.value})")
+        else:
+            super().__init__("verifier call failed")
 
 
 class CircuitError(Error):

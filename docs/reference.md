@@ -52,3 +52,18 @@ LongfellowError
 ::: pylongfellow.mdoc.ProverErrorCode
 ::: pylongfellow.mdoc.VerifierErrorCode
 ::: pylongfellow.mdoc.CircuitGenerationErrorCode
+
+## Rust backend
+
+An alternative backend over [abetterinternet/zk-cred-longfellow](https://github.com/abetterinternet/zk-cred-longfellow),
+generated with UniFFI. It proves and verifies; it cannot generate circuits, so `generate_circuit`
+raises `GenerationUnsupportedError`. `verify` requires the `device_namespaces` argument.
+
+Build it before use: `uv run python scripts/build_rust_backend.py`. This needs the vendored
+`vendor/zk-cred-longfellow` submodule (`git submodule update --init`) and a Rust toolchain. Install
+the `zstandard` runtime dependency with `pip install pylongfellow[rust]`. If either is missing, the
+backend raises `BackendUnavailableError`.
+
+Select it by passing `backend=pylongfellow.backends.rust.BACKEND` to
+[`load_circuit`][pylongfellow.mdoc.load_circuit]; `prove` and `verify` then dispatch through the
+returned handle.
