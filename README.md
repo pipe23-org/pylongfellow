@@ -37,7 +37,13 @@ Wheels are published for **CPython 3.11–3.14 on Linux x86_64** (manylinux and 
 any other platform `pip` falls back to the source distribution, which builds the vendored C++
 locally and needs a C++ toolchain — see [Build from source](#build-from-source).
 
-The wheel's runtime dependencies are **`cffi`**, **`cryptography`**, and **`cbor2`**.
+The wheel's runtime dependencies are **`cffi`**, **`cryptography`**, and **`cbor2`**. It ships
+the cpp backend. The rust backend is not in any wheel: it is source-build only (see
+[Backends](#backends)), and its `zstandard` runtime dependency comes from the `rust` extra:
+
+```
+pip install pylongfellow[rust]
+```
 
 ## What it binds
 
@@ -45,16 +51,19 @@ Everything is in the `pylongfellow.mdoc` submodule: `from pylongfellow import md
 call `mdoc.verify(...)`. Each function wraps one C entry point. The wrappers marshal
 inputs, copy results out, and turn non-success return codes into typed exceptions.
 
-| Python | C entry point | Role |
-|---|---|---|
-| `generate_circuit(spec)` | `generate_circuit` | produce the compressed circuit a spec names |
-| `circuit_id(circuit)` | `circuit_id` | recompute a circuit's canonical id (equals `ZkSpec.circuit_hash`) |
-| `find_zk_spec(system, circuit_hash)` | `find_zk_spec` | look up a built-in `ZkSpec`, or `None` |
-| `prove(circuit, mdoc, issuer_pk, transcript, attrs, timestamp, spec)` | `run_mdoc_prover` | holder side — produce a proof |
-| `verify(circuit, issuer_pk, transcript, attrs, timestamp, proof, doctype, spec)` | `run_mdoc_verifier` | verifier side — raises on a bad proof, returns on success |
+| Python | Role |
+|---|---|
+| `generate_circuit(spec, *, backend=None)` | produce the compressed circuit a spec names |
+| `load_circuit(spec, compressed, *, backend=None)` | load a circuit into a backend, return a `CircuitHandle` |
+| `circuit_id(circuit)` | recompute a circuit's canonical id (equals `ZkSpec.circuit_hash`) |
+| `find_zk_spec(system, circuit_hash)` | look up a built-in `ZkSpec`, or `None` |
+| `prove(handle, mdoc, issuer_pk, transcript, attrs, timestamp)` | holder side; produce a proof |
+| `verify(handle, issuer_pk, transcript, attrs, timestamp, proof, doctype, *, device_namespaces=None)` | verifier side; raises on a bad proof, returns on success |
 
-A circuit is just bytes: get them from `generate_circuit`, or read a committed blob from disk.
-There is no `load_circuit` — `pathlib.Path(...).read_bytes()` is the loader.
+A compressed circuit is bytes: get them from `generate_circuit`, or read a committed blob from
+disk. `prove` and `verify` do not take the bytes directly. Pass them once to `load_circuit`,
+which returns a `CircuitHandle` bound to a backend, and pass the handle to every `prove` and
+`verify` call. `backend` defaults to the cpp backend; see [Backends](#backends).
 
 Two C structs are exposed as frozen dataclasses:
 
@@ -73,14 +82,14 @@ A non-success C return code raises `mdoc.ProverError`, `mdoc.VerifierError`, or
 ```
 LongfellowError
 └── mdoc.Error
-    ├── mdoc.ProverError      # .code is a mdoc.ProverErrorCode
-    ├── mdoc.VerifierError    # .code is a mdoc.VerifierErrorCode
-    └── mdoc.CircuitError     # .code is a mdoc.CircuitGenerationErrorCode
+    ├── mdoc.ProverError      # .code: mdoc.ProverErrorCode or None
+    ├── mdoc.VerifierError    # .code: mdoc.VerifierErrorCode or None
+    └── mdoc.CircuitError     # .code: mdoc.CircuitGenerationErrorCode or None
 ```
 
-Catch by class; read `.code` for the specific failure. The classes do not collapse to one:
-the code enums mirror C ints and overlap, so only the exception class says which enum a code
-is from.
+Catch by class. `.code` carries the specific failure when the backend supplies one: the cpp
+backend always does, the rust backend leaves it `None`. Do not branch on the code. The code
+enums mirror C ints and overlap, so only the exception class says which enum a code is from.
 
 Four functions in `pylongfellow.mdoc` bind no C entry point: `create_credential` assembles
 an ISO 18013-5 `DeviceResponse` test credential under locally held keys, with
@@ -92,25 +101,81 @@ in the [API reference](https://pylongfellow.readthedocs.io/).
 ## Usage
 
 ```python
-import json
-from datetime import datetime
-from pathlib import Path
-
 from pylongfellow import mdoc
 
 spec = mdoc.find_zk_spec("longfellow-libzk-v1", circuit_hash)
-circuit = mdoc.generate_circuit(spec)          # or Path(...).read_bytes()
+compressed = mdoc.generate_circuit(spec)       # or Path(...).read_bytes()
+handle = mdoc.load_circuit(spec, compressed)   # cpp backend by default
 
 attrs = [mdoc.RequestedAttribute("org.iso.18013.5.1", "age_over_18", b"\xf5")]  # CBOR true
 
+proof = mdoc.prove(handle, credential, issuer_pk, transcript, attrs, now)
+mdoc.verify(handle, issuer_pk, transcript, attrs, now, proof, doctype)   # raises on failure
+```
+
+Migrating from 0.2.x: `prove` and `verify` no longer take the circuit bytes and the trailing
+`spec`. Load the circuit once and pass the handle.
+
+```python
+# 0.2.x
 proof = mdoc.prove(circuit, credential, issuer_pk, transcript, attrs, now, spec)
-mdoc.verify(circuit, issuer_pk, transcript, attrs, now, proof, doctype, spec)   # raises on failure
+# 0.3.0
+handle = mdoc.load_circuit(spec, circuit)
+proof = mdoc.prove(handle, credential, issuer_pk, transcript, attrs, now)
 ```
 
 A complete, runnable version over a committed sample mdoc is in
-[`examples/prove_and_verify.py`](examples/prove_and_verify.py) — `find_zk_spec` →
-`generate_circuit` → `circuit_id` → `prove` → `verify`. It needs nothing but the package and the
-bundled fixture; circuit generation takes ~15s.
+[`examples/prove_and_verify.py`](examples/prove_and_verify.py): `find_zk_spec` →
+`generate_circuit` → `circuit_id` → `load_circuit` → `prove` → `verify`. It needs nothing but the
+package and the bundled fixture; circuit generation takes ~15s.
+
+## Backends
+
+`prove` and `verify` dispatch through the backend a circuit was loaded into. `load_circuit` and
+`generate_circuit` take a keyword-only `backend`; the returned `CircuitHandle` carries it, so
+`prove` and `verify` need no backend argument. Two backends ship in the source tree.
+
+**cpp** (`pylongfellow.backends.cpp.BACKEND`) is the default and is in every wheel. It wraps the
+vendored longfellow C++ library. `can_generate` is `True`. It populates `.code` on the
+exceptions it raises and ignores `device_namespaces` on `verify`.
+
+**rust** (`pylongfellow.backends.rust.BACKEND`) wraps
+[abetterinternet/zk-cred-longfellow](https://github.com/abetterinternet/zk-cred-longfellow)
+through its UniFFI bindings. `can_generate` is `False`; it raises `GenerationUnsupportedError`
+from `generate_circuit`, so circuits come from `generate_circuit` on the cpp backend or from
+disk. `verify` requires `device_namespaces` (the inner bytes of the tag-24
+`DeviceNameSpacesBytes`) and raises `ValueError` without it. It leaves `.code` as `None`.
+
+Select it by passing `backend=` to `load_circuit`:
+
+```python
+from pylongfellow.backends import rust
+
+handle = mdoc.load_circuit(spec, compressed, backend=rust.BACKEND)
+```
+
+The rust backend is not in any wheel. Build it from source:
+
+```
+git submodule update --init vendor/zk-cred-longfellow
+uv run python scripts/build_rust_backend.py     # needs cargo 1.85+; ~4 min cold build
+pip install pylongfellow[rust]                  # zstandard runtime dependency
+```
+
+`build_rust_backend.py` stages the UniFFI-generated Python module and the cdylib into
+`src/pylongfellow/backends/_zk_cred/` (gitignored). If the module is not built or `zstandard` is
+not installed, the backend raises `BackendUnavailableError`.
+
+Engine init on the rust backend takes about 18 seconds per role and about 740 MB resident for a
+v6 1-attribute circuit. Init is lazy and cached on the handle. `prove` then takes about 1.3
+seconds and `verify` about 0.8 seconds on the reference machine.
+
+The differential tests exchange proofs between the two backends in both directions over the
+vendored v6 1-attribute circuit, and both backends verify zk-cred-longfellow's committed
+C++-generated interop proof. For the same statement the rust proof is larger than the cpp proof
+(562228 versus 323868 bytes).
+
+zk-cred-longfellow is licensed MPL-2.0. `pylongfellow` remains Apache-2.0.
 
 ## Logging
 
@@ -169,6 +234,10 @@ Two gotchas worth knowing:
 specific commit (currently **v0.9**, `fe83ec6`) and built from source into each wheel. It does
 not float: the upstream ABI and circuits can change between releases, and the test fixtures are
 pinned to a particular circuit and version.
+
+The rust backend vendors `abetterinternet/zk-cred-longfellow` (MPL-2.0) as a second git
+submodule, hard-pinned to `4f3d1b3`. It is built on demand by `scripts/build_rust_backend.py`
+and is not built into any wheel. `pylongfellow` itself is Apache-2.0.
 
 Not affiliated with Google or the European Commission — an independent binding to a public
 Apache-2.0 library.
