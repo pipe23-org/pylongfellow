@@ -4,6 +4,8 @@
 without touching longfellow-zk; they run on `cryptography` and `cbor2` alone.
 """
 
+from ..backends import CircuitHandle
+from ..backends.cpp import circuit_id, find_zk_spec, zk_specs
 from ._credential import (
     CreatedCredential,
     create_certificate,
@@ -20,12 +22,13 @@ from ._errors import (
     VerifierError,
     VerifierErrorCode,
 )
-from ._native import circuit_id, find_zk_spec, generate_circuit, prove, verify, zk_specs
+from ._facade import generate_circuit, load_circuit, prove, verify
 from ._types import RequestedAttribute, ZkSpec
 
 __all__ = [
     "CircuitError",
     "CircuitGenerationErrorCode",
+    "CircuitHandle",
     "CreatedCredential",
     "Error",
     "ProverError",
@@ -39,6 +42,7 @@ __all__ = [
     "create_credential",
     "find_zk_spec",
     "generate_circuit",
+    "load_circuit",
     "prove",
     "sign_device_authentication",
     "verify",
