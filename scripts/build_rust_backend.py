@@ -14,7 +14,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 SUBMODULE = REPO / "vendor" / "zk-cred-longfellow"
-CARGO = Path.home() / ".cargo" / "bin" / "cargo"
+CARGO = shutil.which("cargo") or str(Path.home() / ".cargo" / "bin" / "cargo")
 LIB = "libzk_cred_longfellow.so"
 BINDINGS = "zk_cred_longfellow.py"
 TARGET_SO = SUBMODULE / "target" / "release" / LIB
@@ -41,14 +41,14 @@ def main() -> None:
         "run `git submodule update --init vendor/zk-cred-longfellow`",
     )
     _require(
-        CARGO.is_file(),
+        Path(CARGO).is_file(),
         f"cargo not found at {CARGO}; install the Rust toolchain (https://rustup.rs)",
     )
 
-    _run([str(CARGO), "build", "--release", "--features", "uniffi"])
+    _run([CARGO, "build", "--release", "--features", "uniffi"])
     _run(
         [
-            str(CARGO),
+            CARGO,
             "run",
             "--features",
             "uniffi",

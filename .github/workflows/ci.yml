@@ -80,4 +80,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: uv sync --locked
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: vendor/zk-cred-longfellow
+          shared-key: zk-cred
+      - run: uv run --no-sync python scripts/build_rust_backend.py
       - run: uv run --no-sync pytest -m "slow or not slow" --cov
