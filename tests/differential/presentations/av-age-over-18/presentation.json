@@ -4,7 +4,7 @@
   "circuit_id": "8d079211715200ff06c5109639245502bfe94aa869908d31176aae4016182121",
   "attrs": [
     {
-      "namespace": "org.iso.18013.5.1",
+      "namespace": "eu.europa.ec.av.1",
       "id": "age_over_18",
       "cbor_value_hex": "f5"
     }

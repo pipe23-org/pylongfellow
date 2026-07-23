@@ -109,6 +109,35 @@ def _device_namespaces_hex(mdoc_hex: str) -> str:
     return name_spaces.value.hex()
 
 
+def _attrs_from_credential(fixture: dict, mdoc_hex: str) -> list[dict]:
+    """Rebuild the fixture's attrs against the credential's own issuerSigned map.
+
+    The namespace is resolved by locating the attribute id in the mdoc's
+    issuerSigned nameSpaces; a fixture's own namespace record is not trusted.
+    The claimed value must equal the credential's elementValue.
+    """
+    response = cbor2.loads(bytes.fromhex(mdoc_hex))
+    elements: dict[str, tuple[str, bytes]] = {}
+    for namespace, items in response["documents"][0]["issuerSigned"]["nameSpaces"].items():
+        for item in items:
+            inner = cbor2.loads(item.value)
+            identifier = inner["elementIdentifier"]
+            if identifier in elements:
+                sys.exit(f"error: attribute id {identifier!r} appears in multiple namespaces")
+            elements[identifier] = (namespace, cbor2.dumps(inner["elementValue"]))
+    attrs = []
+    for attr in fixture["attrs"]:
+        if attr["id"] not in elements:
+            sys.exit(f"error: attribute id {attr['id']!r} not in the credential's issuerSigned")
+        namespace, element_value = elements[attr["id"]]
+        if bytes.fromhex(attr["cbor_value_hex"]) != element_value:
+            sys.exit(f"error: claimed value for {attr['id']!r} does not match the credential")
+        attrs.append(
+            {"namespace": namespace, "id": attr["id"], "cbor_value_hex": attr["cbor_value_hex"]}
+        )
+    return attrs
+
+
 def _circuit_byte_sha256(circuit_id: str) -> str:
     for sidecar_path in CIRCUITS.glob("*.json"):
         sidecar = json.loads(sidecar_path.read_text())
@@ -141,6 +170,7 @@ def presentation(fixture_path: str, slug: str) -> None:
         "origin": origin,
     }
     if "mdoc_hex" in fixture:
+        doc["attrs"] = _attrs_from_credential(fixture, fixture["mdoc_hex"])
         doc["mdoc_hex"] = fixture["mdoc_hex"]
         doc["device_namespaces_hex"] = _device_namespaces_hex(fixture["mdoc_hex"])
     _write_json(out / "presentation.json", doc)

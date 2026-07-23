@@ -66,7 +66,9 @@ no format bound to a language or a class.
 - Proof sidecar: `prover`, `prover_source`, `circuit_id`, `circuit_byte_sha256`,
   `byte_sha256`, `origin`.
 - `presentation.json` carries `doctype`, the attributes, the transcript, the issuer key, the
-  timestamp, the mdoc bytes, `device_namespaces`, and `origin`.
+  timestamp, and `origin`. A presentation captured with its mdoc carries the mdoc bytes and
+  the `device_namespaces` extracted from them; a verify-only capture without device namespaces
+  omits both fields.
 
 A circuit's identity is its spec fields plus `byte_sha256`. `circuit_id` is a sourced claim,
 verified once at admission and recorded with the backend and pin that computed it.
@@ -93,8 +95,10 @@ over the backend set. Directory nesting carries no pairing semantics.
 
 An integrity test checks on every run: every `.circuit` and `.proof` has a same-stem `.json`;
 every sidecar's `byte_sha256` matches its file; every proof's `circuit_id` names a circuit in
-`circuits/`; every presentation carries `device_namespaces`. `circuit_id` claims are checked
-at admission, not per run.
+`circuits/` and its `circuit_byte_sha256` matches that circuit's sidecar; every presentation's
+`circuit_id` names a circuit in `circuits/` and its attribute count matches the circuit;
+every presentation with mdoc bytes carries `device_namespaces`. `circuit_id` claims are
+checked at admission, not per run.
 
 ## Pinned and floating runs
 
