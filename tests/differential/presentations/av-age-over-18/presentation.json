@@ -1,7 +1,6 @@
 {
   "doctype": "eu.europa.ec.av.1",
   "system": "longfellow-libzk-v1",
-  "circuit_id": "8d079211715200ff06c5109639245502bfe94aa869908d31176aae4016182121",
   "attrs": [
     {
       "namespace": "eu.europa.ec.av.1",

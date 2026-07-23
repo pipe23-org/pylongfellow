@@ -1,7 +1,6 @@
 {
   "doctype": "org.iso.18013.5.1.mDL",
   "system": "longfellow-libzk-v1",
-  "circuit_id": "137e5a75ce72735a37c8a72da1a8a0a5df8d13365c2ae3d2c2bd6a0e7197c7c6",
   "attrs": [
     {
       "namespace": "org.iso.18013.5.1",

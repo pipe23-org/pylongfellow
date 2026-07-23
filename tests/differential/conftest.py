@@ -75,10 +75,6 @@ class Presentation:
     proofs: tuple[Proof, ...]
 
     @property
-    def circuit_id(self) -> str:
-        return str(self.doc["circuit_id"])
-
-    @property
     def doctype(self) -> str:
         return str(self.doc["doctype"])
 
@@ -203,11 +199,10 @@ def _round_trip_cases() -> list[RoundTripCase]:
     for presentation in PRESENTATIONS:
         if presentation.mdoc_bytes is None:
             continue
-        circuit = _CIRCUITS_BY_ID.get(presentation.circuit_id)
-        if circuit is None:
-            continue  # test_integrity reports the dangling reference
         cases.extend(
             RoundTripCase(presentation, circuit, prover, verifier)
+            for circuit in CIRCUITS
+            if circuit.num_attributes == len(presentation.attrs)
             for prover in BACKENDS
             for verifier in _verifiers_for(presentation)
         )

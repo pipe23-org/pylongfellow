@@ -172,25 +172,8 @@ def isrg_client() -> Pylongfellow:
 
 
 @pytest.fixture(scope="session")
-def google_handle(
-    google_client: Pylongfellow, vendored_vector: VendoredVector
-) -> mdoc.CircuitHandle:
-    return google_client.load_circuit(vendored_vector.spec, vendored_vector.compressed)
-
-
-@pytest.fixture(scope="session")
 def isrg_handle(isrg_client: Pylongfellow, vendored_vector: VendoredVector) -> mdoc.CircuitHandle:
     return isrg_client.load_circuit(vendored_vector.spec, vendored_vector.compressed)
-
-
-@pytest.fixture(scope="session")
-def google_proof(
-    google_client: Pylongfellow, google_handle: mdoc.CircuitHandle, vendored_vector: VendoredVector
-) -> bytes:
-    v = vendored_vector
-    return google_client.prove(
-        google_handle, v.mdoc_bytes, v.issuer_pk, v.transcript, v.attrs, v.timestamp
-    )
 
 
 @pytest.fixture(scope="session")

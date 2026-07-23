@@ -89,7 +89,9 @@ Both modes write the same sidecar schema.
 
 Pairing is computed in `conftest.py` at collection time. Sidecars are read into plain records,
 and compatible (circuit, presentation, prover backend, verifier backend) tuples are generated
-over the backend set. Directory nesting carries no pairing semantics.
+over the backend set. A presentation pairs with every circuit whose attribute count matches;
+a committed proof pairs with the circuit its sidecar's `circuit_id` names. Directory nesting
+carries no pairing semantics.
 
 ## Integrity
 
