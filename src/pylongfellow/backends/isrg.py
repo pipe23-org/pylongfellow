@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Any, cast
 
 from ..mdoc._errors import ProverError, VerifierError
 from . import BackendUnavailableError, CircuitHandle, GenerationUnsupportedError
-from .google import circuit_id
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -110,13 +109,22 @@ def _ensure_verifier(holder: _Circuit) -> tuple[Any, Any]:
 
 
 class _IsrgBackend:
-    """abetterinternet/zk-cred-longfellow via UniFFI as a Backend; it cannot generate circuits."""
+    """abetterinternet/zk-cred-longfellow (ISRG) via UniFFI; it cannot generate circuits."""
 
-    name: str = "abetterinternet/zk-cred-longfellow"
+    name: str = "isrg"
     can_generate: bool = False
+
+    def ensure_available(self) -> None:
+        """Raise BackendUnavailableError unless the UniFFI extension is built."""
+        _zk()
 
     def load_circuit(self, spec: ZkSpec, compressed: bytes) -> CircuitHandle:
         """Decompress and bind a circuit to this backend as a CircuitHandle.
+
+        Circuit identity is backend-native behaviour: this backend does not
+        check that `spec.circuit_hash` matches `compressed`. A wrong circuit of
+        the same version and attribute count is not detected at load;
+        version/count mismatches surface as errors at prove/verify.
 
         Args:
             spec: ZkSpec naming the circuit; its version must be 6 or 7.
@@ -126,14 +134,11 @@ class _IsrgBackend:
             A CircuitHandle carrying the decompressed circuit as backend state.
 
         Raises:
-            ValueError: `spec.version` is not 6 or 7, or `spec` names a
-                different circuit than `compressed`.
+            ValueError: `spec.version` is not 6 or 7.
             BackendUnavailableError: the `zstandard` package is not installed.
         """
         if spec.version not in _VERSIONS:
             raise ValueError(f"unsupported circuit version {spec.version} (expected 6 or 7)")
-        if circuit_id(compressed) != spec.circuit_hash:
-            raise ValueError("spec.circuit_hash does not match the circuit")
         decompressed = _decompress(compressed)
         holder = _Circuit(decompressed, spec.version, spec.num_attributes)
         return CircuitHandle(spec=spec, backend=self, state=holder)

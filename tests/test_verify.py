@@ -8,9 +8,9 @@ import pytest
 from pylongfellow import mdoc
 
 
-def _verify(inputs):
-    handle = mdoc.load_circuit(inputs.spec, inputs.circuit)
-    mdoc.verify(
+def _verify(client, inputs):
+    handle = client.load_circuit(inputs.spec, inputs.circuit)
+    client.verify(
         handle,
         inputs.issuer_pk,
         inputs.transcript,
@@ -21,8 +21,10 @@ def _verify(inputs):
     )
 
 
-def test_verify_proof_age_over_18(proof_age_over_18):
-    _verify(proof_age_over_18)  # returns None on success, raises VerifierError on failure
+def test_verify_proof_age_over_18(google_client, proof_age_over_18):
+    _verify(
+        google_client, proof_age_over_18
+    )  # returns None on success, raises VerifierError on failure
 
 
 def _flip(data: bytes) -> bytes:
@@ -51,40 +53,40 @@ def _attr(inputs, **changes):
     ],
     ids=["proof", "pubkey", "transcript", "timestamp", "value", "id"],
 )
-def test_verify_rejects(proof_age_over_18, mutate):
+def test_verify_rejects(google_client, proof_age_over_18, mutate):
     # A tampered Zk statement the C verifier rejects with VerifierError. (A
     # tampered *spec* is caught earlier by the canonical guard — see
     # test_verify_rejects_noncanonical_spec — so it is not exercised here.)
     with pytest.raises(mdoc.VerifierError):
-        _verify(mutate(proof_age_over_18))
+        _verify(google_client, mutate(proof_age_over_18))
 
 
-def test_verify_rejects_long_doctype(proof_age_over_18):
+def test_verify_rejects_long_doctype(google_client, proof_age_over_18):
     # C silently substitutes a default doctype at >= 256 bytes; refuse instead.
     with pytest.raises(ValueError, match="doctype too long"):
-        _verify(dataclasses.replace(proof_age_over_18, doctype="x" * 256))
+        _verify(google_client, dataclasses.replace(proof_age_over_18, doctype="x" * 256))
 
 
-def test_verify_rejects_noncanonical_spec(proof_age_over_18):
+def test_verify_rejects_noncanonical_spec(google_client, proof_age_over_18):
     # A lying block_enc with a matching hash would SIGABRT in C; caught here.
     inputs = proof_age_over_18
     bad = dataclasses.replace(inputs.spec, block_enc_sig=inputs.spec.block_enc_sig + 1)
     with pytest.raises(ValueError, match="registered ZkSpec"):
-        _verify(dataclasses.replace(inputs, spec=bad))
+        _verify(google_client, dataclasses.replace(inputs, spec=bad))
 
 
 @pytest.mark.parametrize("resize", [lambda a: a + a, lambda a: []], ids=["over", "under"])
-def test_verify_rejects_attr_count_mismatch(proof_age_over_18, resize):
+def test_verify_rejects_attr_count_mismatch(google_client, proof_age_over_18, resize):
     inputs = proof_age_over_18
     with pytest.raises(ValueError, match="num_attributes"):
-        _verify(dataclasses.replace(inputs, attrs=resize(inputs.attrs)))
+        _verify(google_client, dataclasses.replace(inputs, attrs=resize(inputs.attrs)))
 
 
-def test_verify_rejects_spec_for_wrong_circuit(proof_age_over_18):
+def test_verify_rejects_spec_for_wrong_circuit(google_client, proof_age_over_18):
     # A spec naming a different circuit must be a clean ValueError (spec<->circuit guard).
     wrong = mdoc.find_zk_spec(
         "longfellow-libzk-v1",
         "8d079211715200ff06c5109639245502bfe94aa869908d31176aae4016182121",  # v7, not the v6 circuit
     )
     with pytest.raises(ValueError, match="does not match the circuit"):
-        _verify(dataclasses.replace(proof_age_over_18, spec=wrong))
+        _verify(google_client, dataclasses.replace(proof_age_over_18, spec=wrong))

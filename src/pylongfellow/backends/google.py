@@ -14,7 +14,7 @@ from ..mdoc._errors import (
     VerifierErrorCode,
 )
 from ..mdoc._types import RequestedAttribute, ZkSpec
-from . import CircuitHandle
+from . import BackendUnavailableError, CircuitHandle
 
 # C fixed-buffer sizes (from the upstream RequestedAttribute struct).
 _NAMESPACE_MAX, _ID_MAX, _VALUE_MAX = 64, 32, 64
@@ -23,9 +23,9 @@ _NAMESPACE_MAX, _ID_MAX, _VALUE_MAX = 64, 32, 64
 def _load() -> tuple[Any, Any]:
     try:
         from .._longfellow import ffi, lib
-    except ImportError as e:  # pragma: no cover - depends on the build
-        raise ImportError(
-            "pylongfellow native extension is not built; build the package first"
+    except ImportError as e:
+        raise BackendUnavailableError(
+            "the google-cpp backend's native extension is not built; build the package first"
         ) from e
     return ffi, lib
 
@@ -185,10 +185,14 @@ def zk_specs() -> tuple[ZkSpec, ...]:
 
 
 class _GoogleBackend:
-    """google/longfellow-zk's C ABI as a Backend; the C calls are stateless per handle."""
+    """google/longfellow-zk's C++ library via its C ABI; the C calls are stateless per handle."""
 
-    name: str = "google/longfellow-zk"
+    name: str = "google-cpp"
     can_generate: bool = True
+
+    def ensure_available(self) -> None:
+        """Raise BackendUnavailableError unless the native extension is built."""
+        _load()
 
     def load_circuit(self, spec: ZkSpec, compressed: bytes) -> CircuitHandle:
         """Validate the circuit against the spec and return a handle over its bytes.

@@ -2,18 +2,15 @@
 
 ## `pylongfellow`
 
+::: pylongfellow.Pylongfellow
 ::: pylongfellow.LongfellowError
 
 ## `pylongfellow.mdoc`
 
-The mdoc-specific functions, data types, and errors from longfellow-zk.
+The mdoc-specific data types, errors, and spec-table functions from longfellow-zk.
 
 ### Functions
 
-::: pylongfellow.mdoc.load_circuit
-::: pylongfellow.mdoc.prove
-::: pylongfellow.mdoc.verify
-::: pylongfellow.mdoc.generate_circuit
 ::: pylongfellow.mdoc.circuit_id
 ::: pylongfellow.mdoc.find_zk_spec
 ::: pylongfellow.mdoc.zk_specs
@@ -54,6 +51,17 @@ LongfellowError
 ::: pylongfellow.mdoc.VerifierErrorCode
 ::: pylongfellow.mdoc.CircuitGenerationErrorCode
 
+## `pylongfellow.backends`
+
+The backend SPI. A `Backend` implements load, generate, prove, and verify for one longfellow
+implementation; `Pylongfellow` binds one at construction, by registry name (`google-cpp`,
+`isrg`) or instance.
+
+::: pylongfellow.backends.Backend
+::: pylongfellow.backends.get_backend
+::: pylongfellow.backends.GenerationUnsupportedError
+::: pylongfellow.backends.BackendUnavailableError
+
 ## The isrg backend
 
 An alternative backend that binds [abetterinternet/zk-cred-longfellow](https://github.com/abetterinternet/zk-cred-longfellow)
@@ -65,6 +73,6 @@ Build it before use: `uv run python scripts/build_isrg_backend.py`. This needs t
 the `zstandard` runtime dependency with `pip install pylongfellow[isrg]`. If either is missing, the
 backend raises `BackendUnavailableError`.
 
-Select it by passing `backend=pylongfellow.backends.isrg.BACKEND` to
-[`load_circuit`][pylongfellow.mdoc.load_circuit]; `prove` and `verify` then dispatch through the
-returned handle.
+Select it by name — `Pylongfellow(backend="isrg")`; `prove` and `verify` then dispatch through
+the handles it loads. It does not check `spec.circuit_hash` against the circuit bytes at load;
+identity checking is backend-native behaviour.

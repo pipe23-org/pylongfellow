@@ -13,7 +13,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from pylongfellow import mdoc
+from pylongfellow import Pylongfellow, mdoc
 
 
 def _stderr(level: str | None) -> str:
@@ -46,8 +46,9 @@ if __name__ == "__main__":
         mdoc.RequestedAttribute(a["namespace"], a["id"], bytes.fromhex(a["cbor_value_hex"]))
         for a in fx["attrs"]
     ]
-    handle = mdoc.load_circuit(spec, (data / "circuits" / fx["circuit_hash"]).read_bytes())
-    mdoc.verify(
+    client = Pylongfellow(backend="google-cpp")
+    handle = client.load_circuit(spec, (data / "circuits" / fx["circuit_hash"]).read_bytes())
+    client.verify(
         handle,
         (int(fx["issuer_pk_x"], 16), int(fx["issuer_pk_y"], 16)),
         base64.b64decode(fx["transcript_b64"]),

@@ -42,22 +42,24 @@ def test_find_zk_spec_miss_returns_none():
     assert mdoc.find_zk_spec("nope", _KNOWN[0][0]) is None
 
 
-def test_generate_circuit_rejects_old_version():
+def test_generate_circuit_rejects_old_version(google_client):
     # generate_circuit only makes the latest version; an older spec is rejected.
     spec = mdoc.find_zk_spec(_SYSTEM, _KNOWN[0][0])  # v6, not the latest
     assert spec is not None
     with pytest.raises(mdoc.CircuitError):
-        mdoc.generate_circuit(spec)
+        google_client.generate_circuit(spec)
 
 
 @pytest.mark.slow
-def test_generate_circuit_rejects_noncanonical_spec():
+def test_generate_circuit_rejects_noncanonical_spec(google_client):
     # A hand-built spec that isn't in the library's table must be refused before
     # reaching C (block_enc/version SIGABRT; oversize hash is a heap overflow).
     spec = mdoc.find_zk_spec(_SYSTEM, _KNOWN[1][0])
     assert spec is not None
     with pytest.raises(ValueError, match="registered ZkSpec"):
-        mdoc.generate_circuit(dataclasses.replace(spec, block_enc_hash=spec.block_enc_hash + 1))
+        google_client.generate_circuit(
+            dataclasses.replace(spec, block_enc_hash=spec.block_enc_hash + 1)
+        )
 
 
 def test_build_spec_rejects_oversize_hash():
@@ -74,13 +76,13 @@ def test_build_spec_rejects_oversize_hash():
         _build_spec(ffi, dataclasses.replace(spec, circuit_hash="a" * 200))
 
 
-def test_generate_circuit_self_validates():
+def test_generate_circuit_self_validates(google_client):
     # Generation must reproduce the canonical id — the interoperable circuit,
     # not merely a valid one.
     circuit_hash = _KNOWN[1][0]  # v7/n1
     spec = mdoc.find_zk_spec(_SYSTEM, circuit_hash)
     assert spec is not None
-    assert mdoc.circuit_id(mdoc.generate_circuit(spec)) == circuit_hash
+    assert mdoc.circuit_id(google_client.generate_circuit(spec)) == circuit_hash
 
 
 def test_zk_specs_length():

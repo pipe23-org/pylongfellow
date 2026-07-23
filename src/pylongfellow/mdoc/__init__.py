@@ -1,4 +1,4 @@
-"""The mdoc-specific functions, data types, and errors from longfellow-zk.
+"""The mdoc-specific data types, errors, and spec-table functions from longfellow-zk.
 
 `create_credential` and its companion functions construct test credentials
 without touching longfellow-zk; they run on `cryptography` and `cbor2` alone.
@@ -22,7 +22,6 @@ from ._errors import (
     VerifierError,
     VerifierErrorCode,
 )
-from ._facade import generate_circuit, load_circuit, prove, verify
 from ._types import RequestedAttribute, ZkSpec
 
 __all__ = [
@@ -41,11 +40,7 @@ __all__ = [
     "create_certificate",
     "create_credential",
     "find_zk_spec",
-    "generate_circuit",
-    "load_circuit",
-    "prove",
     "sign_device_authentication",
-    "verify",
     "verify_device_authentication",
     "zk_specs",
 ]

@@ -44,6 +44,9 @@ class Backend(Protocol):
     name: str
     can_generate: bool
 
+    def ensure_available(self) -> None:
+        """Raise BackendUnavailableError unless the backend's native dependency is built."""
+
     def load_circuit(self, spec: ZkSpec, compressed: bytes) -> CircuitHandle:
         """Bind a compressed circuit to this backend as a CircuitHandle."""
 
@@ -75,9 +78,52 @@ class Backend(Protocol):
         """Verify a proof of the requested attributes against the transcript."""
 
 
+def _google_backend() -> Backend:
+    from . import google
+
+    return google.BACKEND
+
+
+def _isrg_backend() -> Backend:
+    from . import isrg
+
+    return isrg.BACKEND
+
+
+# Registry names distinguish implementation, not just institution: google ships
+# a second (Rust) implementation upstream, so "google-rust" is reserved.
+_REGISTRY = {
+    "google-cpp": _google_backend,
+    "isrg": _isrg_backend,
+}
+
+
+def get_backend(name: str) -> Backend:
+    """Return the registered backend singleton for a registry name.
+
+    Args:
+        name: Registry name, one of `google-cpp` or `isrg`.
+
+    Returns:
+        The backend singleton. Availability is not checked here; construction
+        of [`Pylongfellow`][pylongfellow.Pylongfellow] probes it.
+
+    Raises:
+        ValueError: `name` is not a registered backend name.
+    """
+    try:
+        loader = _REGISTRY[name]
+    except KeyError:
+        raise ValueError(
+            f"unknown backend {name!r} (registered: {', '.join(sorted(_REGISTRY))})"
+        ) from None
+    return loader()
+
+
 __all__ = [
     "Backend",
     "BackendUnavailableError",
     "CircuitHandle",
     "GenerationUnsupportedError",
+    "get_backend",
 ]

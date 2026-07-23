@@ -48,23 +48,25 @@ pip install pylongfellow[isrg]
 
 ## What it binds
 
-Everything is in the `pylongfellow.mdoc` submodule: `from pylongfellow import mdoc`, then
-call `mdoc.verify(...)`. Each function wraps one C entry point. The wrappers marshal
-inputs, copy results out, and turn non-success return codes into typed exceptions.
+`Pylongfellow` is the entry point: a client bound to one backend at construction. Data types,
+errors, and the spec-table functions are in the `pylongfellow.mdoc` submodule. Each client
+method wraps one native entry point. The wrappers marshal inputs, copy results out, and turn
+non-success return codes into typed exceptions.
 
 | Python | Role |
 |---|---|
-| `generate_circuit(spec, *, backend=None)` | produce the compressed circuit a spec names |
-| `load_circuit(spec, compressed, *, backend=None)` | load a circuit into a backend, return a `CircuitHandle` |
-| `circuit_id(circuit)` | recompute a circuit's canonical id (equals `ZkSpec.circuit_hash`) |
-| `find_zk_spec(system, circuit_hash)` | look up a built-in `ZkSpec`, or `None` |
-| `prove(handle, mdoc, issuer_pk, transcript, attrs, timestamp)` | holder side; produce a proof |
-| `verify(handle, issuer_pk, transcript, attrs, timestamp, proof, doctype, *, device_namespaces=None)` | verifier side; raises on a bad proof, returns on success |
+| `Pylongfellow(*, backend)` | bind a backend, by registry name (`"google-cpp"`, `"isrg"`) or instance |
+| `.generate_circuit(spec)` | produce the compressed circuit a spec names |
+| `.load_circuit(spec, compressed)` | load a circuit into the bound backend, return a `CircuitHandle` |
+| `.prove(handle, mdoc, issuer_pk, transcript, attrs, timestamp)` | holder side; produce a proof |
+| `.verify(handle, issuer_pk, transcript, attrs, timestamp, proof, doctype, *, device_namespaces=None)` | verifier side; raises on a bad proof, returns on success |
+| `mdoc.circuit_id(circuit)` | recompute a circuit's canonical id (equals `ZkSpec.circuit_hash`) |
+| `mdoc.find_zk_spec(system, circuit_hash)` | look up a built-in `ZkSpec`, or `None` |
 
 A compressed circuit is bytes: get them from `generate_circuit`, or read a committed blob from
 disk. `prove` and `verify` do not take the bytes directly. Pass them once to `load_circuit`,
 which returns a `CircuitHandle` bound to a backend, and pass the handle to every `prove` and
-`verify` call. `backend` defaults to the google/longfellow-zk backend; see [Backends](#backends).
+`verify` call. There is no default backend; construction names one. See [Backends](#backends).
 
 Two C structs are exposed as frozen dataclasses:
 
@@ -103,27 +105,31 @@ in the [API reference](https://pylongfellow.readthedocs.io/).
 ## Usage
 
 ```python
-from pylongfellow import mdoc
+from pylongfellow import Pylongfellow, mdoc
+
+client = Pylongfellow(backend="google-cpp")
 
 spec = mdoc.find_zk_spec("longfellow-libzk-v1", circuit_hash)
-compressed = mdoc.generate_circuit(spec)       # or Path(...).read_bytes()
-handle = mdoc.load_circuit(spec, compressed)   # google backend by default
+compressed = client.generate_circuit(spec)       # or Path(...).read_bytes()
+handle = client.load_circuit(spec, compressed)
 
 attrs = [mdoc.RequestedAttribute("org.iso.18013.5.1", "age_over_18", b"\xf5")]  # CBOR true
 
-proof = mdoc.prove(handle, credential, issuer_pk, transcript, attrs, now)
-mdoc.verify(handle, issuer_pk, transcript, attrs, now, proof, doctype)   # raises on failure
+proof = client.prove(handle, credential, issuer_pk, transcript, attrs, now)
+client.verify(handle, issuer_pk, transcript, attrs, now, proof, doctype)   # raises on failure
 ```
 
-Migrating from 0.2.x: `prove` and `verify` no longer take the circuit bytes and the trailing
-`spec`. Load the circuit once and pass the handle.
+Migrating from 0.2.x: the module-level `mdoc` functions are gone; operations are methods on a
+client bound to a named backend. `prove` and `verify` no longer take the circuit bytes and the
+trailing `spec`. Load the circuit once and pass the handle.
 
 ```python
 # 0.2.x
 proof = mdoc.prove(circuit, credential, issuer_pk, transcript, attrs, now, spec)
 # 0.3.0
-handle = mdoc.load_circuit(spec, circuit)
-proof = mdoc.prove(handle, credential, issuer_pk, transcript, attrs, now)
+client = Pylongfellow(backend="google-cpp")
+handle = client.load_circuit(spec, circuit)
+proof = client.prove(handle, credential, issuer_pk, transcript, attrs, now)
 ```
 
 A complete, runnable version over a committed sample mdoc is in
@@ -133,27 +139,32 @@ package and the bundled fixture; circuit generation takes ~15s.
 
 ## Backends
 
-`prove` and `verify` dispatch through the backend a circuit was loaded into. `load_circuit` and
-`generate_circuit` take a keyword-only `backend`; the returned `CircuitHandle` carries it, so
-`prove` and `verify` need no backend argument. Two backends ship in the source tree.
+A client is bound to one backend at construction. `Pylongfellow(backend=...)` takes a registry
+name or a `Backend` instance and raises `BackendUnavailableError` when the backend's native
+dependency is not built. `prove` and `verify` dispatch through the backend a circuit was loaded
+into: the `CircuitHandle` carries it, so a handle works on any client. Two backends ship in the
+source tree.
 
-**google/longfellow-zk** (`pylongfellow.backends.google.BACKEND`) is the default and is in every
-wheel. It binds the vendored longfellow-zk C++ library. `can_generate` is `True`. It populates
-`.code` on the exceptions it raises and ignores `device_namespaces` on `verify`.
+**`google-cpp`** binds the vendored longfellow-zk C++ library and is in every wheel.
+`can_generate` is `True`. It populates `.code` on the exceptions it raises, ignores
+`device_namespaces` on `verify`, and checks at load that `spec.circuit_hash` matches the
+circuit bytes.
 
-**abetterinternet/zk-cred-longfellow (ISRG)** (`pylongfellow.backends.isrg.BACKEND`) binds
+**`isrg`** binds
 [abetterinternet/zk-cred-longfellow](https://github.com/abetterinternet/zk-cred-longfellow)
-through its UniFFI bindings. `can_generate` is `False`; it raises `GenerationUnsupportedError`
-from `generate_circuit`, so circuits come from `generate_circuit` on the google backend or from
-disk. `verify` requires `device_namespaces` (the inner bytes of the tag-24
+(ISRG) through its UniFFI bindings. `can_generate` is `False`; it raises
+`GenerationUnsupportedError` from `generate_circuit`, so circuits come from a `google-cpp`
+client or from disk. `verify` requires `device_namespaces` (the inner bytes of the tag-24
 `DeviceNameSpacesBytes`) and raises `ValueError` without it. It leaves `.code` as `None`.
+Circuit identity checking is backend-native behaviour: this backend does not check
+`spec.circuit_hash` at load, so a wrong circuit of the same version and attribute count is not
+detected there; mismatched version or count surfaces as an error at `prove`/`verify`.
 
-Select it by passing `backend=` to `load_circuit`:
+Select it by name:
 
 ```python
-from pylongfellow.backends import isrg
-
-handle = mdoc.load_circuit(spec, compressed, backend=isrg.BACKEND)
+client = Pylongfellow(backend="isrg")
+handle = client.load_circuit(spec, compressed)
 ```
 
 The isrg backend is not in any wheel. Build it from source:

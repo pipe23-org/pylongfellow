@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from pylongfellow import mdoc
+from pylongfellow import Pylongfellow, mdoc
 
 _DATA = Path(__file__).parent / "data"
 _VECTORS = Path(__file__).parents[1] / "vendor" / "zk-cred-longfellow" / "test-vectors" / "mdoc_zk"
@@ -162,24 +162,42 @@ def vendored_vector() -> VendoredVector:
 
 
 @pytest.fixture(scope="session")
-def google_handle(vendored_vector: VendoredVector) -> mdoc.CircuitHandle:
-    return mdoc.load_circuit(vendored_vector.spec, vendored_vector.compressed)
+def google_client() -> Pylongfellow:
+    return Pylongfellow(backend="google-cpp")
 
 
 @pytest.fixture(scope="session")
-def isrg_handle(vendored_vector: VendoredVector) -> mdoc.CircuitHandle:
-    from pylongfellow.backends import isrg
-
-    return mdoc.load_circuit(vendored_vector.spec, vendored_vector.compressed, backend=isrg.BACKEND)
+def isrg_client() -> Pylongfellow:
+    return Pylongfellow(backend="isrg")
 
 
 @pytest.fixture(scope="session")
-def google_proof(google_handle: mdoc.CircuitHandle, vendored_vector: VendoredVector) -> bytes:
+def google_handle(
+    google_client: Pylongfellow, vendored_vector: VendoredVector
+) -> mdoc.CircuitHandle:
+    return google_client.load_circuit(vendored_vector.spec, vendored_vector.compressed)
+
+
+@pytest.fixture(scope="session")
+def isrg_handle(isrg_client: Pylongfellow, vendored_vector: VendoredVector) -> mdoc.CircuitHandle:
+    return isrg_client.load_circuit(vendored_vector.spec, vendored_vector.compressed)
+
+
+@pytest.fixture(scope="session")
+def google_proof(
+    google_client: Pylongfellow, google_handle: mdoc.CircuitHandle, vendored_vector: VendoredVector
+) -> bytes:
     v = vendored_vector
-    return mdoc.prove(google_handle, v.mdoc_bytes, v.issuer_pk, v.transcript, v.attrs, v.timestamp)
+    return google_client.prove(
+        google_handle, v.mdoc_bytes, v.issuer_pk, v.transcript, v.attrs, v.timestamp
+    )
 
 
 @pytest.fixture(scope="session")
-def isrg_proof(isrg_handle: mdoc.CircuitHandle, vendored_vector: VendoredVector) -> bytes:
+def isrg_proof(
+    isrg_client: Pylongfellow, isrg_handle: mdoc.CircuitHandle, vendored_vector: VendoredVector
+) -> bytes:
     v = vendored_vector
-    return mdoc.prove(isrg_handle, v.mdoc_bytes, v.issuer_pk, v.transcript, v.attrs, v.timestamp)
+    return isrg_client.prove(
+        isrg_handle, v.mdoc_bytes, v.issuer_pk, v.transcript, v.attrs, v.timestamp
+    )

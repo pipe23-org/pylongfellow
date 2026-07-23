@@ -8,9 +8,9 @@ import pytest
 from pylongfellow import mdoc
 
 
-def _prove(inputs):
-    handle = mdoc.load_circuit(inputs.spec, inputs.circuit)
-    return mdoc.prove(
+def _prove(client, inputs):
+    handle = client.load_circuit(inputs.spec, inputs.circuit)
+    return client.prove(
         handle,
         inputs.mdoc_bytes,
         inputs.issuer_pk,
@@ -24,13 +24,13 @@ def _attr(inputs, **changes):
     return dataclasses.replace(inputs, attrs=[dataclasses.replace(inputs.attrs[0], **changes)])
 
 
-def test_prove_then_verify(mdoc_eu_av):
+def test_prove_then_verify(google_client, mdoc_eu_av):
     inputs = mdoc_eu_av
-    proof = _prove(inputs)
+    proof = _prove(google_client, inputs)
     assert proof
     # The proof we just made must verify against the same inputs.
-    handle = mdoc.load_circuit(inputs.spec, inputs.circuit)
-    mdoc.verify(
+    handle = google_client.load_circuit(inputs.spec, inputs.circuit)
+    google_client.verify(
         handle,
         inputs.issuer_pk,
         inputs.transcript,
@@ -59,21 +59,21 @@ def test_prove_then_verify(mdoc_eu_av):
     ],
     ids=["mdoc", "pubkey", "timestamp", "id", "value"],
 )
-def test_prove_rejects(mdoc_eu_av, mutate):
+def test_prove_rejects(google_client, mdoc_eu_av, mutate):
     with pytest.raises(mdoc.ProverError):
-        _prove(mutate(mdoc_eu_av))
+        _prove(google_client, mutate(mdoc_eu_av))
 
 
 @pytest.mark.parametrize("resize", [lambda a: a + a, lambda a: []], ids=["over", "under"])
-def test_prove_rejects_attr_count_mismatch(mdoc_eu_av, resize):
+def test_prove_rejects_attr_count_mismatch(google_client, mdoc_eu_av, resize):
     # 3 of the 4 count-mismatch quadrants SIGABRT in C (DenseFiller overfill /
     # Ligero subfield check); the guard keeps them out of C entirely.
     inputs = mdoc_eu_av
     with pytest.raises(ValueError, match="num_attributes"):
-        _prove(dataclasses.replace(inputs, attrs=resize(inputs.attrs)))
+        _prove(google_client, dataclasses.replace(inputs, attrs=resize(inputs.attrs)))
 
 
-def test_prove_rejects_spec_for_wrong_circuit(mdoc_eu_av):
+def test_prove_rejects_spec_for_wrong_circuit(google_client, mdoc_eu_av):
     # A spec naming a different circuit must be a clean ValueError, not the
     # upstream SIGABRT (the binding's spec<->circuit guard).
     wrong = mdoc.find_zk_spec(
@@ -81,4 +81,4 @@ def test_prove_rejects_spec_for_wrong_circuit(mdoc_eu_av):
         "137e5a75ce72735a37c8a72da1a8a0a5df8d13365c2ae3d2c2bd6a0e7197c7c6",  # v6, not the v7 circuit
     )
     with pytest.raises(ValueError, match="does not match the circuit"):
-        _prove(dataclasses.replace(mdoc_eu_av, spec=wrong))
+        _prove(google_client, dataclasses.replace(mdoc_eu_av, spec=wrong))

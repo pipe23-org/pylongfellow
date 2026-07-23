@@ -42,12 +42,6 @@ def test_load_rejects_bad_version(vendored_vector):
         isrg.BACKEND.load_circuit(spec, vendored_vector.compressed)
 
 
-def test_load_rejects_hash_mismatch(vendored_vector):
-    spec = dataclasses.replace(vendored_vector.spec, circuit_hash="a" * 64)
-    with pytest.raises(ValueError, match="does not match the circuit"):
-        isrg.BACKEND.load_circuit(spec, vendored_vector.compressed)
-
-
 def test_load_rejects_missing_zstandard(monkeypatch, vendored_vector):
     monkeypatch.setitem(sys.modules, "zstandard", None)
     with pytest.raises(BackendUnavailableError, match="zstandard"):
@@ -111,10 +105,10 @@ def test_verify_reports_unavailable_backend(monkeypatch):
 
 @pytest.mark.slow
 @skip_without_isrg
-def test_round_trip_verifies(isrg_handle, isrg_proof, vendored_vector):
+def test_round_trip_verifies(isrg_client, isrg_handle, isrg_proof, vendored_vector):
     v = vendored_vector
     assert isrg_proof
-    mdoc.verify(
+    isrg_client.verify(
         isrg_handle,
         v.issuer_pk,
         v.transcript,
@@ -128,12 +122,12 @@ def test_round_trip_verifies(isrg_handle, isrg_proof, vendored_vector):
 
 @pytest.mark.slow
 @skip_without_isrg
-def test_verify_rejects_tampered_proof(isrg_handle, isrg_proof, vendored_vector):
+def test_verify_rejects_tampered_proof(isrg_client, isrg_handle, isrg_proof, vendored_vector):
     v = vendored_vector
     tampered = bytearray(isrg_proof)
     tampered[100] ^= 0xFF
     with pytest.raises(mdoc.VerifierError) as excinfo:
-        mdoc.verify(
+        isrg_client.verify(
             isrg_handle,
             v.issuer_pk,
             v.transcript,
@@ -149,10 +143,10 @@ def test_verify_rejects_tampered_proof(isrg_handle, isrg_proof, vendored_vector)
 
 @pytest.mark.slow
 @skip_without_isrg
-def test_prove_rejects_unknown_claim(isrg_handle, vendored_vector):
+def test_prove_rejects_unknown_claim(isrg_client, isrg_handle, vendored_vector):
     v = vendored_vector
     attrs = [dataclasses.replace(v.attrs[0], id="definitely_not_present")]
     with pytest.raises(mdoc.ProverError) as excinfo:
-        mdoc.prove(isrg_handle, v.mdoc_bytes, v.issuer_pk, v.transcript, attrs, v.timestamp)
+        isrg_client.prove(isrg_handle, v.mdoc_bytes, v.issuer_pk, v.transcript, attrs, v.timestamp)
     assert excinfo.value.code is None
     assert str(excinfo.value) == str(excinfo.value.__cause__)
