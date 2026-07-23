@@ -1,0 +1,17 @@
+{
+  "doctype": "org.iso.18013.5.1.mDL",
+  "system": "longfellow-libzk-v1",
+  "circuit_id": "137e5a75ce72735a37c8a72da1a8a0a5df8d13365c2ae3d2c2bd6a0e7197c7c6",
+  "attrs": [
+    {
+      "namespace": "org.iso.18013.5.1",
+      "id": "age_over_18",
+      "cbor_value_hex": "f5"
+    }
+  ],
+  "transcript_hex": "83f6f682764f70656e4944345650444341504948616e646f7665725820be834a88e65d4841f818669a1d2acfc8fabf5ac53b9c9ae443084e16fc7892bd",
+  "issuer_pk_x": "ab4bb1a19d6bc9d61138cf43a004ba5156ae4f3080804c910cf638eacf3b4e00",
+  "issuer_pk_y": "216a667060dae40ecca6fb4b39f1c93e1098ac64667b6e5bbf0140518672cb7b",
+  "timestamp": "2025-12-01T23:59:59+00:00",
+  "origin": "tests/data/proof_age_over_18.json"
+}
