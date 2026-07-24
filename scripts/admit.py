@@ -223,7 +223,7 @@ def presentation(fixture_path: str, slug: str) -> None:
         print(f"wrote presentations/{slug}/{stem}.proof + {stem}.json")
 
 
-def presentation_from_isrg_vector(vector_path: str, slug: str) -> None:
+def presentation_from_isrg_vector(vector_path: str, slug: str, attr_ids: list[str]) -> None:
     """Convert an abetterinternet/zk-cred-longfellow test vector into a presentation.
 
     The vector JSON carries mdoc, transcript, attribute ids, and the
@@ -247,7 +247,7 @@ def presentation_from_isrg_vector(vector_path: str, slug: str) -> None:
     doc = {
         "doctype": response["documents"][0]["docType"],
         "system": SYSTEM,
-        "attrs": _attrs_from_ids([a["id"] for a in vector["attributes"]], mdoc_hex),
+        "attrs": _attrs_from_ids(attr_ids or [a["id"] for a in vector["attributes"]], mdoc_hex),
         "transcript_hex": vector["transcript"],
         "issuer_pk_x": pk_x,
         "issuer_pk_y": pk_y,
@@ -304,6 +304,13 @@ def main() -> None:
     p_isrg = sub.add_parser("presentation-from-isrg-vector")
     p_isrg.add_argument("vector_path")
     p_isrg.add_argument("--slug", required=True)
+    p_isrg.add_argument(
+        "--attr",
+        action="append",
+        default=[],
+        dest="attr_ids",
+        help="attribute id to request; repeatable; defaults to the vector's own list",
+    )
 
     p_proof = sub.add_parser("proof-import")
     p_proof.add_argument("proof_path")
@@ -321,7 +328,7 @@ def main() -> None:
     elif args.command == "presentation":
         presentation(args.fixture_path, args.slug)
     elif args.command == "presentation-from-isrg-vector":
-        presentation_from_isrg_vector(args.vector_path, args.slug)
+        presentation_from_isrg_vector(args.vector_path, args.slug, args.attr_ids)
     else:
         proof_import(
             args.proof_path,
