@@ -16,11 +16,16 @@ The mdoc-specific functions, data types, and errors from longfellow-zk.
 ::: pylongfellow.mdoc.circuit_id
 ::: pylongfellow.mdoc.find_zk_spec
 ::: pylongfellow.mdoc.zk_specs
+::: pylongfellow.mdoc.create_credential
+::: pylongfellow.mdoc.create_certificate
+::: pylongfellow.mdoc.sign_device_authentication
+::: pylongfellow.mdoc.verify_device_authentication
 
 ### Data types
 
 ::: pylongfellow.mdoc.RequestedAttribute
 ::: pylongfellow.mdoc.ZkSpec
+::: pylongfellow.mdoc.CreatedCredential
 
 ### Errors
 

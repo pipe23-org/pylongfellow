@@ -1,7 +1,7 @@
 """Python bindings for the [longfellow-zk](https://github.com/google/longfellow-zk) library.
 
 Currently `pylongfellow.mdoc` implements the mdoc-specific functions: proving, verifying,
-and circuit generation.
+circuit generation, and backend-free test-credential construction.
 """
 
 from importlib.metadata import version

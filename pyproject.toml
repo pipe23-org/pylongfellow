@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "pylongfellow"
-version = "0.2.2"
+version = "0.2.3"
 description = "Thin Python binding to Google's Longfellow zero-knowledge mdoc library"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -23,8 +23,9 @@ classifiers = [
   "Topic :: Security :: Cryptography",
 ]
 # cffi API-mode extensions import _cffi_backend at runtime, so cffi is a real
-# runtime dependency (as for cryptography, bcrypt, PyNaCl).
-dependencies = ["cffi>=2.0"]
+# runtime dependency (as for cryptography, bcrypt, PyNaCl). cryptography and
+# cbor2 carry mdoc.create_credential and its companions.
+dependencies = ["cffi>=2.0", "cbor2>=6", "cryptography>=49"]
 
 [project.urls]
 Homepage = "https://github.com/pipe23-org/pylongfellow"
@@ -35,14 +36,13 @@ Upstream = "https://github.com/google/longfellow-zk"
 
 # Test/dev only — not shipped in the wheel.
 [dependency-groups]
-test = ["cbor2", "pytest>=8"]
+test = ["pytest>=8"]
 docs = ["mkdocs-material", "mkdocstrings[python]", "interrogate"]
 dev = [
     {include-group = "test"},
     {include-group = "docs"},
     "ruff",
     "mypy",
-    "cryptography>=49.0.0",
     "types-cffi>=2.0.0.20260518",
     "pytest-cov>=7.1.0",
 ]

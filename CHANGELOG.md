@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.2.3
+
+Backend-free test-credential construction in `pylongfellow.mdoc`. None of the new
+functions load or call longfellow-zk; they run on `cryptography` and `cbor2`, which move
+from the dev/test groups to runtime dependencies.
+
+- **`mdoc.create_credential()`** — assembles an ISO 18013-5 `DeviceResponse` under locally
+  held keys, with caller-controlled issuer-signed claims and device namespaces. Deployed
+  wallets emit an empty device-namespace map; a created credential can carry a non-empty,
+  device-signed one. The keys and the leaf certificate can be supplied or generated;
+  the encoded output is checked against its own signatures before it is returned.
+- **`mdoc.create_certificate()`** — builds one X.509 certificate of a test trust chain
+  (CA or leaf), ECDSA over SHA-256.
+- **`mdoc.sign_device_authentication()`** / **`mdoc.verify_device_authentication()`** —
+  the `DeviceAuthentication` COSE signature over a session transcript, as a
+  sign/check pair. Signing serves presenters that re-bind a credential to a fresh
+  session transcript; checking validates any mdoc's device signature without a ZK
+  backend.
+
 ## 0.2.2
 
 - **`mdoc.zk_specs()`** — returns every ZkSpec compiled into the linked library, in table

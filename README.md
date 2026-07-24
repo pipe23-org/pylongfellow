@@ -37,7 +37,7 @@ Wheels are published for **CPython 3.11–3.14 on Linux x86_64** (manylinux and 
 any other platform `pip` falls back to the source distribution, which builds the vendored C++
 locally and needs a C++ toolchain — see [Build from source](#build-from-source).
 
-The wheel's only runtime dependency is **`cffi`**.
+The wheel's runtime dependencies are **`cffi`**, **`cryptography`**, and **`cbor2`**.
 
 ## What it binds
 
@@ -81,6 +81,13 @@ LongfellowError
 Catch by class; read `.code` for the specific failure. The classes do not collapse to one:
 the code enums mirror C ints and overlap, so only the exception class says which enum a code
 is from.
+
+Four functions in `pylongfellow.mdoc` bind no C entry point: `create_credential` assembles
+an ISO 18013-5 `DeviceResponse` test credential under locally held keys, with
+caller-controlled issuer-signed claims and device namespaces; `create_certificate`,
+`sign_device_authentication`, and `verify_device_authentication` are its trust-chain and
+device-signature companions. They run on `cryptography` and `cbor2` alone; signatures are
+in the [API reference](https://pylongfellow.readthedocs.io/).
 
 ## Usage
 

@@ -948,16 +948,16 @@ wheels = [
 
 [[package]]
 name = "pylongfellow"
-version = "0.2.2"
+version = "0.2.3"
 source = { editable = "." }
 dependencies = [
+    { name = "cbor2" },
     { name = "cffi" },
+    { name = "cryptography" },
 ]
 
 [package.dev-dependencies]
 dev = [
-    { name = "cbor2" },
-    { name = "cryptography" },
     { name = "interrogate" },
     { name = "mkdocs-material" },
     { name = "mkdocstrings", extra = ["python"] },
@@ -973,17 +973,18 @@ docs = [
     { name = "mkdocstrings", extra = ["python"] },
 ]
 test = [
-    { name = "cbor2" },
     { name = "pytest" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "cffi", specifier = ">=2.0" }]
+requires-dist = [
+    { name = "cbor2", specifier = ">=6" },
+    { name = "cffi", specifier = ">=2.0" },
+    { name = "cryptography", specifier = ">=49" },
+]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "cbor2" },
-    { name = "cryptography", specifier = ">=49.0.0" },
     { name = "interrogate" },
     { name = "mkdocs-material" },
     { name = "mkdocstrings", extras = ["python"] },
@@ -998,10 +999,7 @@ docs = [
     { name = "mkdocs-material" },
     { name = "mkdocstrings", extras = ["python"] },
 ]
-test = [
-    { name = "cbor2" },
-    { name = "pytest", specifier = ">=8" },
-]
+test = [{ name = "pytest", specifier = ">=8" }]
 
 [[package]]
 name = "pymdown-extensions"
