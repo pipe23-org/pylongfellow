@@ -1,6 +1,6 @@
 """Corpus integrity: sidecar presence, byte hashes, and cross-references, every run.
 
-circuit_id claims are verified at admission by scripts/admit.py, not here; the
+circuit_id claims are verified by scripts/corpus.py, not here; the
 byte_sha256 checks pin the artifacts instead.
 """
 
@@ -41,15 +41,15 @@ def test_proof_byte_hashes_match():
             assert _sha256(proof.path) == proof.sidecar["byte_sha256"], proof.path.name
 
 
-def test_every_proof_references_an_admitted_circuit():
+def test_every_proof_references_a_corpus_circuit():
     for presentation in PRESENTATIONS:
         for proof in presentation.proofs:
             circuit = _CIRCUITS_BY_ID.get(proof.circuit_id)
-            assert circuit is not None, f"{proof.path.name} references an unadmitted circuit"
+            assert circuit is not None, f"{proof.path.name} references a circuit not in the corpus"
             assert proof.sidecar["circuit_byte_sha256"] == circuit.byte_sha256, proof.path.name
 
 
-def test_every_presentation_pairs_with_an_admitted_circuit():
+def test_every_presentation_pairs_with_a_corpus_circuit():
     counts = {c.num_attributes for c in CIRCUITS}
     for presentation in PRESENTATIONS:
         assert len(presentation.attrs) in counts, f"{presentation.slug} pairs with no circuit"

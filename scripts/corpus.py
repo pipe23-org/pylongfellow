@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Admit circuits and presentations into the differential-test corpus.
+"""Write circuits and presentations into the differential-test corpus.
 
-    python scripts/admit.py circuit-import <blob-path> --origin <string>
-    python scripts/admit.py circuit-generate --version V --num-attributes N
-    python scripts/admit.py presentation <fixture-json-path> --slug <slug>
+    python scripts/corpus.py circuit-import <blob-path> --origin <string>
+    python scripts/corpus.py circuit-generate --version V --num-attributes N
+    python scripts/corpus.py presentation <fixture-json-path> --slug <slug>
 
 circuit-import copies an externally produced circuit blob byte-identically.
 circuit-generate produces a blob with the pinned google-cpp backend. Both write
@@ -174,7 +174,7 @@ def _circuit_byte_sha256(circuit_id: str) -> str:
         sidecar = json.loads(sidecar_path.read_text())
         if sidecar["circuit_id"] == circuit_id:
             return sidecar["byte_sha256"]
-    sys.exit(f"error: circuit {circuit_id} not admitted; import it first")
+    sys.exit(f"error: circuit {circuit_id} not in the corpus; import it first")
 
 
 def presentation(fixture_path: str, slug: str) -> None:
@@ -270,7 +270,7 @@ def proof_import(
         sys.exit(f"error: no ZkSpec for {SYSTEM} {circuit_id}")
     out = PRESENTATIONS / slug
     if not (out / "presentation.json").is_file():
-        sys.exit(f"error: presentation {slug!r} not admitted; import it first")
+        sys.exit(f"error: presentation {slug!r} not in the corpus; import it first")
     stem = f"{prover}-v{spec.version}"
     (out / f"{stem}.proof").write_bytes(proof)
     sidecar = {

@@ -71,12 +71,12 @@ no format bound to a language or a class.
   omits both fields.
 
 A circuit's identity is its spec fields plus `byte_sha256`. `circuit_id` is a sourced claim,
-verified once at admission and recorded with the backend and pin that computed it.
+verified once when the artifact is written and recorded with the backend and pin that computed it.
 `byte_sha256` is verified on every run.
 
-## Admission
+## Adding artifacts
 
-Artifacts enter the corpus through `scripts/admit.py`.
+Artifacts enter the corpus through `scripts/corpus.py`.
 
 - `generate` runs a pinned generator and writes the blob, its hashes, and the sidecar. The
   result is reproducible by re-running against the pin.
@@ -100,7 +100,7 @@ every sidecar's `byte_sha256` matches its file; every proof's `circuit_id` names
 `circuits/` and its `circuit_byte_sha256` matches that circuit's sidecar; every presentation's
 `circuit_id` names a circuit in `circuits/` and its attribute count matches the circuit;
 every presentation with mdoc bytes carries `device_namespaces`. `circuit_id` claims are
-checked at admission, not per run.
+checked when the artifact is written, not per run.
 
 ## Pinned and floating runs
 
