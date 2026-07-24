@@ -82,8 +82,11 @@ Artifacts enter the corpus through `scripts/add_test_data.py`.
   result is reproducible by re-running against the pin.
 - `import` copies an externally produced artifact and writes a sidecar whose `origin` records
   the source repository, ref, and capture date.
+- `presentation-create` builds a credential with `mdoc.create_credential` (fresh keys per
+  run) and writes its presentation through the same extraction path as captures. This is the
+  origin for inputs no deployed wallet produces, e.g. non-empty device namespaces.
 
-Both modes write the same sidecar schema.
+All modes write the same schemas.
 
 ## Pairing
 

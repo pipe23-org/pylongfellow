@@ -4,6 +4,7 @@
     python scripts/add_test_data.py circuit-import <blob-path> --origin <string>
     python scripts/add_test_data.py circuit-generate --version V --num-attributes N
     python scripts/add_test_data.py presentation <fixture-json-path> --slug <slug>
+    python scripts/add_test_data.py presentation-create --slug <slug>
 
 circuit-import copies an externally produced circuit blob byte-identically.
 circuit-generate produces a blob with the pinned google-cpp backend. Both write
@@ -20,6 +21,7 @@ import json
 import shutil
 import subprocess
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -285,6 +287,49 @@ def proof_import(
     print(f"wrote presentations/{slug}/{stem}.proof + {stem}.json")
 
 
+def presentation_create(slug: str) -> None:
+    """Create a credential with non-empty device namespaces and write its presentation.
+
+    The credential comes from mdoc.create_credential with fresh keys; every
+    presentation.json field is then extracted back out of the credential's own
+    bytes through the same helpers the capture paths use. No deployed wallet
+    produces a non-empty device-namespace map, so this presentation cannot be
+    captured; it exists to put that boundary in the test matrix.
+    """
+    doc_type = "eu.europa.ec.av.1"
+    claims = {"eu.europa.ec.av.1": {"age_over_18": True}}
+    device_namespaces = {"eu.europa.ec.av.1": {"specimen": "non-empty device namespaces"}}
+    handover = hashlib.sha256(b"pylongfellow constructed specimen").digest()
+    transcript = cbor2.dumps([None, None, ["dcapi", handover]])
+    created = mdoc.create_credential(
+        doc_type,
+        claims,
+        transcript,
+        datetime(2026, 7, 1, tzinfo=UTC),
+        datetime(2036, 7, 1, tzinfo=UTC),
+        device_namespaces=device_namespaces,
+    )
+    mdoc_hex = created.mdoc.hex()
+    pk_x, pk_y = _issuer_pk_from_mdoc(mdoc_hex)
+
+    out = PRESENTATIONS / slug
+    out.mkdir(parents=True, exist_ok=True)
+    doc = {
+        "doctype": doc_type,
+        "system": SYSTEM,
+        "attrs": _attrs_from_ids(["age_over_18"], mdoc_hex),
+        "transcript_hex": transcript.hex(),
+        "issuer_pk_x": pk_x,
+        "issuer_pk_y": pk_y,
+        "timestamp": "2026-07-02T00:00:00Z",
+        "mdoc_hex": mdoc_hex,
+        "device_namespaces_hex": _device_namespaces_hex(mdoc_hex),
+        "origin": "scripts/add_test_data.py presentation-create (fresh keys per run)",
+    }
+    _write_json(out / "presentation.json", doc)
+    print(f"wrote presentations/{slug}/presentation.json")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -312,6 +357,9 @@ def main() -> None:
         help="attribute id to request; repeatable; defaults to the vector's own list",
     )
 
+    p_create = sub.add_parser("presentation-create")
+    p_create.add_argument("--slug", required=True)
+
     p_proof = sub.add_parser("proof-import")
     p_proof.add_argument("proof_path")
     p_proof.add_argument("--slug", required=True)
@@ -329,6 +377,8 @@ def main() -> None:
         presentation(args.fixture_path, args.slug)
     elif args.command == "presentation-from-isrg-vector":
         presentation_from_isrg_vector(args.vector_path, args.slug, args.attr_ids)
+    elif args.command == "presentation-create":
+        presentation_create(args.slug)
     else:
         proof_import(
             args.proof_path,
