@@ -209,8 +209,22 @@ def _round_trip_cases() -> list[RoundTripCase]:
     return cases
 
 
+# The google harness fixes DeviceNameSpacesBytes to the empty map (constant
+# {0xD8, 0x18, 0x41, 0xA0}, lib/circuits/mdoc/mdoc_witness.h:413 @ fe83ec6), so a
+# presentation whose device signed a non-empty map cannot prove or verify there.
+# strict: if a google backend ever accepts one, the run fails with XPASS and the
+# characterization here is wrong or upstream changed.
+_GOOGLE_DEVICE_NAMESPACES_XFAIL = pytest.mark.xfail(
+    strict=True,
+    reason="google fixes DeviceNameSpacesBytes to the empty map; "
+    "lib/circuits/mdoc/mdoc_witness.h:413 @ fe83ec6",
+)
+
+
 def _param(case: VerifyCase | RoundTripCase, backends: tuple[str, ...]) -> Any:
     marks = [pytest.mark.slow] if "isrg" in backends else []
+    if case.presentation.device_namespaces not in (None, b"\xa0") and "google-cpp" in backends:
+        marks.append(_GOOGLE_DEVICE_NAMESPACES_XFAIL)
     return pytest.param(case, id=case.id, marks=marks)
 
 
