@@ -1,6 +1,6 @@
 """Corpus integrity: sidecar presence, byte hashes, and cross-references, every run.
 
-circuit_id claims are verified by scripts/corpus.py, not here; the
+circuit_id claims are verified by scripts/add_test_data.py, not here; the
 byte_sha256 checks pin the artifacts instead.
 """
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Write circuits and presentations into the differential-test corpus.
 
-    python scripts/corpus.py circuit-import <blob-path> --origin <string>
-    python scripts/corpus.py circuit-generate --version V --num-attributes N
-    python scripts/corpus.py presentation <fixture-json-path> --slug <slug>
+    python scripts/add_test_data.py circuit-import <blob-path> --origin <string>
+    python scripts/add_test_data.py circuit-generate --version V --num-attributes N
+    python scripts/add_test_data.py presentation <fixture-json-path> --slug <slug>
 
 circuit-import copies an externally produced circuit blob byte-identically.
 circuit-generate produces a blob with the pinned google-cpp backend. Both write

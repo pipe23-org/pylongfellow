@@ -76,7 +76,7 @@ verified once when the artifact is written and recorded with the backend and pin
 
 ## Adding artifacts
 
-Artifacts enter the corpus through `scripts/corpus.py`.
+Artifacts enter the corpus through `scripts/add_test_data.py`.
 
 - `generate` runs a pinned generator and writes the blob, its hashes, and the sidecar. The
   result is reproducible by re-running against the pin.
