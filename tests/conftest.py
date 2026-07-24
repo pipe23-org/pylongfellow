@@ -5,6 +5,7 @@ them back into the dataclasses prove()/verify() take.
 """
 
 import base64
+import importlib.util
 import json
 from dataclasses import dataclass
 from datetime import datetime
@@ -12,9 +13,23 @@ from pathlib import Path
 
 import pytest
 
-from pylongfellow import mdoc
+from pylongfellow import Pylongfellow, mdoc
 
 _DATA = Path(__file__).parent / "data"
+_VECTORS = Path(__file__).parents[1] / "vendor" / "zk-cred-longfellow" / "test-vectors" / "mdoc_zk"
+
+
+def _isrg_available() -> bool:
+    try:
+        return (
+            importlib.util.find_spec("pylongfellow.backends._zk_cred.zk_cred_longfellow")
+            is not None
+        )
+    except ModuleNotFoundError:
+        return False
+
+
+ISRG_AVAILABLE = _isrg_available()
 
 
 @dataclass(frozen=True)
@@ -90,3 +105,82 @@ def proof_age_over_18() -> VerifyInputs:
 @pytest.fixture
 def mdoc_eu_av() -> ProveInputs:
     return _load_prove("mdoc_eu_av")
+
+
+_CIRCUIT_V6_1 = "6_1_137e5a75ce72735a37c8a72da1a8a0a5df8d13365c2ae3d2c2bd6a0e7197c7c6"
+_ISSUER_PK_SEC1 = bytes.fromhex(
+    "04DC1C1F55CFF4CD5C76CF4169278F7217667F86EE81D8669B63F2E19BC12A0C"
+    "9F12355DD0385FED3BC33BEDC9781B9AAD47B33E4C24704B8D14288B1B3CB45C28"
+)
+_NAMESPACE = "org.iso.18013.5.1"
+_DOCTYPE = "org.iso.18013.5.1.mDL"
+_DEVICE_NAMESPACES = b"\xa0"
+_ISSUE_DATE_CBOR = b"\xd9\x03\xec\x6a" + b"2024-03-15"
+
+
+@dataclass(frozen=True)
+class VendoredVector:
+    spec: mdoc.ZkSpec
+    compressed: bytes
+    mdoc_bytes: bytes
+    transcript: bytes
+    attrs: list[mdoc.RequestedAttribute]
+    timestamp: datetime
+    issuer_pk: tuple[int, int]
+    issuer_pk_sec1: bytes
+    doctype: str
+    device_namespaces: bytes
+    google_interop_proof: bytes
+
+
+@pytest.fixture(scope="session")
+def vendored_vector() -> VendoredVector:
+    """Load the shared v6/1-attribute interop vector from the zk-cred-longfellow submodule.
+
+    The issuer key, namespace, doctype, attribute value, and device-namespaces bytes are not in
+    the JSON; they are the values the crate's own mdoc_zk interop tests pass for this vector.
+    """
+    payload = json.loads((_VECTORS / "v6_v7_1attr_issue_date.json").read_text())
+    spec = mdoc.find_zk_spec("longfellow-libzk-v1", _CIRCUIT_V6_1.split("_")[-1])
+    assert spec is not None
+    return VendoredVector(
+        spec=spec,
+        compressed=(_VECTORS / _CIRCUIT_V6_1).read_bytes(),
+        mdoc_bytes=bytes.fromhex(payload["mdoc"]),
+        transcript=bytes.fromhex(payload["transcript"]),
+        attrs=[mdoc.RequestedAttribute(_NAMESPACE, "issue_date", _ISSUE_DATE_CBOR)],
+        timestamp=datetime.fromisoformat(payload["now"]),
+        issuer_pk=(
+            int.from_bytes(_ISSUER_PK_SEC1[1:33], "big"),
+            int.from_bytes(_ISSUER_PK_SEC1[33:65], "big"),
+        ),
+        issuer_pk_sec1=_ISSUER_PK_SEC1,
+        doctype=_DOCTYPE,
+        device_namespaces=_DEVICE_NAMESPACES,
+        google_interop_proof=(_VECTORS / "v6_1attr_issue_date.proof").read_bytes(),
+    )
+
+
+@pytest.fixture(scope="session")
+def google_client() -> Pylongfellow:
+    return Pylongfellow(backend="google-cpp")
+
+
+@pytest.fixture(scope="session")
+def isrg_client() -> Pylongfellow:
+    return Pylongfellow(backend="isrg")
+
+
+@pytest.fixture(scope="session")
+def isrg_handle(isrg_client: Pylongfellow, vendored_vector: VendoredVector) -> mdoc.CircuitHandle:
+    return isrg_client.load_circuit(vendored_vector.spec, vendored_vector.compressed)
+
+
+@pytest.fixture(scope="session")
+def isrg_proof(
+    isrg_client: Pylongfellow, isrg_handle: mdoc.CircuitHandle, vendored_vector: VendoredVector
+) -> bytes:
+    v = vendored_vector
+    return isrg_client.prove(
+        isrg_handle, v.mdoc_bytes, v.issuer_pk, v.transcript, v.attrs, v.timestamp
+    )

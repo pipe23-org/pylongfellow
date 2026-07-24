@@ -1,0 +1,8 @@
+{
+  "prover": "google-cpp",
+  "prover_source": "vendor/longfellow-zk/reference/verifier-service/server/examples/post1.json",
+  "circuit_id": "137e5a75ce72735a37c8a72da1a8a0a5df8d13365c2ae3d2c2bd6a0e7197c7c6",
+  "circuit_byte_sha256": "12050d8baaa37eb8225a3dcf5cb6139a0ccd4fa63a0e0ac2555ecb4810ada8a3",
+  "byte_sha256": "3942652e7a7483f6810ef196497c201dd7b4d6dc4b0eac555228e99bd52ccd7d",
+  "origin": "tests/data/proof_age_over_18.json"
+}

@@ -10,7 +10,9 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from pylongfellow import mdoc
+from pylongfellow import Pylongfellow, mdoc
+
+client = Pylongfellow(backend="google-cpp")
 
 credential = json.loads((Path(__file__).parent / "mdoc_eu_av.json").read_text())
 
@@ -19,9 +21,11 @@ if spec is None:
     raise SystemExit(f"no built-in spec for {credential['circuit_hash']}")
 
 print(f"generating circuit for {spec.system} (v{spec.version}, {spec.num_attributes} attr)...")
-circuit = mdoc.generate_circuit(spec)
+circuit = client.generate_circuit(spec)
 if mdoc.circuit_id(circuit) != spec.circuit_hash:
     raise SystemExit("generated circuit id does not match the spec")
+
+handle = client.load_circuit(spec, circuit)
 
 attrs = [
     mdoc.RequestedAttribute(a["namespace"], a["id"], bytes.fromhex(a["cbor_value_hex"]))
@@ -32,9 +36,9 @@ transcript = bytes.fromhex(credential["transcript_hex"])
 credential_mdoc = bytes.fromhex(credential["mdoc_hex"])
 timestamp = datetime.fromisoformat(credential["timestamp"])
 
-proof = mdoc.prove(circuit, credential_mdoc, issuer_pk, transcript, attrs, timestamp, spec)
+proof = client.prove(handle, credential_mdoc, issuer_pk, transcript, attrs, timestamp)
 print(f"proved: {len(proof)} bytes")
 
 # verify() returns None on success and raises VerifierError otherwise.
-mdoc.verify(circuit, issuer_pk, transcript, attrs, timestamp, proof, credential["doctype"], spec)
+client.verify(handle, issuer_pk, transcript, attrs, timestamp, proof, credential["doctype"])
 print("verified")

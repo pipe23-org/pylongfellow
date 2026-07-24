@@ -1,5 +1,54 @@
 # Changelog
 
+## 0.3.0
+
+Breaking. The module-level `mdoc` functions are replaced by an instantiated client:
+`Pylongfellow(backend=...)` binds one backend at construction, and circuit operations are
+methods on it. Adds the `pylongfellow.backends` submodule and a second backend over
+abetterinternet/zk-cred-longfellow (ISRG). Wheels ship the `google-cpp` backend only.
+
+### Breaking
+
+- **`Pylongfellow(*, backend)`** — new entry point, exported from the package root. `backend`
+  is required: a registry name (`"google-cpp"`, `"isrg"`) or a `Backend` instance. Construction
+  raises `ValueError` for an unknown name and `BackendUnavailableError` when the backend's
+  native dependency is not built. There is no default backend.
+- **`mdoc.load_circuit`, `mdoc.prove`, `mdoc.verify`, `mdoc.generate_circuit`** — removed; use
+  the client methods. `mdoc` keeps the data types, errors, and the spec-table functions
+  (`circuit_id`, `find_zk_spec`, `zk_specs`).
+- **`.prove(handle, mdoc, issuer_pk, transcript, attrs, timestamp)`** — was
+  `prove(circuit, mdoc, issuer_pk, transcript, attrs, timestamp, spec)` in 0.2.x. The leading
+  `circuit` bytes and trailing `spec` are replaced by `handle`, from `.load_circuit`.
+- **`.verify(handle, issuer_pk, transcript, attrs, timestamp, proof, doctype, *, device_namespaces=None)`**
+  — was `verify(circuit, issuer_pk, transcript, attrs, timestamp, proof, doctype, spec)` in
+  0.2.x. The leading `circuit` bytes and trailing `spec` are replaced by `handle`.
+  `device_namespaces` (`bytes | None`) is new and keyword-only: the inner bytes of the tag-24
+  `DeviceNameSpacesBytes`, required by the `isrg` backend and ignored by `google-cpp`.
+- **`ProverError.code`, `VerifierError.code`** — now `Optional`. The `google-cpp` backend
+  populates the code; the `isrg` backend leaves it `None`. Catch by class. Both exceptions
+  accept a keyword-only `message`.
+
+### Added
+
+- **`pylongfellow.backends`** — the `Backend` protocol (the SPI), `CircuitHandle`,
+  `get_backend`, `GenerationUnsupportedError`, and `BackendUnavailableError`. Registry names
+  distinguish implementation, not just institution: `google-cpp` and `isrg` are registered,
+  `google-rust` is reserved for upstream's next-generation Rust implementation.
+- **`google-cpp`** (`backends.google.BACKEND`) — the backend over the vendored
+  google/longfellow-zk C++ library. `can_generate` is `True`. Checks at load that
+  `spec.circuit_hash` matches the circuit bytes.
+- **`isrg`** (`backends.isrg.BACKEND`) — a backend over
+  [abetterinternet/zk-cred-longfellow](https://github.com/abetterinternet/zk-cred-longfellow)
+  (ISRG; vendored submodule, MPL-2.0). `can_generate` is `False`: circuits come from a
+  `google-cpp` client or from disk. Circuit identity checking is backend-native behaviour:
+  this backend does not check `spec.circuit_hash` at load. Source-build only; run
+  `uv run python scripts/build_isrg_backend.py` (needs cargo 1.85 or newer for edition 2024). The
+  `isrg` extra (`pip install pylongfellow[isrg]`) adds `zstandard`. Not shipped in wheels.
+
+### Unchanged
+
+- The vendored longfellow revision (v0.9, `fe83ec6`) is unchanged.
+
 ## 0.2.3
 
 Backend-free test-credential construction in `pylongfellow.mdoc`. None of the new

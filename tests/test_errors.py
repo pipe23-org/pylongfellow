@@ -19,6 +19,19 @@ def test_error_carries_its_code():
     assert "MDOC_VERIFIER_INVALID_CBOR" in str(err)
 
 
+def test_error_default_message_without_code():
+    assert str(mdoc.ProverError()) == "prover call failed"
+    assert str(mdoc.VerifierError()) == "verifier call failed"
+    assert mdoc.ProverError().code is None
+
+
+@pytest.mark.parametrize("exc", [mdoc.ProverError, mdoc.VerifierError], ids=["prover", "verifier"])
+def test_error_preserves_backend_message(exc):
+    err = exc(message="upstream detail")
+    assert str(err) == "upstream detail"
+    assert err.code is None
+
+
 @pytest.mark.parametrize(("exc", "code_enum"), _CONCRETES, ids=["prover", "verifier", "circuit"])
 def test_catch_contract(exc, code_enum):
     # The public catch contract: each concrete is reachable through both bases,
