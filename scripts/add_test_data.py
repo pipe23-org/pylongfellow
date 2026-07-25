@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """Write circuits and presentations into the differential-test corpus.
 
-    python scripts/add_test_data.py circuit-import <blob-path> --origin <string>
-    python scripts/add_test_data.py circuit-generate --version V --num-attributes N
-    python scripts/add_test_data.py presentation <fixture-json-path> --slug <slug>
-    python scripts/add_test_data.py presentation-create --slug <slug>
+    python scripts/add_test_data.py import-circuit <blob-path> --origin <string>
+    python scripts/add_test_data.py generate-circuit --version V --num-attributes N
+    python scripts/add_test_data.py add-presentation <fixture-json-path> --name <dir-name>
+    python scripts/add_test_data.py create-presentation --name <dir-name>
 
-circuit-import copies an externally produced circuit blob byte-identically.
-circuit-generate produces a blob with the pinned google-cpp backend. Both write
+import-circuit copies an externally produced circuit blob byte-identically.
+generate-circuit produces a blob with the pinned google-cpp backend. Both write
 the blob under tests/differential/circuits/ with a same-stem JSON sidecar.
-presentation converts a committed fixture from tests/data/ into a directory under
+add-presentation converts a committed fixture from tests/data/ into a directory under
 tests/differential/presentations/, writing presentation.json and, when the
 fixture carries a proof, a .proof file with its sidecar.
 """
@@ -77,7 +77,7 @@ def _write_circuit(blob: bytes, spec: mdoc.ZkSpec, origin: str) -> Path:
     return blob_path
 
 
-def circuit_import(blob_path: str, origin: str) -> None:
+def import_circuit(blob_path: str, origin: str) -> None:
     blob = Path(blob_path).read_bytes()
     circuit_id = mdoc.circuit_id(blob)
     spec = mdoc.find_zk_spec(SYSTEM, circuit_id)
@@ -86,7 +86,7 @@ def circuit_import(blob_path: str, origin: str) -> None:
     _write_circuit(blob, spec, origin)
 
 
-def circuit_generate(version: int, num_attributes: int) -> None:
+def generate_circuit(version: int, num_attributes: int) -> None:
     spec = next(
         (s for s in mdoc.zk_specs() if s.version == version and s.num_attributes == num_attributes),
         None,
@@ -179,7 +179,7 @@ def _circuit_byte_sha256(circuit_id: str) -> str:
     sys.exit(f"error: circuit {circuit_id} not in the corpus; import it first")
 
 
-def presentation(fixture_path: str, slug: str) -> None:
+def add_presentation(fixture_path: str, name: str) -> None:
     src = Path(fixture_path)
     fixture = json.loads(src.read_text())
     circuit_id = fixture["circuit_hash"]
@@ -188,7 +188,7 @@ def presentation(fixture_path: str, slug: str) -> None:
         sys.exit(f"error: no ZkSpec for {SYSTEM} {circuit_id}")
 
     origin = str(src.resolve().relative_to(ROOT))
-    out = PRESENTATIONS / slug
+    out = PRESENTATIONS / name
     out.mkdir(parents=True, exist_ok=True)
 
     doc = {
@@ -206,7 +206,7 @@ def presentation(fixture_path: str, slug: str) -> None:
         doc["mdoc_hex"] = fixture["mdoc_hex"]
         doc["device_namespaces_hex"] = _device_namespaces_hex(fixture["mdoc_hex"])
     _write_json(out / "presentation.json", doc)
-    print(f"wrote presentations/{slug}/presentation.json")
+    print(f"wrote presentations/{name}/presentation.json")
 
     if "proof_b64" in fixture:
         proof = base64.b64decode(fixture["proof_b64"])
@@ -222,10 +222,10 @@ def presentation(fixture_path: str, slug: str) -> None:
             "origin": origin,
         }
         _write_json(out / f"{stem}.json", sidecar)
-        print(f"wrote presentations/{slug}/{stem}.proof + {stem}.json")
+        print(f"wrote presentations/{name}/{stem}.proof + {stem}.json")
 
 
-def presentation_from_isrg_vector(vector_path: str, slug: str, attr_ids: list[str]) -> None:
+def import_isrg_vector(vector_path: str, name: str, attr_ids: list[str]) -> None:
     """Convert an abetterinternet/zk-cred-longfellow test vector into a presentation.
 
     The vector JSON carries mdoc, transcript, attribute ids, and the
@@ -244,7 +244,7 @@ def presentation_from_isrg_vector(vector_path: str, slug: str, attr_ids: list[st
         check=True,
     ).stdout.strip()
 
-    out = PRESENTATIONS / slug
+    out = PRESENTATIONS / name
     out.mkdir(parents=True, exist_ok=True)
     doc = {
         "doctype": response["documents"][0]["docType"],
@@ -260,19 +260,19 @@ def presentation_from_isrg_vector(vector_path: str, slug: str, attr_ids: list[st
         "device_namespaces_hex": _device_namespaces_hex(mdoc_hex),
     }
     _write_json(out / "presentation.json", doc)
-    print(f"wrote presentations/{slug}/presentation.json")
+    print(f"wrote presentations/{name}/presentation.json")
 
 
-def proof_import(
-    proof_path: str, slug: str, prover: str, circuit_id: str, prover_source: str, origin: str
+def import_proof(
+    proof_path: str, name: str, prover: str, circuit_id: str, prover_source: str, origin: str
 ) -> None:
     proof = Path(proof_path).read_bytes()
     spec = mdoc.find_zk_spec(SYSTEM, circuit_id)
     if spec is None:
         sys.exit(f"error: no ZkSpec for {SYSTEM} {circuit_id}")
-    out = PRESENTATIONS / slug
+    out = PRESENTATIONS / name
     if not (out / "presentation.json").is_file():
-        sys.exit(f"error: presentation {slug!r} not in the corpus; import it first")
+        sys.exit(f"error: presentation {name!r} not in the corpus; import it first")
     stem = f"{prover}-v{spec.version}"
     (out / f"{stem}.proof").write_bytes(proof)
     sidecar = {
@@ -284,10 +284,10 @@ def proof_import(
         "origin": origin,
     }
     _write_json(out / f"{stem}.json", sidecar)
-    print(f"wrote presentations/{slug}/{stem}.proof + {stem}.json")
+    print(f"wrote presentations/{name}/{stem}.proof + {stem}.json")
 
 
-def presentation_create(slug: str) -> None:
+def create_presentation(name: str) -> None:
     """Create a credential with non-empty device namespaces and write its presentation.
 
     The credential comes from mdoc.create_credential with fresh keys; every
@@ -312,7 +312,7 @@ def presentation_create(slug: str) -> None:
     mdoc_hex = created.mdoc.hex()
     pk_x, pk_y = _issuer_pk_from_mdoc(mdoc_hex)
 
-    out = PRESENTATIONS / slug
+    out = PRESENTATIONS / name
     out.mkdir(parents=True, exist_ok=True)
     doc = {
         "doctype": doc_type,
@@ -324,31 +324,31 @@ def presentation_create(slug: str) -> None:
         "timestamp": "2026-07-02T00:00:00Z",
         "mdoc_hex": mdoc_hex,
         "device_namespaces_hex": _device_namespaces_hex(mdoc_hex),
-        "origin": "scripts/add_test_data.py presentation-create (fresh keys per run)",
+        "origin": "scripts/add_test_data.py create-presentation (fresh keys per run)",
     }
     _write_json(out / "presentation.json", doc)
-    print(f"wrote presentations/{slug}/presentation.json")
+    print(f"wrote presentations/{name}/presentation.json")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p_import = sub.add_parser("circuit-import")
+    p_import = sub.add_parser("import-circuit")
     p_import.add_argument("blob_path")
     p_import.add_argument("--origin", required=True)
 
-    p_generate = sub.add_parser("circuit-generate")
+    p_generate = sub.add_parser("generate-circuit")
     p_generate.add_argument("--version", type=int, required=True)
     p_generate.add_argument("--num-attributes", type=int, required=True)
 
-    p_present = sub.add_parser("presentation")
+    p_present = sub.add_parser("add-presentation")
     p_present.add_argument("fixture_path")
-    p_present.add_argument("--slug", required=True)
+    p_present.add_argument("--name", required=True)
 
-    p_isrg = sub.add_parser("presentation-from-isrg-vector")
+    p_isrg = sub.add_parser("import-isrg-vector")
     p_isrg.add_argument("vector_path")
-    p_isrg.add_argument("--slug", required=True)
+    p_isrg.add_argument("--name", required=True)
     p_isrg.add_argument(
         "--attr",
         action="append",
@@ -357,32 +357,32 @@ def main() -> None:
         help="attribute id to request; repeatable; defaults to the vector's own list",
     )
 
-    p_create = sub.add_parser("presentation-create")
-    p_create.add_argument("--slug", required=True)
+    p_create = sub.add_parser("create-presentation")
+    p_create.add_argument("--name", required=True)
 
-    p_proof = sub.add_parser("proof-import")
+    p_proof = sub.add_parser("import-proof")
     p_proof.add_argument("proof_path")
-    p_proof.add_argument("--slug", required=True)
+    p_proof.add_argument("--name", required=True)
     p_proof.add_argument("--prover", required=True)
     p_proof.add_argument("--circuit-id", required=True)
     p_proof.add_argument("--prover-source", required=True)
     p_proof.add_argument("--origin", required=True)
 
     args = parser.parse_args()
-    if args.command == "circuit-import":
-        circuit_import(args.blob_path, args.origin)
-    elif args.command == "circuit-generate":
-        circuit_generate(args.version, args.num_attributes)
-    elif args.command == "presentation":
-        presentation(args.fixture_path, args.slug)
-    elif args.command == "presentation-from-isrg-vector":
-        presentation_from_isrg_vector(args.vector_path, args.slug, args.attr_ids)
-    elif args.command == "presentation-create":
-        presentation_create(args.slug)
+    if args.command == "import-circuit":
+        import_circuit(args.blob_path, args.origin)
+    elif args.command == "generate-circuit":
+        generate_circuit(args.version, args.num_attributes)
+    elif args.command == "add-presentation":
+        add_presentation(args.fixture_path, args.name)
+    elif args.command == "import-isrg-vector":
+        import_isrg_vector(args.vector_path, args.name, args.attr_ids)
+    elif args.command == "create-presentation":
+        create_presentation(args.name)
     else:
-        proof_import(
+        import_proof(
             args.proof_path,
-            args.slug,
+            args.name,
             args.prover,
             args.circuit_id,
             args.prover_source,

@@ -69,7 +69,7 @@ class Proof:
 
 @dataclass(frozen=True)
 class Presentation:
-    slug: str
+    name: str
     path: Path
     doc: dict[str, Any]
     proofs: tuple[Proof, ...]
@@ -128,7 +128,7 @@ def load_presentations() -> tuple[Presentation, ...]:
         )
         presentations.append(
             Presentation(
-                slug=directory.name,
+                name=directory.name,
                 path=directory,
                 doc=json.loads((directory / "presentation.json").read_text()),
                 proofs=proofs,
@@ -163,7 +163,7 @@ class VerifyCase:
 
     @property
     def id(self) -> str:
-        return f"{self.presentation.slug}-{self.circuit.stem}-{self.proof.path.stem}-verify-{self.verifier}"
+        return f"{self.presentation.name}-{self.circuit.stem}-{self.proof.path.stem}-verify-{self.verifier}"
 
 
 @dataclass(frozen=True)
@@ -177,7 +177,7 @@ class RoundTripCase:
 
     @property
     def id(self) -> str:
-        return f"{self.presentation.slug}-{self.circuit.stem}-prove-{self.prover}-verify-{self.verifier}"
+        return f"{self.presentation.name}-{self.circuit.stem}-prove-{self.prover}-verify-{self.verifier}"
 
 
 def _verify_cases() -> list[VerifyCase]:

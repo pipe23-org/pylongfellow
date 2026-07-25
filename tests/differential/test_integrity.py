@@ -52,10 +52,10 @@ def test_every_proof_references_a_corpus_circuit():
 def test_every_presentation_pairs_with_a_corpus_circuit():
     counts = {c.num_attributes for c in CIRCUITS}
     for presentation in PRESENTATIONS:
-        assert len(presentation.attrs) in counts, f"{presentation.slug} pairs with no circuit"
+        assert len(presentation.attrs) in counts, f"{presentation.name} pairs with no circuit"
 
 
 def test_presentations_with_mdoc_carry_device_namespaces():
     for presentation in PRESENTATIONS:
         if presentation.mdoc_bytes is not None:
-            assert presentation.device_namespaces is not None, presentation.slug
+            assert presentation.device_namespaces is not None, presentation.name
