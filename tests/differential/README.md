@@ -41,7 +41,7 @@ tests/differential/
     age-over-18/
       presentation.json
       google-cpp-v7.proof + google-cpp-v7.json
-      isrg-v6.proof + isrg-v6.json
+      isrg-rust-v6.proof + isrg-rust-v6.json
 ```
 
 - The corpus is data. Behaviour lives in `pylongfellow`; the corpus never grows methods.
@@ -114,5 +114,5 @@ tests run in both. On `main` the submodules are pinned. Test names never carry `
 ## Running
 
 The cross-verification tests are marked `slow`; the full suite is
-`uv run pytest -m "slow or not slow"`. The isrg backend must be built first
-(`uv run python scripts/build_isrg_backend.py`) or the cross-tests skip.
+`uv run pytest -m "slow or not slow"`. The isrg-rust backend must be built first
+(`uv run python scripts/build_isrg_rust_backend.py`) or the cross-tests skip.

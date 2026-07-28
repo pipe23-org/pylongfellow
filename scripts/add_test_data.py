@@ -225,7 +225,7 @@ def add_presentation(fixture_path: str, name: str) -> None:
         print(f"wrote presentations/{name}/{stem}.proof + {stem}.json")
 
 
-def import_isrg_vector(vector_path: str, name: str, attr_ids: list[str]) -> None:
+def import_isrg_rust_vector(vector_path: str, name: str, attr_ids: list[str]) -> None:
     """Convert an abetterinternet/zk-cred-longfellow test vector into a presentation.
 
     The vector JSON carries mdoc, transcript, attribute ids, and the
@@ -237,7 +237,7 @@ def import_isrg_vector(vector_path: str, name: str, attr_ids: list[str]) -> None
     mdoc_hex = vector["mdoc"]
     response = cbor2.loads(bytes.fromhex(mdoc_hex))
     pk_x, pk_y = _issuer_pk_from_mdoc(mdoc_hex)
-    isrg_pin = subprocess.run(
+    isrg_rust_pin = subprocess.run(
         [GIT, "-C", str(ROOT / "vendor" / "zk-cred-longfellow"), "rev-parse", "--short", "HEAD"],
         capture_output=True,
         text=True,
@@ -254,7 +254,7 @@ def import_isrg_vector(vector_path: str, name: str, attr_ids: list[str]) -> None
         "issuer_pk_x": pk_x,
         "issuer_pk_y": pk_y,
         "timestamp": vector["now"],
-        "origin": f"abetterinternet/zk-cred-longfellow@{isrg_pin} "
+        "origin": f"abetterinternet/zk-cred-longfellow@{isrg_rust_pin} "
         f"{src.resolve().relative_to(ROOT / 'vendor' / 'zk-cred-longfellow')}",
         "mdoc_hex": mdoc_hex,
         "device_namespaces_hex": _device_namespaces_hex(mdoc_hex),
@@ -346,10 +346,10 @@ def main() -> None:
     p_present.add_argument("fixture_path")
     p_present.add_argument("--name", required=True)
 
-    p_isrg = sub.add_parser("import-isrg-vector")
-    p_isrg.add_argument("vector_path")
-    p_isrg.add_argument("--name", required=True)
-    p_isrg.add_argument(
+    p_isrg_rust = sub.add_parser("import-isrg-rust-vector")
+    p_isrg_rust.add_argument("vector_path")
+    p_isrg_rust.add_argument("--name", required=True)
+    p_isrg_rust.add_argument(
         "--attr",
         action="append",
         default=[],
@@ -375,8 +375,8 @@ def main() -> None:
         generate_circuit(args.version, args.num_attributes)
     elif args.command == "add-presentation":
         add_presentation(args.fixture_path, args.name)
-    elif args.command == "import-isrg-vector":
-        import_isrg_vector(args.vector_path, args.name, args.attr_ids)
+    elif args.command == "import-isrg-rust-vector":
+        import_isrg_rust_vector(args.vector_path, args.name, args.attr_ids)
     elif args.command == "create-presentation":
         create_presentation(args.name)
     else:

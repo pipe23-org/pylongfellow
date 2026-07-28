@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 import pytest
 
 from pylongfellow import Pylongfellow, mdoc
-from pylongfellow.backends import BackendUnavailableError, CircuitHandle, google
+from pylongfellow.backends import BackendUnavailableError, CircuitHandle, google_cpp
 
 _AWARE = datetime(2024, 10, 1, 9, 0, 0, tzinfo=UTC)
 _SPEC = mdoc.ZkSpec("", "0" * 64, 1, 6, 0, 0)
@@ -60,7 +60,7 @@ class _RecordingBackend:
 
 def test_registry_name_resolves_to_singleton():
     client = Pylongfellow(backend="google-cpp")
-    assert client.backend is google.BACKEND
+    assert client.backend is google_cpp.BACKEND
 
 
 def test_backend_instance_is_bound_and_probed():
@@ -72,7 +72,7 @@ def test_backend_instance_is_bound_and_probed():
 
 def test_unknown_backend_name_lists_registered():
     with pytest.raises(
-        ValueError, match=r"unknown backend 'nope' \(registered: google-cpp, isrg\)"
+        ValueError, match=r"unknown backend 'nope' \(registered: google-cpp, isrg-rust\)"
     ):
         Pylongfellow(backend="nope")
 

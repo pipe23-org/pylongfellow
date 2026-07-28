@@ -40,10 +40,10 @@ locally and needs a C++ toolchain — see [Build from source](#build-from-source
 The wheel's runtime dependencies are **`cffi`**, **`cryptography`**, and **`cbor2`**. It ships
 the google/longfellow-zk backend. The abetterinternet/zk-cred-longfellow (ISRG) backend is not
 in any wheel: it is source-build only (see [Backends](#backends)), and its `zstandard` runtime
-dependency comes from the `isrg` extra:
+dependency comes from the `isrg-rust` extra:
 
 ```
-pip install pylongfellow[isrg]
+pip install pylongfellow[isrg-rust]
 ```
 
 ## What it binds
@@ -55,7 +55,7 @@ non-success return codes into typed exceptions.
 
 | Python | Role |
 |---|---|
-| `Pylongfellow(*, backend)` | bind a backend, by registry name (`"google-cpp"`, `"isrg"`) or instance |
+| `Pylongfellow(*, backend)` | bind a backend, by registry name (`"google-cpp"`, `"isrg-rust"`) or instance |
 | `.generate_circuit(spec)` | produce the compressed circuit a spec names |
 | `.load_circuit(spec, compressed)` | load a circuit into the bound backend, return a `CircuitHandle` |
 | `.prove(handle, mdoc, issuer_pk, transcript, attrs, timestamp)` | holder side; produce a proof |
@@ -150,7 +150,7 @@ source tree.
 `device_namespaces` on `verify`, and checks at load that `spec.circuit_hash` matches the
 circuit bytes.
 
-**`isrg`** binds
+**`isrg-rust`** binds
 [abetterinternet/zk-cred-longfellow](https://github.com/abetterinternet/zk-cred-longfellow)
 (ISRG) through its UniFFI bindings. `can_generate` is `False`; it raises
 `GenerationUnsupportedError` from `generate_circuit`, so circuits come from a `google-cpp`
@@ -163,29 +163,29 @@ detected there; mismatched version or count surfaces as an error at `prove`/`ver
 Select it by name:
 
 ```python
-client = Pylongfellow(backend="isrg")
+client = Pylongfellow(backend="isrg-rust")
 handle = client.load_circuit(spec, compressed)
 ```
 
-The isrg backend is not in any wheel. Build it from source:
+The isrg-rust backend is not in any wheel. Build it from source:
 
 ```
 git submodule update --init vendor/zk-cred-longfellow
-uv run python scripts/build_isrg_backend.py     # needs cargo 1.85+; ~4 min cold build
-pip install pylongfellow[isrg]                  # zstandard runtime dependency
+uv run python scripts/build_isrg_rust_backend.py # needs cargo 1.85+; ~4 min cold build
+pip install pylongfellow[isrg-rust]              # zstandard runtime dependency
 ```
 
-`build_isrg_backend.py` stages the UniFFI-generated Python module and the cdylib into
+`build_isrg_rust_backend.py` stages the UniFFI-generated Python module and the cdylib into
 `src/pylongfellow/backends/_zk_cred/` (gitignored). If the module is not built or `zstandard` is
 not installed, the backend raises `BackendUnavailableError`.
 
-Engine init on the isrg backend takes about 18 seconds per role and about 740 MB resident for a
+Engine init on the isrg-rust backend takes about 18 seconds per role and about 740 MB resident for a
 v6 1-attribute circuit. Init is lazy and cached on the handle. `prove` then takes about 1.3
 seconds and `verify` about 0.8 seconds on the reference machine.
 
 The differential tests exchange proofs between the two backends in both directions over the
 vendored v6 1-attribute circuit, and both backends verify zk-cred-longfellow's committed interop
-proof, which google/longfellow-zk generated. For the same statement the isrg proof is larger than
+proof, which google/longfellow-zk generated. For the same statement the isrg-rust proof is larger than
 the google proof (562228 versus 323868 bytes).
 
 zk-cred-longfellow is licensed MPL-2.0. `pylongfellow` remains Apache-2.0.
@@ -248,8 +248,8 @@ specific commit (currently **v0.9**, `fe83ec6`) and built from source into each 
 not float: the upstream ABI and circuits can change between releases, and the test fixtures are
 pinned to a particular circuit and version.
 
-The isrg backend vendors `abetterinternet/zk-cred-longfellow` (ISRG, MPL-2.0) as a second git
-submodule, hard-pinned to `4f3d1b3`. It is built on demand by `scripts/build_isrg_backend.py`
+The isrg-rust backend vendors `abetterinternet/zk-cred-longfellow` (ISRG, MPL-2.0) as a second git
+submodule, hard-pinned to `4f3d1b3`. It is built on demand by `scripts/build_isrg_rust_backend.py`
 and is not built into any wheel. `pylongfellow` itself is Apache-2.0.
 
 Not affiliated with Google or the European Commission — an independent binding to a public

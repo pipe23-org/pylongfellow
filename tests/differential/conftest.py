@@ -24,10 +24,10 @@ CORPUS = Path(__file__).parent
 CIRCUITS_DIR = CORPUS / "circuits"
 PRESENTATIONS_DIR = CORPUS / "presentations"
 
-# Verifier-side input requirements the join must know about: the isrg backend
-# rejects verify calls without device_namespaces, so presentations lacking it
-# produce no tuple with an isrg verifier.
-_NEEDS_DEVICE_NAMESPACES = frozenset({"isrg"})
+# Verifier-side input requirements the join must know about: the isrg-rust
+# backend rejects verify calls without device_namespaces, so presentations
+# lacking it produce no tuple with an isrg-rust verifier.
+_NEEDS_DEVICE_NAMESPACES = frozenset({"isrg-rust"})
 
 
 @dataclass(frozen=True)
@@ -222,7 +222,7 @@ _GOOGLE_DEVICE_NAMESPACES_XFAIL = pytest.mark.xfail(
 
 
 def _param(case: VerifyCase | RoundTripCase, backends: tuple[str, ...]) -> Any:
-    marks = [pytest.mark.slow] if "isrg" in backends else []
+    marks = [pytest.mark.slow] if "isrg-rust" in backends else []
     if case.presentation.device_namespaces not in (None, b"\xa0") and "google-cpp" in backends:
         marks.append(_GOOGLE_DEVICE_NAMESPACES_XFAIL)
     return pytest.param(case, id=case.id, marks=marks)
@@ -257,8 +257,8 @@ def handle_for(
 ) -> Callable[[str, Circuit], mdoc.CircuitHandle]:
     """Return a session-cached CircuitHandle for (registry name, corpus circuit).
 
-    The isrg backend holds lazily initialised prover/verifier engines on the
-    handle, so reusing the handle across cases avoids re-initialising them.
+    The isrg-rust backend holds lazily initialised prover/verifier engines on
+    the handle, so reusing the handle across cases avoids re-initialising them.
     """
     cache: dict[tuple[str, str], mdoc.CircuitHandle] = {}
 

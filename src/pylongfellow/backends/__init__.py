@@ -79,22 +79,22 @@ class Backend(Protocol):
 
 
 def _google_backend() -> Backend:
-    from . import google
+    from . import google_cpp
 
-    return google.BACKEND
+    return google_cpp.BACKEND
 
 
-def _isrg_backend() -> Backend:
-    from . import isrg
+def _isrg_rust_backend() -> Backend:
+    from . import isrg_rust
 
-    return isrg.BACKEND
+    return isrg_rust.BACKEND
 
 
 # Registry names distinguish implementation, not just institution: google ships
 # a second (Rust) implementation upstream, so "google-rust" is reserved.
 _REGISTRY = {
     "google-cpp": _google_backend,
-    "isrg": _isrg_backend,
+    "isrg-rust": _isrg_rust_backend,
 }
 
 
@@ -102,7 +102,7 @@ def get_backend(name: str) -> Backend:
     """Return the registered backend singleton for a registry name.
 
     Args:
-        name: Registry name, one of `google-cpp` or `isrg`.
+        name: Registry name, one of `google-cpp` or `isrg-rust`.
 
     Returns:
         The backend singleton. Availability is not checked here; construction

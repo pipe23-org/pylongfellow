@@ -4,7 +4,7 @@ Runs `cargo build` and `uniffi-bindgen` against the vendored submodule, then cop
 the generated `zk_cred_longfellow.py` and `libzk_cred_longfellow.so` into
 `src/pylongfellow/backends/_zk_cred/`. Idempotent.
 
-Run: uv run python scripts/build_isrg_backend.py
+Run: uv run python scripts/build_isrg_rust_backend.py
 """
 
 import shutil

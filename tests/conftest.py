@@ -19,7 +19,7 @@ _DATA = Path(__file__).parent / "data"
 _VECTORS = Path(__file__).parents[1] / "vendor" / "zk-cred-longfellow" / "test-vectors" / "mdoc_zk"
 
 
-def _isrg_available() -> bool:
+def _isrg_rust_available() -> bool:
     try:
         return (
             importlib.util.find_spec("pylongfellow.backends._zk_cred.zk_cred_longfellow")
@@ -29,7 +29,7 @@ def _isrg_available() -> bool:
         return False
 
 
-ISRG_AVAILABLE = _isrg_available()
+ISRG_RUST_AVAILABLE = _isrg_rust_available()
 
 
 @dataclass(frozen=True)
@@ -167,20 +167,24 @@ def google_client() -> Pylongfellow:
 
 
 @pytest.fixture(scope="session")
-def isrg_client() -> Pylongfellow:
-    return Pylongfellow(backend="isrg")
+def isrg_rust_client() -> Pylongfellow:
+    return Pylongfellow(backend="isrg-rust")
 
 
 @pytest.fixture(scope="session")
-def isrg_handle(isrg_client: Pylongfellow, vendored_vector: VendoredVector) -> mdoc.CircuitHandle:
-    return isrg_client.load_circuit(vendored_vector.spec, vendored_vector.compressed)
+def isrg_rust_handle(
+    isrg_rust_client: Pylongfellow, vendored_vector: VendoredVector
+) -> mdoc.CircuitHandle:
+    return isrg_rust_client.load_circuit(vendored_vector.spec, vendored_vector.compressed)
 
 
 @pytest.fixture(scope="session")
-def isrg_proof(
-    isrg_client: Pylongfellow, isrg_handle: mdoc.CircuitHandle, vendored_vector: VendoredVector
+def isrg_rust_proof(
+    isrg_rust_client: Pylongfellow,
+    isrg_rust_handle: mdoc.CircuitHandle,
+    vendored_vector: VendoredVector,
 ) -> bytes:
     v = vendored_vector
-    return isrg_client.prove(
-        isrg_handle, v.mdoc_bytes, v.issuer_pk, v.transcript, v.attrs, v.timestamp
+    return isrg_rust_client.prove(
+        isrg_rust_handle, v.mdoc_bytes, v.issuer_pk, v.transcript, v.attrs, v.timestamp
     )

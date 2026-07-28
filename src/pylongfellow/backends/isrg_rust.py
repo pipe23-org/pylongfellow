@@ -23,7 +23,7 @@ def _zk() -> Any:
         from ._zk_cred import zk_cred_longfellow
     except ImportError as e:
         raise BackendUnavailableError(
-            "the isrg backend is not built; run scripts/build_isrg_backend.py"
+            "the isrg-rust backend is not built; run scripts/build_isrg_rust_backend.py"
         ) from e
     return zk_cred_longfellow
 
@@ -33,7 +33,8 @@ def _decompress(compressed: bytes) -> bytes:
         import zstandard
     except ImportError as e:
         raise BackendUnavailableError(
-            "the zstandard package is required by the isrg backend; install pylongfellow[isrg]"
+            "the zstandard package is required by the isrg-rust backend; "
+            "install pylongfellow[isrg-rust]"
         ) from e
     return zstandard.ZstdDecompressor().stream_reader(io.BytesIO(compressed)).read()
 
@@ -108,10 +109,10 @@ def _ensure_verifier(holder: _Circuit) -> tuple[Any, Any]:
     return zk, holder.verifier
 
 
-class _IsrgBackend:
+class _IsrgRustBackend:
     """abetterinternet/zk-cred-longfellow (ISRG) via UniFFI; it cannot generate circuits."""
 
-    name: str = "isrg"
+    name: str = "isrg-rust"
     can_generate: bool = False
 
     def ensure_available(self) -> None:
@@ -152,7 +153,7 @@ class _IsrgBackend:
         Raises:
             GenerationUnsupportedError: always.
         """
-        raise GenerationUnsupportedError("the isrg backend cannot generate circuits")
+        raise GenerationUnsupportedError("the isrg-rust backend cannot generate circuits")
 
     def prove(
         self,
@@ -178,7 +179,7 @@ class _IsrgBackend:
 
         Raises:
             ValueError: `attrs` do not share one namespace, or `timestamp` is naive.
-            BackendUnavailableError: the isrg backend is not built.
+            BackendUnavailableError: the isrg-rust backend is not built.
             ProverError: the prover rejected the inputs.
         """
         holder = cast("_Circuit", handle.state)
@@ -216,7 +217,7 @@ class _IsrgBackend:
 
         Raises:
             ValueError: `device_namespaces` is None, or `timestamp` is naive.
-            BackendUnavailableError: the isrg backend is not built.
+            BackendUnavailableError: the isrg-rust backend is not built.
             VerifierError: the proof does not hold.
         """
         if device_namespaces is None:
@@ -244,4 +245,4 @@ class _IsrgBackend:
             raise VerifierError(message=str(e)) from e
 
 
-BACKEND = _IsrgBackend()
+BACKEND = _IsrgRustBackend()

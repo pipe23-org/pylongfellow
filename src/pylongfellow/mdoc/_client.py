@@ -25,7 +25,7 @@ class Pylongfellow:
         """Bind a backend and probe its availability.
 
         Args:
-            backend: Registry name (`google-cpp` or `isrg`) or a Backend
+            backend: Registry name (`google-cpp` or `isrg-rust`) or a Backend
                 instance.
 
         Raises:
@@ -51,7 +51,7 @@ class Pylongfellow:
         Raises:
             ValueError: `spec` is rejected by the backend, e.g. it is not
                 registered or names a different circuit than `compressed`
-                (google-cpp), or its version is unsupported (isrg).
+                (google-cpp), or its version is unsupported (isrg-rust).
         """
         return self.backend.load_circuit(spec, compressed)
 
@@ -132,12 +132,12 @@ class Pylongfellow:
             proof: Proof bytes from [`prove`][pylongfellow.Pylongfellow.prove].
             doctype: mdoc doctype the proof is scoped to.
             device_namespaces: Inner bytes of the tag-24 DeviceNameSpacesBytes,
-                required by the isrg backend; ignored by the google-cpp backend.
+                required by the isrg-rust backend; ignored by the google-cpp backend.
 
         Raises:
             ValueError: `len(attrs)` does not match `handle.spec.num_attributes`,
                 `doctype` is 256 bytes or longer (google-cpp), or
-                `device_namespaces` is None (isrg).
+                `device_namespaces` is None (isrg-rust).
             VerifierError: The proof does not hold.
         """
         handle.backend.verify(

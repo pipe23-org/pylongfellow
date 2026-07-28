@@ -55,24 +55,24 @@ LongfellowError
 
 The backend SPI. A `Backend` implements load, generate, prove, and verify for one longfellow
 implementation; `Pylongfellow` binds one at construction, by registry name (`google-cpp`,
-`isrg`) or instance.
+`isrg-rust`) or instance.
 
 ::: pylongfellow.backends.Backend
 ::: pylongfellow.backends.get_backend
 ::: pylongfellow.backends.GenerationUnsupportedError
 ::: pylongfellow.backends.BackendUnavailableError
 
-## The isrg backend
+## The isrg-rust backend
 
 An alternative backend that binds [abetterinternet/zk-cred-longfellow](https://github.com/abetterinternet/zk-cred-longfellow)
 (ISRG) through UniFFI. It proves and verifies; it cannot generate circuits, so `generate_circuit`
 raises `GenerationUnsupportedError`. `verify` requires the `device_namespaces` argument.
 
-Build it before use: `uv run python scripts/build_isrg_backend.py`. This needs the vendored
+Build it before use: `uv run python scripts/build_isrg_rust_backend.py`. This needs the vendored
 `vendor/zk-cred-longfellow` submodule (`git submodule update --init`) and a Rust toolchain. Install
-the `zstandard` runtime dependency with `pip install pylongfellow[isrg]`. If either is missing, the
+the `zstandard` runtime dependency with `pip install pylongfellow[isrg-rust]`. If either is missing, the
 backend raises `BackendUnavailableError`.
 
-Select it by name — `Pylongfellow(backend="isrg")`; `prove` and `verify` then dispatch through
+Select it by name — `Pylongfellow(backend="isrg-rust")`; `prove` and `verify` then dispatch through
 the handles it loads. It does not check `spec.circuit_hash` against the circuit bytes at load;
 identity checking is backend-native behaviour.

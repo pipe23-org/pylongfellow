@@ -957,7 +957,7 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-isrg = [
+isrg-rust = [
     { name = "zstandard" },
 ]
 
@@ -987,9 +987,9 @@ requires-dist = [
     { name = "cbor2", specifier = ">=6" },
     { name = "cffi", specifier = ">=2.0" },
     { name = "cryptography", specifier = ">=49" },
-    { name = "zstandard", marker = "extra == 'isrg'" },
+    { name = "zstandard", marker = "extra == 'isrg-rust'" },
 ]
-provides-extras = ["isrg"]
+provides-extras = ["isrg-rust"]
 
 [package.metadata.requires-dev]
 dev = [
