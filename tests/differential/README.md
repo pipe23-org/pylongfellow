@@ -105,6 +105,35 @@ every sidecar's `byte_sha256` matches its file; every proof's `circuit_id` names
 every presentation with mdoc bytes carries `device_namespaces`. `circuit_id` claims are
 checked when the artifact is written, not per run.
 
+## Recorded divergences
+
+Divergences observed by this suite between backends. An entry states the observed behaviour,
+the corpus entry that exhibits it, and the source locations of the differing code.
+
+### device namespaces
+
+- Observed: over `presentations/device-namespaces-nonempty/` (a credential whose device
+  signed a non-empty `DeviceNameSpaces` map), isrg-rust proves and verifies on both
+  1-attribute circuits; google-cpp fails as prover with
+  `MDOC_PROVER_DEVICE_SIGNATURE_FAILURE` (30) and rejects the valid isrg-rust proof as
+  verifier with `MDOC_VERIFIER_GENERAL_FAILURE` (5). The codes are defined in
+  `lib/circuits/mdoc/mdoc_zk.h`; they are run-time observations, not suite assertions. The
+  circuit blobs loaded into both backends are byte-identical.
+- Mechanism: `DeviceNameSpacesBytes` is not a circuit input. Both implementations hash the
+  four-element `DeviceAuthentication` structure outside the circuit and bind the digest as a
+  public input. google/longfellow-zk assembles it over the constant `D8 18 41 A0` (tag 24
+  wrapping an empty map) in `compute_transcript_hash` — pin `fe83ec6`:
+  `lib/circuits/mdoc/mdoc_witness.h:413`, prover call `:597`, caller
+  `lib/circuits/mdoc/mdoc_zk.cc:200` (`fill_public_inputs`); unchanged at upstream HEAD
+  `3dfaac7` (`mdoc_witness.h:466`); the next-generation Rust implementation at `598816b`
+  carries the same constant (`rust/applications/mdoc_zk/circuits/src/cbor/mdoc.rs:354`).
+  abetterinternet/zk-cred-longfellow (`4f3d1b3`) takes the value as a prove and verify
+  parameter (`src/mdoc_zk/mod.rs:676`; prover side `src/mdoc_zk/mdoc/mod.rs:193`).
+- Scope: deployed wallets emit the empty map, over which the backends agree; the constant is
+  consistent with a restriction to that deployed profile. The google-cpp cells are strict
+  xfails in the pairing join, with the source citation in the reason string; an upstream
+  change that stops the failure surfaces as an unexpected pass and fails the run.
+
 ## Pinned and floating runs
 
 Pinned and floating describe the environment (the submodule checkout), not the test. The same

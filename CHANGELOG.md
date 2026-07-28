@@ -45,6 +45,28 @@ abetterinternet/zk-cred-longfellow (ISRG). Wheels ship the `google-cpp` backend 
   `uv run python scripts/build_isrg_rust_backend.py` (needs cargo 1.85 or newer for edition 2024). The
   `isrg-rust` extra (`pip install pylongfellow[isrg-rust]`) adds `zstandard`. Not shipped in wheels.
 
+### Recorded divergence
+
+- **Device namespaces in ZK verification** — the differential suite records a divergence
+  between the backends over the mdoc `DeviceNameSpacesBytes` value. `DeviceNameSpacesBytes`
+  is not a circuit input: both implementations hash the `DeviceAuthentication` structure
+  outside the circuit and bind the digest as a public input. google/longfellow-zk assembles
+  it over the constant `D8 18 41 A0` (tag 24 wrapping an empty map) in
+  `compute_transcript_hash`: at the vendored pin `fe83ec6`,
+  `lib/circuits/mdoc/mdoc_witness.h:413`; unchanged at upstream HEAD `3dfaac7`
+  (`mdoc_witness.h:466`); present in the next-generation Rust implementation at `598816b`,
+  `rust/applications/mdoc_zk/circuits/src/cbor/mdoc.rs:354`.
+  abetterinternet/zk-cred-longfellow at `4f3d1b3` takes the value as a prove and verify
+  parameter (`src/mdoc_zk/mod.rs`). On a credential whose device signed a non-empty
+  namespace map (`tests/differential/presentations/device-namespaces-nonempty/`), the
+  isrg-rust backend proves and verifies on both 1-attribute circuits; the google-cpp
+  backend fails as prover with `MDOC_PROVER_DEVICE_SIGNATURE_FAILURE` (30) and rejects the
+  valid isrg-rust proof as verifier with `MDOC_VERIFIER_GENERAL_FAILURE` (5), codes as
+  defined in `lib/circuits/mdoc/mdoc_zk.h` and observed at run time. The circuit blobs
+  loaded into both backends are byte-identical. Deployed wallets emit an empty
+  device-namespace map, over which the implementations agree. The full record is in
+  `tests/differential/README.md`, Recorded divergences.
+
 ### Unchanged
 
 - The vendored longfellow revision (v0.9, `fe83ec6`) is unchanged.
