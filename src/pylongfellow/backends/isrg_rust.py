@@ -51,12 +51,7 @@ def _fmt_timestamp(timestamp: datetime) -> str:
 
     Returns:
         The `YYYY-MM-DDTHH:MM:SSZ` string.
-
-    Raises:
-        ValueError: `timestamp` is naive.
     """
-    if timestamp.tzinfo is None:
-        raise ValueError("timestamp must be timezone-aware")
     return timestamp.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
@@ -178,7 +173,7 @@ class _IsrgRustBackend:
             Proof bytes.
 
         Raises:
-            ValueError: `attrs` do not share one namespace, or `timestamp` is naive.
+            ValueError: `attrs` do not share one namespace.
             BackendUnavailableError: the isrg-rust backend is not built.
             ProverError: the prover rejected the inputs.
         """
@@ -216,7 +211,7 @@ class _IsrgRustBackend:
             device_namespaces: Inner bytes of the tag-24 DeviceNameSpacesBytes; required.
 
         Raises:
-            ValueError: `device_namespaces` is None, or `timestamp` is naive.
+            ValueError: `device_namespaces` is None.
             BackendUnavailableError: the isrg-rust backend is not built.
             VerifierError: the proof does not hold.
         """

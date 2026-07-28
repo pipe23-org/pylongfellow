@@ -9,6 +9,7 @@ from pylongfellow import Pylongfellow, mdoc
 from pylongfellow.backends import BackendUnavailableError, CircuitHandle, google_cpp
 
 _AWARE = datetime(2024, 10, 1, 9, 0, 0, tzinfo=UTC)
+_NAIVE = datetime(2024, 10, 1, 9, 0, 0)
 _SPEC = mdoc.ZkSpec("", "0" * 64, 1, 6, 0, 0)
 
 
@@ -100,6 +101,25 @@ def test_prove_and_verify_dispatch_through_handle_backend():
     client.verify(handle, (1, 2), b"", [], _AWARE, b"", "doc")
     assert loader.calls == ["load_circuit", "prove", "verify"]
     assert other.calls == ["ensure_available"]
+
+
+def test_prove_rejects_naive_timestamp():
+    # The tz-aware check sits above backend dispatch: prove is never reached.
+    backend = _RecordingBackend()
+    handle = backend.load_circuit(_SPEC, b"")
+    client = Pylongfellow(backend=backend)
+    with pytest.raises(ValueError, match="timezone-aware"):
+        client.prove(handle, b"", (1, 2), b"", [], _NAIVE)
+    assert "prove" not in backend.calls
+
+
+def test_verify_rejects_naive_timestamp():
+    backend = _RecordingBackend()
+    handle = backend.load_circuit(_SPEC, b"")
+    client = Pylongfellow(backend=backend)
+    with pytest.raises(ValueError, match="timezone-aware"):
+        client.verify(handle, (1, 2), b"", [], _NAIVE, b"", "doc")
+    assert "verify" not in backend.calls
 
 
 def test_handle_carries_spec(google_client, mdoc_eu_av):

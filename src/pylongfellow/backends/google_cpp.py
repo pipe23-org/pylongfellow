@@ -32,8 +32,6 @@ def _load() -> tuple[Any, Any]:
 
 def _fmt_timestamp(timestamp: datetime) -> bytes:
     """Render timestamp to the exact 20-byte RFC 3339 UTC form the circuit compares against."""
-    if timestamp.tzinfo is None:
-        raise ValueError("timestamp must be timezone-aware")
     return timestamp.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ").encode("ascii")
 
 

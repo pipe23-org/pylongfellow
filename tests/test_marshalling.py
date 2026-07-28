@@ -26,11 +26,6 @@ def test_timestamp_truncates_subsecond():
     assert out == b"2023-11-02T09:00:00Z"
 
 
-def test_timestamp_rejects_naive():
-    with pytest.raises(ValueError, match="timezone-aware"):
-        _fmt_timestamp(datetime(2023, 11, 2, 9, 0, 0))
-
-
 @pytest.mark.parametrize(
     "attr",
     [

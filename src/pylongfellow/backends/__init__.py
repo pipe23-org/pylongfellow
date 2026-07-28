@@ -62,7 +62,10 @@ class Backend(Protocol):
         attrs: list[RequestedAttribute],
         timestamp: datetime,
     ) -> bytes:
-        """Prove the requested attributes over the mdoc, bound to the transcript."""
+        """Prove the requested attributes over the mdoc, bound to the transcript.
+
+        `timestamp` is timezone-aware; the client rejects naive datetimes before dispatch.
+        """
 
     def verify(
         self,
@@ -75,7 +78,10 @@ class Backend(Protocol):
         doctype: str,
         device_namespaces: bytes | None,
     ) -> None:
-        """Verify a proof of the requested attributes against the transcript."""
+        """Verify a proof of the requested attributes against the transcript.
+
+        `timestamp` is timezone-aware; the client rejects naive datetimes before dispatch.
+        """
 
 
 def _google_backend() -> Backend:

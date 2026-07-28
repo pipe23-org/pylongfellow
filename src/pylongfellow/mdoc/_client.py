@@ -65,9 +65,9 @@ class Pylongfellow:
             Compressed circuit bytes.
 
         Raises:
-            ValueError: `spec` is not registered on the backend.
-            CircuitError: Generation failed, e.g. an unsupported spec version.
-            GenerationUnsupportedError: The backend cannot generate circuits.
+            ValueError: `spec` is not registered on the backend (google-cpp).
+            CircuitError: Generation failed, e.g. an unsupported spec version (google-cpp).
+            GenerationUnsupportedError: The backend cannot generate circuits (isrg-rust).
         """
         return self.backend.generate_circuit(spec)
 
@@ -99,9 +99,13 @@ class Pylongfellow:
             Proof bytes.
 
         Raises:
-            ValueError: `len(attrs)` does not match `handle.spec.num_attributes`.
+            ValueError: `timestamp` is naive; `len(attrs)` does not match
+                `handle.spec.num_attributes` (google-cpp); or `attrs` do not
+                share one namespace (isrg-rust).
             ProverError: The prover rejected the inputs.
         """
+        if timestamp.tzinfo is None:
+            raise ValueError("timestamp must be timezone-aware")
         return handle.backend.prove(handle, mdoc, issuer_pk, transcript, attrs, timestamp)
 
     def verify(
@@ -135,11 +139,13 @@ class Pylongfellow:
                 required by the isrg-rust backend; ignored by the google-cpp backend.
 
         Raises:
-            ValueError: `len(attrs)` does not match `handle.spec.num_attributes`,
-                `doctype` is 256 bytes or longer (google-cpp), or
-                `device_namespaces` is None (isrg-rust).
+            ValueError: `timestamp` is naive; `len(attrs)` does not match
+                `handle.spec.num_attributes` or `doctype` is 256 bytes or longer
+                (google-cpp); or `device_namespaces` is None (isrg-rust).
             VerifierError: The proof does not hold.
         """
+        if timestamp.tzinfo is None:
+            raise ValueError("timestamp must be timezone-aware")
         handle.backend.verify(
             handle, issuer_pk, transcript, attrs, timestamp, proof, doctype, device_namespaces
         )

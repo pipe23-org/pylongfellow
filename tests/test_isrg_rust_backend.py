@@ -17,7 +17,6 @@ from pylongfellow.backends import (
 from .conftest import ISRG_RUST_AVAILABLE
 
 _AWARE = datetime(2024, 10, 1, 9, 0, 0, tzinfo=UTC)
-_NAIVE = datetime(2024, 10, 1, 9, 0, 0)
 _SPEC = mdoc.ZkSpec("", "0" * 64, 1, 6, 0, 0)
 
 skip_without_isrg_rust = pytest.mark.skipif(
@@ -59,22 +58,10 @@ def test_prove_rejects_mixed_namespaces():
         isrg_rust.BACKEND.prove(_dummy_handle(), b"", (1, 2), b"", attrs, _AWARE)
 
 
-def test_prove_rejects_naive_timestamp():
-    with pytest.raises(ValueError, match="timezone-aware"):
-        isrg_rust.BACKEND.prove(_dummy_handle(), b"", (1, 2), b"", _one_attr(), _NAIVE)
-
-
 def test_verify_rejects_missing_device_namespaces():
     with pytest.raises(ValueError, match="device_namespaces is required"):
         isrg_rust.BACKEND.verify(
             _dummy_handle(), (1, 2), b"", _one_attr(), _AWARE, b"", "doc", None
-        )
-
-
-def test_verify_rejects_naive_timestamp():
-    with pytest.raises(ValueError, match="timezone-aware"):
-        isrg_rust.BACKEND.verify(
-            _dummy_handle(), (1, 2), b"", _one_attr(), _NAIVE, b"", "doc", b"\xa0"
         )
 
 
