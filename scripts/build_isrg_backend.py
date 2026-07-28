@@ -18,7 +18,9 @@ CARGO = shutil.which("cargo") or str(Path.home() / ".cargo" / "bin" / "cargo")
 LIB = "libzk_cred_longfellow.so"
 BINDINGS = "zk_cred_longfellow.py"
 TARGET_SO = SUBMODULE / "target" / "release" / LIB
-OUT = SUBMODULE / "out"
+# Bindgen output goes under the submodule's target/, which upstream's .gitignore
+# already covers, so a build leaves the vendored checkout clean.
+OUT = SUBMODULE / "target" / "uniffi"
 DEST = REPO / "src" / "pylongfellow" / "backends" / "_zk_cred"
 
 _INIT = '"""Generated UniFFI bindings for abetterinternet/zk-cred-longfellow (ISRG)."""\n'
