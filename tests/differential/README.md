@@ -11,11 +11,22 @@ backends and circuit versions change.
 
 - **interop tests** — the circuit is a committed corpus artifact loaded byte-identically into
   both backends; only the proof crosses implementations. A failure is in prove or verify.
-- **generation tests** — the circuit is produced at test time by `generate_circuit` on a
-  backend whose `can_generate` is `True`. A failure decomposes in order: a changed
-  `circuit_id` is generation drift; a changed byte hash with a stable `circuit_id` is a
-  serialization change, reported without failing the test; a cross prove/verify failure is
-  scored as in the interop category.
+- **generation tests** — the latest circuit per attribute count is regenerated at test time by
+  `generate_circuit` on a backend whose `can_generate` is `True`. The recomputed `circuit_id`
+  must equal the committed sidecar's; a mismatch fails the case as generation drift. A changed
+  decompressed byte hash at a stable `circuit_id` is a serialization change, emitted as an
+  `ObservationWarning` that appears in the warnings summary without failing the case. The
+  comparison is over decompressed bytes: the zstd envelope differs between upstream's export
+  pipeline and the runtime generate path while wrapping an identical serialization, and it
+  varies with zstd versions.
+
+## Observations
+
+An `ObservationWarning` records an event that breaks no contract. It is carried as a warning in
+a passing run, never through the exit code. The generation tests hold the one warn site: a
+decompressed serialization that changed while the `circuit_id` held. Warnings are events measured against the
+corpus census, not standing states. Pin-tree runs are warning-free; a warning at the pin is a
+reproducibility break.
 
 ## Backend set
 

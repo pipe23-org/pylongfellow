@@ -30,6 +30,10 @@ PRESENTATIONS_DIR = CORPUS / "presentations"
 _NEEDS_DEVICE_NAMESPACES = frozenset({"isrg-rust"})
 
 
+class ObservationWarning(Warning):
+    """An observed event that breaks no contract (see README taxonomy)."""
+
+
 @dataclass(frozen=True)
 class Circuit:
     stem: str
