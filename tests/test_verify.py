@@ -6,6 +6,7 @@ import cbor2
 import pytest
 
 from pylongfellow import mdoc
+from pylongfellow.backends.google_cpp import find_zk_spec
 
 
 def _verify(client, inputs):
@@ -71,7 +72,7 @@ def test_verify_rejects_noncanonical_spec(google_client, proof_age_over_18):
     # A lying block_enc with a matching hash would SIGABRT in C; caught here.
     inputs = proof_age_over_18
     bad = dataclasses.replace(inputs.spec, block_enc_sig=inputs.spec.block_enc_sig + 1)
-    with pytest.raises(ValueError, match="registered ZkSpec"):
+    with pytest.raises(ValueError, match="compiled-in spec table"):
         _verify(google_client, dataclasses.replace(inputs, spec=bad))
 
 
@@ -84,7 +85,7 @@ def test_verify_rejects_attr_count_mismatch(google_client, proof_age_over_18, re
 
 def test_verify_rejects_spec_for_wrong_circuit(google_client, proof_age_over_18):
     # A spec naming a different circuit must be a clean ValueError (spec<->circuit guard).
-    wrong = mdoc.find_zk_spec(
+    wrong = find_zk_spec(
         "longfellow-libzk-v1",
         "8d079211715200ff06c5109639245502bfe94aa869908d31176aae4016182121",  # v7, not the v6 circuit
     )

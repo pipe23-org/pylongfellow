@@ -14,8 +14,12 @@ abetterinternet/zk-cred-longfellow (ISRG). Wheels ship the `google-cpp` backend 
   raises `ValueError` for an unknown name and `BackendUnavailableError` when the backend's
   native dependency is not built. There is no default backend.
 - **`mdoc.load_circuit`, `mdoc.prove`, `mdoc.verify`, `mdoc.generate_circuit`** — removed; use
-  the client methods. `mdoc` keeps the data types, errors, and the spec-table functions
-  (`circuit_id`, `find_zk_spec`, `zk_specs`).
+  the client methods. `mdoc` keeps the data types and errors.
+- **`mdoc.ZkSpec` → `mdoc.CircuitSpec`** — the circuit-spec dataclass is renamed. Field names
+  are unchanged.
+- **`mdoc.circuit_id`, `mdoc.find_zk_spec`, `mdoc.zk_specs`** — moved to
+  `pylongfellow.backends.google_cpp`; they read that backend's compiled-in spec table. `mdoc`
+  no longer binds any backend.
 - **`.prove(handle, mdoc, issuer_pk, transcript, attrs, timestamp)`** — was
   `prove(circuit, mdoc, issuer_pk, transcript, attrs, timestamp, spec)` in 0.2.x. The leading
   `circuit` bytes and trailing `spec` are replaced by `handle`, from `.load_circuit`.

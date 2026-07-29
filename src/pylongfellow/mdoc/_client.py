@@ -9,7 +9,7 @@ from ..backends import Backend, CircuitHandle, get_backend
 if TYPE_CHECKING:
     from datetime import datetime
 
-    from ._types import RequestedAttribute, ZkSpec
+    from ._types import CircuitSpec, RequestedAttribute
 
 
 class Pylongfellow:
@@ -36,11 +36,11 @@ class Pylongfellow:
         self.backend = get_backend(backend) if isinstance(backend, str) else backend
         self.backend.ensure_available()
 
-    def load_circuit(self, spec: ZkSpec, compressed: bytes) -> CircuitHandle:
+    def load_circuit(self, spec: CircuitSpec, compressed: bytes) -> CircuitHandle:
         """Load a compressed circuit into the bound backend and return a handle over it.
 
         Args:
-            spec: ZkSpec naming the circuit.
+            spec: CircuitSpec naming the circuit.
             compressed: Compressed circuit bytes, as from
                 [`generate_circuit`][pylongfellow.Pylongfellow.generate_circuit].
 
@@ -55,11 +55,11 @@ class Pylongfellow:
         """
         return self.backend.load_circuit(spec, compressed)
 
-    def generate_circuit(self, spec: ZkSpec) -> bytes:
+    def generate_circuit(self, spec: CircuitSpec) -> bytes:
         """Generate a compressed circuit blob on the bound backend.
 
         Args:
-            spec: ZkSpec naming the circuit to generate.
+            spec: CircuitSpec naming the circuit to generate.
 
         Returns:
             Compressed circuit bytes.

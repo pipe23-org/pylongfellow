@@ -10,7 +10,7 @@ from .._errors import LongfellowError
 if TYPE_CHECKING:
     from datetime import datetime
 
-    from ..mdoc._types import RequestedAttribute, ZkSpec
+    from ..mdoc._types import CircuitSpec, RequestedAttribute
 
 
 class GenerationUnsupportedError(LongfellowError):
@@ -26,14 +26,14 @@ class CircuitHandle:
     """A circuit loaded by a backend, ready for prove and verify.
 
     Attributes:
-        spec: The ZkSpec the circuit was loaded against.
+        spec: The CircuitSpec the circuit was loaded against.
         backend: The backend that loaded the circuit and runs its operations.
         state: Backend-private circuit state, opaque to callers; a backend may
             hold expensive parsed state here, so cache the handle rather than
             reloading the circuit per call.
     """
 
-    spec: ZkSpec
+    spec: CircuitSpec
     backend: Backend
     state: object
 
@@ -47,10 +47,10 @@ class Backend(Protocol):
     def ensure_available(self) -> None:
         """Raise BackendUnavailableError unless the backend's native dependency is built."""
 
-    def load_circuit(self, spec: ZkSpec, compressed: bytes) -> CircuitHandle:
+    def load_circuit(self, spec: CircuitSpec, compressed: bytes) -> CircuitHandle:
         """Bind a compressed circuit to this backend as a CircuitHandle."""
 
-    def generate_circuit(self, spec: ZkSpec) -> bytes:
+    def generate_circuit(self, spec: CircuitSpec) -> bytes:
         """Generate the compressed circuit named by spec."""
 
     def prove(

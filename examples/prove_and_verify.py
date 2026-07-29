@@ -11,18 +11,19 @@ from datetime import datetime
 from pathlib import Path
 
 from pylongfellow import Pylongfellow, mdoc
+from pylongfellow.backends.google_cpp import circuit_id, find_zk_spec
 
 client = Pylongfellow(backend="google-cpp")
 
 credential = json.loads((Path(__file__).parent / "mdoc_eu_av.json").read_text())
 
-spec = mdoc.find_zk_spec(credential["system"], credential["circuit_hash"])
+spec = find_zk_spec(credential["system"], credential["circuit_hash"])
 if spec is None:
     raise SystemExit(f"no built-in spec for {credential['circuit_hash']}")
 
 print(f"generating circuit for {spec.system} (v{spec.version}, {spec.num_attributes} attr)...")
 circuit = client.generate_circuit(spec)
-if mdoc.circuit_id(circuit) != spec.circuit_hash:
+if circuit_id(circuit) != spec.circuit_hash:
     raise SystemExit("generated circuit id does not match the spec")
 
 handle = client.load_circuit(spec, circuit)

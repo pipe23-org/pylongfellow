@@ -29,6 +29,7 @@ import cbor2
 
 import pylongfellow.mdoc as mdoc
 from pylongfellow import Pylongfellow
+from pylongfellow.backends import google_cpp
 
 ROOT = Path(__file__).resolve().parent.parent
 VENDOR = ROOT / "vendor" / "longfellow-zk"
@@ -56,7 +57,7 @@ def _write_json(path: Path, obj: dict[str, Any]) -> None:
     path.write_text(json.dumps(obj, indent=2) + "\n")
 
 
-def _write_circuit(blob: bytes, spec: mdoc.ZkSpec, origin: str) -> Path:
+def _write_circuit(blob: bytes, spec: mdoc.CircuitSpec, origin: str) -> Path:
     stem = f"v{spec.version}-{spec.num_attributes}attr"
     CIRCUITS.mkdir(parents=True, exist_ok=True)
     blob_path = CIRCUITS / f"{stem}.circuit"
@@ -79,8 +80,8 @@ def _write_circuit(blob: bytes, spec: mdoc.ZkSpec, origin: str) -> Path:
 
 def import_circuit(blob_path: str, origin: str) -> None:
     blob = Path(blob_path).read_bytes()
-    circuit_id = mdoc.circuit_id(blob)
-    spec = mdoc.find_zk_spec(SYSTEM, circuit_id)
+    circuit_id = google_cpp.circuit_id(blob)
+    spec = google_cpp.find_zk_spec(SYSTEM, circuit_id)
     if spec is None:
         sys.exit(f"error: no ZkSpec for {SYSTEM} {circuit_id}")
     _write_circuit(blob, spec, origin)
@@ -88,13 +89,17 @@ def import_circuit(blob_path: str, origin: str) -> None:
 
 def generate_circuit(version: int, num_attributes: int) -> None:
     spec = next(
-        (s for s in mdoc.zk_specs() if s.version == version and s.num_attributes == num_attributes),
+        (
+            s
+            for s in google_cpp.zk_specs()
+            if s.version == version and s.num_attributes == num_attributes
+        ),
         None,
     )
     if spec is None:
         sys.exit(f"error: no ZkSpec for version {version}, {num_attributes} attributes")
     blob = Pylongfellow(backend="google-cpp").generate_circuit(spec)
-    if mdoc.circuit_id(blob) != spec.circuit_hash:
+    if google_cpp.circuit_id(blob) != spec.circuit_hash:
         sys.exit("error: generated circuit_id does not match spec.circuit_hash")
     _write_circuit(blob, spec, f"generated: google-cpp @ {_pin()}")
 
@@ -183,7 +188,7 @@ def add_presentation(fixture_path: str, name: str) -> None:
     src = Path(fixture_path)
     fixture = json.loads(src.read_text())
     circuit_id = fixture["circuit_hash"]
-    spec = mdoc.find_zk_spec(SYSTEM, circuit_id)
+    spec = google_cpp.find_zk_spec(SYSTEM, circuit_id)
     if spec is None:
         sys.exit(f"error: no ZkSpec for {SYSTEM} {circuit_id}")
 
@@ -267,7 +272,7 @@ def import_proof(
     proof_path: str, name: str, prover: str, circuit_id: str, prover_source: str, origin: str
 ) -> None:
     proof = Path(proof_path).read_bytes()
-    spec = mdoc.find_zk_spec(SYSTEM, circuit_id)
+    spec = google_cpp.find_zk_spec(SYSTEM, circuit_id)
     if spec is None:
         sys.exit(f"error: no ZkSpec for {SYSTEM} {circuit_id}")
     out = PRESENTATIONS / name

@@ -14,6 +14,7 @@ from pathlib import Path
 import pytest
 
 from pylongfellow import Pylongfellow, mdoc
+from pylongfellow.backends.google_cpp import find_zk_spec
 
 _DATA = Path(__file__).parent / "data"
 _VECTORS = Path(__file__).parents[1] / "vendor" / "zk-cred-longfellow" / "test-vectors" / "mdoc_zk"
@@ -41,7 +42,7 @@ class VerifyInputs:
     timestamp: datetime
     proof: bytes
     doctype: str
-    spec: mdoc.ZkSpec
+    spec: mdoc.CircuitSpec
 
 
 @dataclass(frozen=True)
@@ -53,7 +54,7 @@ class ProveInputs:
     attrs: list[mdoc.RequestedAttribute]
     timestamp: datetime
     doctype: str
-    spec: mdoc.ZkSpec
+    spec: mdoc.CircuitSpec
 
 
 def _attrs(fixture) -> list[mdoc.RequestedAttribute]:
@@ -67,7 +68,7 @@ def _attrs(fixture) -> list[mdoc.RequestedAttribute]:
 
 def _load_verify(name: str) -> VerifyInputs:
     fixture = json.loads((_DATA / f"{name}.json").read_text())
-    spec = mdoc.find_zk_spec(fixture["system"], fixture["circuit_hash"])
+    spec = find_zk_spec(fixture["system"], fixture["circuit_hash"])
     assert spec is not None, f"no spec for {fixture['circuit_hash']}"
     return VerifyInputs(
         circuit=(_DATA / "circuits" / fixture["circuit_hash"]).read_bytes(),
@@ -83,7 +84,7 @@ def _load_verify(name: str) -> VerifyInputs:
 
 def _load_prove(name: str) -> ProveInputs:
     fixture = json.loads((_DATA / f"{name}.json").read_text())
-    spec = mdoc.find_zk_spec(fixture["system"], fixture["circuit_hash"])
+    spec = find_zk_spec(fixture["system"], fixture["circuit_hash"])
     assert spec is not None, f"no spec for {fixture['circuit_hash']}"
     return ProveInputs(
         circuit=(_DATA / "circuits" / fixture["circuit_hash"]).read_bytes(),
@@ -120,7 +121,7 @@ _ISSUE_DATE_CBOR = b"\xd9\x03\xec\x6a" + b"2024-03-15"
 
 @dataclass(frozen=True)
 class VendoredVector:
-    spec: mdoc.ZkSpec
+    spec: mdoc.CircuitSpec
     compressed: bytes
     mdoc_bytes: bytes
     transcript: bytes
@@ -141,7 +142,7 @@ def vendored_vector() -> VendoredVector:
     the JSON; they are the values the crate's own mdoc_zk interop tests pass for this vector.
     """
     payload = json.loads((_VECTORS / "v6_v7_1attr_issue_date.json").read_text())
-    spec = mdoc.find_zk_spec("longfellow-libzk-v1", _CIRCUIT_V6_1.split("_")[-1])
+    spec = find_zk_spec("longfellow-libzk-v1", _CIRCUIT_V6_1.split("_")[-1])
     assert spec is not None
     return VendoredVector(
         spec=spec,

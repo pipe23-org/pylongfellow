@@ -13,7 +13,7 @@ from ..mdoc._errors import (
     VerifierError,
     VerifierErrorCode,
 )
-from ..mdoc._types import RequestedAttribute, ZkSpec
+from ..mdoc._types import CircuitSpec, RequestedAttribute
 from . import BackendUnavailableError, CircuitHandle
 
 # C fixed-buffer sizes (from the upstream RequestedAttribute struct).
@@ -54,7 +54,7 @@ def _fill_attrs(ffi: Any, attrs: list[RequestedAttribute]) -> Any:
     return c_attrs
 
 
-def _build_spec(ffi: Any, spec: ZkSpec) -> tuple[Any, Any]:
+def _build_spec(ffi: Any, spec: CircuitSpec) -> tuple[Any, Any]:
     """Build the C ZkSpecStruct from the dataclass.
 
     Returns (struct, system_buf). The struct's `system` field is a raw char*
@@ -77,7 +77,7 @@ def _build_spec(ffi: Any, spec: ZkSpec) -> tuple[Any, Any]:
     return c_spec, system_buf
 
 
-def _require_attrs_match_spec(attrs: list[RequestedAttribute], spec: ZkSpec) -> None:
+def _require_attrs_match_spec(attrs: list[RequestedAttribute], spec: CircuitSpec) -> None:
     # The C entry points never read spec.num_attributes; the invariant is
     # attrs_len == the circuit's attribute count, for which the spec field is the
     # proxy (tied to the circuit by the hash check below). A mismatch hard-aborts
@@ -89,7 +89,7 @@ def _require_attrs_match_spec(attrs: list[RequestedAttribute], spec: ZkSpec) -> 
         )
 
 
-def _require_canonical_spec(spec: ZkSpec) -> None:
+def _require_canonical_spec(spec: CircuitSpec) -> None:
     # The C entry points read version and block_enc_* straight from the struct
     # and SIGABRT on non-canonical values even when the hash matches (Ligero
     # subfield / block_enc checks). num_attributes/system/circuit_hash are the
@@ -97,10 +97,10 @@ def _require_canonical_spec(spec: ZkSpec) -> None:
     # unchecked. Pin the whole tuple to the library's own table: a registered
     # (system, circuit_hash) has one canonical spec, and any deviation is a lie.
     if spec != find_zk_spec(spec.system, spec.circuit_hash):
-        raise ValueError("spec is not a registered ZkSpec")
+        raise ValueError("spec is not registered in the compiled-in spec table")
 
 
-def _require_spec_matches_circuit(circuit: bytes, spec: ZkSpec) -> None:
+def _require_spec_matches_circuit(circuit: bytes, spec: CircuitSpec) -> None:
     # The C prover hard-aborts (SIGABRT — a paranoid subfield check in the Ligero
     # prover) on a spec/circuit mismatch, with no error return; refuse it here as
     # a clean error. circuit_id is cached, so a reused circuit pays the parse once.
@@ -108,9 +108,9 @@ def _require_spec_matches_circuit(circuit: bytes, spec: ZkSpec) -> None:
         raise ValueError("spec.circuit_hash does not match the circuit")
 
 
-def _spec_from_struct(ffi: Any, c_spec: Any) -> ZkSpec:
-    """Convert a ZkSpecStruct (pointer or array element) to a ZkSpec."""
-    return ZkSpec(
+def _spec_from_struct(ffi: Any, c_spec: Any) -> CircuitSpec:
+    """Convert a ZkSpecStruct (pointer or array element) to a CircuitSpec."""
+    return CircuitSpec(
         system=ffi.string(c_spec.system).decode(),
         circuit_hash=ffi.string(c_spec.circuit_hash).decode(),
         num_attributes=c_spec.num_attributes,
@@ -125,7 +125,7 @@ def circuit_id(circuit: bytes) -> str:
     """Recompute a circuit's canonical id from its compressed bytes.
 
     Binds `circuit_id`. The id is 64 hex chars and equals
-    [`ZkSpec.circuit_hash`][pylongfellow.mdoc.ZkSpec].
+    [`CircuitSpec.circuit_hash`][pylongfellow.mdoc.CircuitSpec].
 
     Args:
         circuit: Compressed circuit bytes.
@@ -138,7 +138,7 @@ def circuit_id(circuit: bytes) -> str:
     """
     ffi, lib = _load()
     # v0.9 circuit_id only null-checks the spec; the id is a pure function of the circuit.
-    dummy_spec = ZkSpec("", "0" * 64, 0, 0, 0, 0)
+    dummy_spec = CircuitSpec("", "0" * 64, 0, 0, 0, 0)
     c_spec, _keepalive = _build_spec(ffi, dummy_spec)
     out = ffi.new("uint8_t[32]")
     if lib.circuit_id(out, circuit, len(circuit), c_spec) != 1:
@@ -146,18 +146,18 @@ def circuit_id(circuit: bytes) -> str:
     return bytes(ffi.buffer(out, 32)).hex()
 
 
-def find_zk_spec(system: str, circuit_hash: str) -> ZkSpec | None:
-    """Look up the built-in ZkSpec for a (system, circuit_hash) pair.
+def find_zk_spec(system: str, circuit_hash: str) -> CircuitSpec | None:
+    """Look up the built-in CircuitSpec for a (system, circuit_hash) pair.
 
     Binds `find_zk_spec`.
 
     Args:
         system: Proof-system identifier the spec is registered under.
         circuit_hash: Canonical circuit id, as from
-            [`circuit_id`][pylongfellow.mdoc.circuit_id].
+            [`circuit_id`][pylongfellow.backends.google_cpp.circuit_id].
 
     Returns:
-        The matching ZkSpec, or None if the build has no spec for that pair.
+        The matching CircuitSpec, or None if the build has no spec for that pair.
     """
     ffi, lib = _load()
     spec_ptr = lib.find_zk_spec(system.encode(), circuit_hash.encode())
@@ -167,8 +167,8 @@ def find_zk_spec(system: str, circuit_hash: str) -> ZkSpec | None:
 
 
 @functools.cache
-def zk_specs() -> tuple[ZkSpec, ...]:
-    """Return every ZkSpec compiled into the linked library, in table order.
+def zk_specs() -> tuple[CircuitSpec, ...]:
+    """Return every CircuitSpec compiled into the linked library, in table order.
 
     Binds the `kZkSpecs` table. Entries include superseded circuit versions:
     for a given `num_attributes`, several `(version, circuit_hash)` rows may be
@@ -176,7 +176,7 @@ def zk_specs() -> tuple[ZkSpec, ...]:
     `num_attributes`.
 
     Returns:
-        The table's ZkSpec entries, in table order.
+        The table's CircuitSpec entries, in table order.
     """
     ffi, lib = _load()
     return tuple(_spec_from_struct(ffi, c_spec) for c_spec in lib.kZkSpecs)
@@ -192,37 +192,37 @@ class _GoogleBackend:
         """Raise BackendUnavailableError unless the native extension is built."""
         _load()
 
-    def load_circuit(self, spec: ZkSpec, compressed: bytes) -> CircuitHandle:
+    def load_circuit(self, spec: CircuitSpec, compressed: bytes) -> CircuitHandle:
         """Validate the circuit against the spec and return a handle over its bytes.
 
         Args:
-            spec: ZkSpec naming the circuit.
+            spec: CircuitSpec naming the circuit.
             compressed: Compressed circuit bytes.
 
         Returns:
             A CircuitHandle carrying the compressed bytes as backend state.
 
         Raises:
-            ValueError: `spec` is not a registered ZkSpec, or names a different
-                circuit than `compressed`.
+            ValueError: `spec` is not registered in the compiled-in spec table,
+                or names a different circuit than `compressed`.
         """
         _require_canonical_spec(spec)
         _require_spec_matches_circuit(compressed, spec)
         return CircuitHandle(spec=spec, backend=self, state=compressed)
 
-    def generate_circuit(self, spec: ZkSpec) -> bytes:
+    def generate_circuit(self, spec: CircuitSpec) -> bytes:
         """Generate a circuit blob.
 
         Binds `generate_circuit`. Only the latest circuit version is generated.
 
         Args:
-            spec: ZkSpec naming the circuit to generate.
+            spec: CircuitSpec naming the circuit to generate.
 
         Returns:
             Compressed circuit bytes.
 
         Raises:
-            ValueError: `spec` is not a registered ZkSpec.
+            ValueError: `spec` is not registered in the compiled-in spec table.
             CircuitError: Generation failed, e.g. an unsupported spec version.
         """
         ffi, lib = _load()

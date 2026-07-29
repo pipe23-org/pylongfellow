@@ -1,11 +1,10 @@
-"""The mdoc-specific data types, errors, and spec-table functions from longfellow-zk.
+"""The mdoc-specific data types and errors from longfellow-zk.
 
 `create_credential` and its companion functions construct test credentials
 without touching longfellow-zk; they run on `cryptography` and `cbor2` alone.
 """
 
 from ..backends import CircuitHandle
-from ..backends.google_cpp import circuit_id, find_zk_spec, zk_specs
 from ._credential import (
     CreatedCredential,
     create_certificate,
@@ -22,12 +21,13 @@ from ._errors import (
     VerifierError,
     VerifierErrorCode,
 )
-from ._types import RequestedAttribute, ZkSpec
+from ._types import CircuitSpec, RequestedAttribute
 
 __all__ = [
     "CircuitError",
     "CircuitGenerationErrorCode",
     "CircuitHandle",
+    "CircuitSpec",
     "CreatedCredential",
     "Error",
     "ProverError",
@@ -35,12 +35,8 @@ __all__ = [
     "RequestedAttribute",
     "VerifierError",
     "VerifierErrorCode",
-    "ZkSpec",
-    "circuit_id",
     "create_certificate",
     "create_credential",
-    "find_zk_spec",
     "sign_device_authentication",
     "verify_device_authentication",
-    "zk_specs",
 ]

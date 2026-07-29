@@ -10,7 +10,7 @@ from pylongfellow.backends import BackendUnavailableError, CircuitHandle, google
 
 _AWARE = datetime(2024, 10, 1, 9, 0, 0, tzinfo=UTC)
 _NAIVE = datetime(2024, 10, 1, 9, 0, 0)
-_SPEC = mdoc.ZkSpec("", "0" * 64, 1, 6, 0, 0)
+_SPEC = mdoc.CircuitSpec("", "0" * 64, 1, 6, 0, 0)
 
 
 class _RecordingBackend:
@@ -25,11 +25,11 @@ class _RecordingBackend:
     def ensure_available(self) -> None:
         self.calls.append("ensure_available")
 
-    def load_circuit(self, spec: mdoc.ZkSpec, compressed: bytes) -> CircuitHandle:
+    def load_circuit(self, spec: mdoc.CircuitSpec, compressed: bytes) -> CircuitHandle:
         self.calls.append("load_circuit")
         return CircuitHandle(spec=spec, backend=self, state=compressed)
 
-    def generate_circuit(self, spec: mdoc.ZkSpec) -> bytes:
+    def generate_circuit(self, spec: mdoc.CircuitSpec) -> bytes:
         self.calls.append("generate_circuit")
         return b""
 
@@ -131,7 +131,7 @@ def test_handle_carries_spec(google_client, mdoc_eu_av):
 def test_load_circuit_rejects_hash_spec_mismatch(google_client, mdoc_eu_av):
     # A spec naming a different circuit than the bytes is rejected at load
     # (google-native identity check).
-    wrong = mdoc.find_zk_spec(
+    wrong = google_cpp.find_zk_spec(
         "longfellow-libzk-v1",
         "137e5a75ce72735a37c8a72da1a8a0a5df8d13365c2ae3d2c2bd6a0e7197c7c6",  # v6, not the v7 circuit
     )

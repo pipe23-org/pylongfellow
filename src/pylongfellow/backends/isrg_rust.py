@@ -13,7 +13,7 @@ from . import BackendUnavailableError, CircuitHandle, GenerationUnsupportedError
 if TYPE_CHECKING:
     from datetime import datetime
 
-    from ..mdoc._types import RequestedAttribute, ZkSpec
+    from ..mdoc._types import CircuitSpec, RequestedAttribute
 
 _VERSIONS = frozenset({6, 7})
 
@@ -114,7 +114,7 @@ class _IsrgRustBackend:
         """Raise BackendUnavailableError unless the UniFFI extension is built."""
         _zk()
 
-    def load_circuit(self, spec: ZkSpec, compressed: bytes) -> CircuitHandle:
+    def load_circuit(self, spec: CircuitSpec, compressed: bytes) -> CircuitHandle:
         """Decompress and bind a circuit to this backend as a CircuitHandle.
 
         Circuit identity is backend-native behaviour: this backend does not
@@ -123,7 +123,7 @@ class _IsrgRustBackend:
         version/count mismatches surface as errors at prove/verify.
 
         Args:
-            spec: ZkSpec naming the circuit; its version must be 6 or 7.
+            spec: CircuitSpec naming the circuit; its version must be 6 or 7.
             compressed: zstd-compressed circuit bytes.
 
         Returns:
@@ -139,11 +139,11 @@ class _IsrgRustBackend:
         holder = _Circuit(decompressed, spec.version, spec.num_attributes)
         return CircuitHandle(spec=spec, backend=self, state=holder)
 
-    def generate_circuit(self, spec: ZkSpec) -> bytes:
+    def generate_circuit(self, spec: CircuitSpec) -> bytes:
         """Reject circuit generation; this backend cannot generate circuits.
 
         Args:
-            spec: ZkSpec naming the circuit to generate.
+            spec: CircuitSpec naming the circuit to generate.
 
         Raises:
             GenerationUnsupportedError: always.

@@ -266,8 +266,14 @@ def handle_for(
         key = (name, circuit.stem)
         if key not in cache:
             client = client_for(name)
-            spec = mdoc.find_zk_spec(str(circuit.sidecar["system"]), circuit.circuit_id)
-            assert spec is not None, f"no built-in spec for corpus circuit {circuit.stem}"
+            spec = mdoc.CircuitSpec(
+                system=str(circuit.sidecar["system"]),
+                circuit_hash=circuit.circuit_id,
+                num_attributes=circuit.num_attributes,
+                version=circuit.version,
+                block_enc_hash=int(circuit.sidecar["block_enc_hash"]),
+                block_enc_sig=int(circuit.sidecar["block_enc_sig"]),
+            )
             cache[key] = client.load_circuit(spec, circuit.path.read_bytes())
         return cache[key]
 

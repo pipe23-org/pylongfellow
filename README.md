@@ -48,10 +48,11 @@ pip install pylongfellow[isrg-rust]
 
 ## What it binds
 
-`Pylongfellow` is the entry point: a client bound to one backend at construction. Data types,
-errors, and the spec-table functions are in the `pylongfellow.mdoc` submodule. Each client
-method wraps one native entry point. The wrappers marshal inputs, copy results out, and turn
-non-success return codes into typed exceptions.
+`Pylongfellow` is the entry point: a client bound to one backend at construction. Data types and
+errors are in the `pylongfellow.mdoc` submodule; the spec-table functions are in the
+`pylongfellow.backends.google_cpp` module, which reads the google-cpp backend's compiled-in
+table. Each client method wraps one native entry point. The wrappers marshal inputs, copy
+results out, and turn non-success return codes into typed exceptions.
 
 | Python | Role |
 |---|---|
@@ -60,8 +61,8 @@ non-success return codes into typed exceptions.
 | `.load_circuit(spec, compressed)` | load a circuit into the bound backend, return a `CircuitHandle` |
 | `.prove(handle, mdoc, issuer_pk, transcript, attrs, timestamp)` | holder side; produce a proof |
 | `.verify(handle, issuer_pk, transcript, attrs, timestamp, proof, doctype, *, device_namespaces=None)` | verifier side; raises on a bad proof, returns on success |
-| `mdoc.circuit_id(circuit)` | recompute a circuit's canonical id (equals `ZkSpec.circuit_hash`) |
-| `mdoc.find_zk_spec(system, circuit_hash)` | look up a built-in `ZkSpec`, or `None` |
+| `google_cpp.circuit_id(circuit)` | recompute a circuit's canonical id (equals `CircuitSpec.circuit_hash`); google-cpp only |
+| `google_cpp.find_zk_spec(system, circuit_hash)` | look up a built-in `CircuitSpec`, or `None`; google-cpp only |
 
 A compressed circuit is bytes: get them from `generate_circuit`, or read a committed blob from
 disk. `prove` and `verify` do not take the bytes directly. Pass them once to `load_circuit`,
@@ -73,10 +74,11 @@ Two C structs are exposed as frozen dataclasses:
 - **`RequestedAttribute(namespace, id, cbor_value)`** — "attribute `(namespace, id)` holds this
   value." `cbor_value` is **raw CBOR bytes** (e.g. `b"\xf5"` is CBOR `true`); the binding does
   no encoding.
-- **`ZkSpec(system, circuit_hash, num_attributes, version, block_enc_hash, block_enc_sig)`** —
+- **`CircuitSpec(system, circuit_hash, num_attributes, version, block_enc_hash, block_enc_sig)`** —
   a circuit's identity. The spec is the small descriptor prover and verifier agree on;
   `circuit_hash` (SHA-256 hex) pins which circuit it is. `len(attrs)` must equal
-  `num_attributes`.
+  `num_attributes`. Every backend reads `version` and `num_attributes`; the google-cpp backend
+  additionally requires the whole record to match its compiled-in spec table.
 
 A non-success C return code raises `mdoc.ProverError`, `mdoc.VerifierError`, or
 `mdoc.CircuitError`. All three are subclasses of `mdoc.Error`, which is a subclass of
@@ -106,10 +108,11 @@ in the [API reference](https://pylongfellow.readthedocs.io/).
 
 ```python
 from pylongfellow import Pylongfellow, mdoc
+from pylongfellow.backends.google_cpp import find_zk_spec
 
 client = Pylongfellow(backend="google-cpp")
 
-spec = mdoc.find_zk_spec("longfellow-libzk-v1", circuit_hash)
+spec = find_zk_spec("longfellow-libzk-v1", circuit_hash)
 compressed = client.generate_circuit(spec)       # or Path(...).read_bytes()
 handle = client.load_circuit(spec, compressed)
 

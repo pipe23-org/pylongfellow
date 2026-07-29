@@ -17,7 +17,7 @@ from pylongfellow.backends import (
 from .conftest import ISRG_RUST_AVAILABLE
 
 _AWARE = datetime(2024, 10, 1, 9, 0, 0, tzinfo=UTC)
-_SPEC = mdoc.ZkSpec("", "0" * 64, 1, 6, 0, 0)
+_SPEC = mdoc.CircuitSpec("", "0" * 64, 1, 6, 0, 0)
 
 skip_without_isrg_rust = pytest.mark.skipif(
     not ISRG_RUST_AVAILABLE, reason="isrg-rust backend not built"

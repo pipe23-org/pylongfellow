@@ -7,13 +7,10 @@
 
 ## `pylongfellow.mdoc`
 
-The mdoc-specific data types, errors, and spec-table functions from longfellow-zk.
+The mdoc-specific data types and errors from longfellow-zk.
 
 ### Functions
 
-::: pylongfellow.mdoc.circuit_id
-::: pylongfellow.mdoc.find_zk_spec
-::: pylongfellow.mdoc.zk_specs
 ::: pylongfellow.mdoc.create_credential
 ::: pylongfellow.mdoc.create_certificate
 ::: pylongfellow.mdoc.sign_device_authentication
@@ -23,7 +20,7 @@ The mdoc-specific data types, errors, and spec-table functions from longfellow-z
 
 ::: pylongfellow.mdoc.CircuitHandle
 ::: pylongfellow.mdoc.RequestedAttribute
-::: pylongfellow.mdoc.ZkSpec
+::: pylongfellow.mdoc.CircuitSpec
 ::: pylongfellow.mdoc.CreatedCredential
 
 ### Errors
@@ -61,6 +58,16 @@ implementation; `Pylongfellow` binds one at construction, by registry name (`goo
 ::: pylongfellow.backends.get_backend
 ::: pylongfellow.backends.GenerationUnsupportedError
 ::: pylongfellow.backends.BackendUnavailableError
+
+## The google-cpp backend
+
+The default backend, binding the vendored google/longfellow-zk C++ library. These functions read
+its compiled-in spec table; they are `google-cpp`-specific and depend on the built native
+extension.
+
+::: pylongfellow.backends.google_cpp.circuit_id
+::: pylongfellow.backends.google_cpp.find_zk_spec
+::: pylongfellow.backends.google_cpp.zk_specs
 
 ## The isrg-rust backend
 
