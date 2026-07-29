@@ -46,7 +46,7 @@ def test_committed_proof(case: VerifyCase, client_for, handle_for):
 def test_round_trip(case: RoundTripCase, client_for, handle_for):
     p = case.presentation
     mdoc_bytes = p.mdoc_bytes
-    assert mdoc_bytes is not None  # the join only emits round trips for presentations with an mdoc
+    assert mdoc_bytes is not None  # a presentation without mdoc bytes is skipped as untestable
     prover_client = client_for(case.prover)
     prove_handle = handle_for(case.prover, case.circuit)
     proof = prover_client.prove(

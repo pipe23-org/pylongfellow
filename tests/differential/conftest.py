@@ -1,9 +1,11 @@
-"""Corpus loading and the compatible-tuple join.
+"""Corpus loading and the case join.
 
 Sidecars and presentation.json files are read into plain records at collection
 time; the join computes the (circuit, presentation, prover, verifier) tuples
-the relationship tests parametrize over. The corpus contract is README.md in
-this directory.
+the relationship tests parametrize over. A tuple whose inputs the corpus cannot
+supply is parametrized as a skip carrying the reason, and its id and reason are
+collected in UNTESTABLE_CELLS. The corpus contract is README.md in this
+directory.
 """
 
 from __future__ import annotations
@@ -24,10 +26,10 @@ CORPUS = Path(__file__).parent
 CIRCUITS_DIR = CORPUS / "circuits"
 PRESENTATIONS_DIR = CORPUS / "presentations"
 
-# Verifier-side input requirements the join must know about: the isrg-rust
-# backend rejects verify calls without device_namespaces, so presentations
-# lacking it produce no tuple with an isrg-rust verifier.
+# Verifier backends whose FFI takes device_namespaces as a required parameter.
 _NEEDS_DEVICE_NAMESPACES = frozenset({"isrg-rust"})
+
+_NO_MDOC_CLAUSE = "the capture carries no mdoc bytes, which the prover requires as input"
 
 
 class ObservationWarning(Warning):
@@ -148,12 +150,13 @@ BACKENDS = tuple(sorted(_REGISTRY))
 _CIRCUITS_BY_ID = {c.circuit_id: c for c in CIRCUITS}
 
 
-def _verifiers_for(presentation: Presentation) -> tuple[str, ...]:
-    return tuple(
-        name
-        for name in BACKENDS
-        if presentation.device_namespaces is not None or name not in _NEEDS_DEVICE_NAMESPACES
-    )
+def _verifier_input_clauses(presentation: Presentation, verifier: str) -> tuple[str, ...]:
+    if presentation.device_namespaces is None and verifier in _NEEDS_DEVICE_NAMESPACES:
+        return (
+            "the ZK response format carries no device namespaces, "
+            f"which the {verifier} verifier requires as input",
+        )
+    return ()
 
 
 @dataclass(frozen=True)
@@ -169,6 +172,10 @@ class VerifyCase:
     def id(self) -> str:
         return f"{self.presentation.name}-{self.circuit.stem}-{self.proof.path.stem}-verify-{self.verifier}"
 
+    @property
+    def untestable(self) -> tuple[str, ...]:
+        return _verifier_input_clauses(self.presentation, self.verifier)
+
 
 @dataclass(frozen=True)
 class RoundTripCase:
@@ -183,6 +190,13 @@ class RoundTripCase:
     def id(self) -> str:
         return f"{self.presentation.name}-{self.circuit.stem}-prove-{self.prover}-verify-{self.verifier}"
 
+    @property
+    def untestable(self) -> tuple[str, ...]:
+        prove: tuple[str, ...] = (
+            () if self.presentation.mdoc_bytes is not None else (_NO_MDOC_CLAUSE,)
+        )
+        return prove + _verifier_input_clauses(self.presentation, self.verifier)
+
 
 def _verify_cases() -> list[VerifyCase]:
     cases: list[VerifyCase] = []
@@ -192,25 +206,20 @@ def _verify_cases() -> list[VerifyCase]:
             if circuit is None:
                 continue  # test_integrity reports the dangling reference
             cases.extend(
-                VerifyCase(presentation, circuit, proof, verifier)
-                for verifier in _verifiers_for(presentation)
+                VerifyCase(presentation, circuit, proof, verifier) for verifier in BACKENDS
             )
     return cases
 
 
 def _round_trip_cases() -> list[RoundTripCase]:
-    cases: list[RoundTripCase] = []
-    for presentation in PRESENTATIONS:
-        if presentation.mdoc_bytes is None:
-            continue
-        cases.extend(
-            RoundTripCase(presentation, circuit, prover, verifier)
-            for circuit in CIRCUITS
-            if circuit.num_attributes == len(presentation.attrs)
-            for prover in BACKENDS
-            for verifier in _verifiers_for(presentation)
-        )
-    return cases
+    return [
+        RoundTripCase(presentation, circuit, prover, verifier)
+        for presentation in PRESENTATIONS
+        for circuit in CIRCUITS
+        if circuit.num_attributes == len(presentation.attrs)
+        for prover in BACKENDS
+        for verifier in BACKENDS
+    ]
 
 
 # The google harness fixes DeviceNameSpacesBytes to the empty map (constant
@@ -225,15 +234,33 @@ _GOOGLE_DEVICE_NAMESPACES_XFAIL = pytest.mark.xfail(
 )
 
 
+def _untestable_reason(case: VerifyCase | RoundTripCase) -> str:
+    return "untestable: " + "; ".join(case.untestable)
+
+
 def _param(case: VerifyCase | RoundTripCase, backends: tuple[str, ...]) -> Any:
+    if case.untestable:
+        # An untestable cell runs no backend code, so it carries no slow mark and
+        # appears in the summary of every run. The cell id goes in the reason
+        # because pytest groups the skip summary by (location, reason).
+        skip = pytest.mark.skip(reason=f"{case.id}: {_untestable_reason(case)}")
+        return pytest.param(case, id=case.id, marks=[skip])
     marks = [pytest.mark.slow] if "isrg-rust" in backends else []
     if case.presentation.device_namespaces not in (None, b"\xa0") and "google-cpp" in backends:
         marks.append(_GOOGLE_DEVICE_NAMESPACES_XFAIL)
     return pytest.param(case, id=case.id, marks=marks)
 
 
-VERIFY_PARAMS = [_param(c, (c.verifier,)) for c in _verify_cases()]
-ROUND_TRIP_PARAMS = [_param(c, (c.prover, c.verifier)) for c in _round_trip_cases()]
+VERIFY_CASES = _verify_cases()
+ROUND_TRIP_CASES = _round_trip_cases()
+VERIFY_PARAMS = [_param(c, (c.verifier,)) for c in VERIFY_CASES]
+ROUND_TRIP_PARAMS = [_param(c, (c.prover, c.verifier)) for c in ROUND_TRIP_CASES]
+
+_ALL_CASES: tuple[VerifyCase | RoundTripCase, ...] = (*VERIFY_CASES, *ROUND_TRIP_CASES)
+
+UNTESTABLE_CELLS = tuple(
+    {"id": case.id, "reason": _untestable_reason(case)} for case in _ALL_CASES if case.untestable
+)
 
 
 @pytest.fixture(scope="session")

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "mdl-age-over-18-v6-1attr-google-cpp-v6-verify-isrg-rust",
+    "reason": "untestable: the ZK response format carries no device namespaces, which the isrg-rust verifier requires as input"
+  },
+  {
+    "id": "mdl-age-over-18-v6-1attr-prove-google-cpp-verify-google-cpp",
+    "reason": "untestable: the capture carries no mdoc bytes, which the prover requires as input"
+  },
+  {
+    "id": "mdl-age-over-18-v6-1attr-prove-google-cpp-verify-isrg-rust",
+    "reason": "untestable: the capture carries no mdoc bytes, which the prover requires as input; the ZK response format carries no device namespaces, which the isrg-rust verifier requires as input"
+  },
+  {
+    "id": "mdl-age-over-18-v6-1attr-prove-isrg-rust-verify-google-cpp",
+    "reason": "untestable: the capture carries no mdoc bytes, which the prover requires as input"
+  },
+  {
+    "id": "mdl-age-over-18-v6-1attr-prove-isrg-rust-verify-isrg-rust",
+    "reason": "untestable: the capture carries no mdoc bytes, which the prover requires as input; the ZK response format carries no device namespaces, which the isrg-rust verifier requires as input"
+  },
+  {
+    "id": "mdl-age-over-18-v7-1attr-prove-google-cpp-verify-google-cpp",
+    "reason": "untestable: the capture carries no mdoc bytes, which the prover requires as input"
+  },
+  {
+    "id": "mdl-age-over-18-v7-1attr-prove-google-cpp-verify-isrg-rust",
+    "reason": "untestable: the capture carries no mdoc bytes, which the prover requires as input; the ZK response format carries no device namespaces, which the isrg-rust verifier requires as input"
+  },
+  {
+    "id": "mdl-age-over-18-v7-1attr-prove-isrg-rust-verify-google-cpp",
+    "reason": "untestable: the capture carries no mdoc bytes, which the prover requires as input"
+  },
+  {
+    "id": "mdl-age-over-18-v7-1attr-prove-isrg-rust-verify-isrg-rust",
+    "reason": "untestable: the capture carries no mdoc bytes, which the prover requires as input; the ZK response format carries no device namespaces, which the isrg-rust verifier requires as input"
+  }
+]
