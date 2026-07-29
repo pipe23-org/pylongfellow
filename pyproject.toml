@@ -164,7 +164,11 @@ manylinux-x86_64-image = "manylinux_2_28"
 before-all = "dnf install -y epel-release && dnf install -y openssl-devel libzstd-devel gtest-devel google-benchmark-devel && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal"
 
 # musllinux is Alpine — override the dnf before-all with apk. rustup installs
-# the musl host toolchain there.
+# the musl host toolchain there. The musl target defaults to a static CRT,
+# under which rustc drops the cdylib crate type and cargo builds no .so;
+# -crt-static restores dynamic musl linking, which is what musllinux wheels
+# link against anyway.
 [[tool.cibuildwheel.overrides]]
 select = "*-musllinux*"
 before-all = "apk add --no-cache curl openssl-dev zstd-dev gtest-dev benchmark-dev && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal"
+environment = { RUSTFLAGS = "-C target-feature=-crt-static" }

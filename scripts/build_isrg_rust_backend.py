@@ -48,6 +48,13 @@ def main() -> None:
     )
 
     _run([CARGO, "build", "--release", "--features", "uniffi"])
+    # A target with a static CRT (musl default) drops the cdylib crate type,
+    # so cargo can succeed without producing the library.
+    _require(
+        TARGET_SO.is_file(),
+        f"cargo build produced no {LIB}; on musl targets set "
+        'RUSTFLAGS="-C target-feature=-crt-static"',
+    )
     _run(
         [
             CARGO,
