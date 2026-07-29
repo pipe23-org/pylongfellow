@@ -88,7 +88,11 @@ jobs:
       - name: Differential suite
         id: suite
         if: steps.guard.outputs.cache-hit != 'true'
-        run: uv run --no-sync pytest -m "slow or not slow" | tee pytest-output.txt
+        # Explicit bash so the step shell carries pipefail: the tee must not mask
+        # pytest's exit status. Collection is scoped to tests/ because the unpinned
+        # vendor trees may carry their own Python test files.
+        shell: bash
+        run: uv run --no-sync pytest tests -m "slow or not slow" | tee pytest-output.txt
 
       - name: Report drift
         if: failure()
