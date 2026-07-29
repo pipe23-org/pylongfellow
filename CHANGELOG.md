@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.4.0
+
+Every wheel now ships both backends. The isrg-rust cdylib (abetterinternet/zk-cred-longfellow,
+pinned at `4f3d1b3`) is built into the cp311–cp314 wheels alongside the google-cpp extension;
+`Pylongfellow(backend="isrg-rust")` works from a plain `pip install pylongfellow`.
+
+- **`[isrg-rust]` extra removed** — `zstandard` is a runtime dependency; the extra pulled
+  nothing else. `pip install pylongfellow[isrg-rust]` now warns about an unknown extra and
+  installs the same package.
+- **Licence expression `Apache-2.0 AND MPL-2.0`** — the wheel carries the compiled MPL-2.0
+  cdylib, so the distribution metadata names both licences and ships all three licence texts.
+  See the README's Licensing section. `pylongfellow`'s own code stays Apache-2.0.
+- **Per-backend build switches** — source builds take
+  `-C cmake.define.PYLONGFELLOW_BUILD_ISRG=OFF` or
+  `-C cmake.define.PYLONGFELLOW_BUILD_GOOGLE=OFF` to omit one backend; the omitted backend
+  raises `BackendUnavailableError` at first use. Default source builds require both toolchains
+  (C++ and cargo).
+- **`scripts/build_isrg_rust_backend.py` runs inside the CMake build** — `uv sync` and wheel
+  builds produce the backend without a separate step; the script still works standalone for
+  incremental dev builds.
+
 ## 0.3.0
 
 Breaking. The module-level `mdoc` functions are replaced by an instantiated client:

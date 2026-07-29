@@ -25,7 +25,8 @@ def _load() -> tuple[Any, Any]:
         from .._longfellow import ffi, lib
     except ImportError as e:
         raise BackendUnavailableError(
-            "the google-cpp backend's native extension is not built; build the package first"
+            "the google-cpp backend's native extension is not built; source builds omit "
+            "it when configured with PYLONGFELLOW_BUILD_GOOGLE=OFF"
         ) from e
     return ffi, lib
 

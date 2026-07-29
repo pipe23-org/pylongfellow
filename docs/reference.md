@@ -75,10 +75,11 @@ An alternative backend that binds [abetterinternet/zk-cred-longfellow](https://g
 (ISRG) through UniFFI. It proves and verifies; it cannot generate circuits, so `generate_circuit`
 raises `GenerationUnsupportedError`. `verify` requires the `device_namespaces` argument.
 
-Build it before use: `uv run python scripts/build_isrg_rust_backend.py`. This needs the vendored
-`vendor/zk-cred-longfellow` submodule (`git submodule update --init`) and a Rust toolchain. Install
-the `zstandard` runtime dependency with `pip install pylongfellow[isrg-rust]`. If either is missing, the
-backend raises `BackendUnavailableError`.
+Every wheel ships it. In a dev checkout, build it with
+`uv run python scripts/build_isrg_rust_backend.py`; this needs the vendored
+`vendor/zk-cred-longfellow` submodule (`git submodule update --init`) and a Rust toolchain.
+When the native module is absent — a dev checkout before that build, or a source install
+configured with `PYLONGFELLOW_BUILD_ISRG=OFF` — the backend raises `BackendUnavailableError`.
 
 Select it by name — `Pylongfellow(backend="isrg-rust")`; `prove` and `verify` then dispatch through
 the handles it loads. It does not check `spec.circuit_hash` against the circuit bytes at load;

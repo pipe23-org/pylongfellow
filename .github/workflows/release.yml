@@ -31,6 +31,45 @@ jobs:
           ver="$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")"
           [ "$tag" = "$ver" ] || { echo "::error::tag v$tag does not match pyproject version $ver"; exit 1; }
 
+  # Each PYLONGFELLOW_BUILD_* switch gets its own gate: an sdist install with
+  # the switch off must yield a package where the remaining backend works and
+  # the disabled one raises BackendUnavailableError.
+  sdist-backend-flags:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - flag: PYLONGFELLOW_BUILD_ISRG
+            disabled: isrg-rust
+            remaining: google-cpp
+          - flag: PYLONGFELLOW_BUILD_GOOGLE
+            disabled: google-cpp
+            remaining: isrg-rust
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - run: sudo apt-get update && sudo apt-get install -y libssl-dev libzstd-dev libgtest-dev libbenchmark-dev
+      - uses: astral-sh/setup-uv@v8.3.2
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - run: uv build --sdist
+      - run: pip install dist/*.tar.gz --config-settings=cmake.define.${{ matrix.flag }}=OFF
+      - run: |
+          python - <<'EOF'
+          from pylongfellow.backends import BackendUnavailableError, get_backend
+
+          get_backend("${{ matrix.remaining }}").ensure_available()
+          try:
+              get_backend("${{ matrix.disabled }}").ensure_available()
+          except BackendUnavailableError:
+              pass
+          else:
+              raise SystemExit("${{ matrix.disabled }} unexpectedly available")
+          EOF
+
   sdist:
     runs-on: ubuntu-latest
     steps:
@@ -45,7 +84,7 @@ jobs:
           path: dist/*.tar.gz
 
   publish:
-    needs: [wheels, sdist, check-version]
+    needs: [wheels, sdist, check-version, sdist-backend-flags]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     environment: pypi
@@ -78,4 +117,12 @@ jobs:
             [ "$n" -ge 5 ] && exit 1
             sleep 20
           done
-      - run: python -c "import pylongfellow; print(pylongfellow.__version__)"
+      # Both backends must be present and loadable in the published wheel.
+      - run: |
+          python -c "
+          import pylongfellow
+          from pylongfellow.backends import get_backend
+          for name in ('google-cpp', 'isrg-rust'):
+              get_backend(name).ensure_available()
+          print(pylongfellow.__version__)
+          "

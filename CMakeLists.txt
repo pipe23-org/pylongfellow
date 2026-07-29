@@ -4,6 +4,17 @@ project(pylongfellow LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+# Each backend's native piece builds behind its own switch, default ON. A build
+# with a backend off still yields a working package; that backend raises
+# BackendUnavailableError at first use. Source installs opt out per backend:
+#   pip install pylongfellow -C cmake.define.PYLONGFELLOW_BUILD_ISRG=OFF
+option(PYLONGFELLOW_BUILD_GOOGLE "Build the google-cpp backend (cffi extension)" ON)
+option(PYLONGFELLOW_BUILD_ISRG "Build the isrg-rust backend (uniffi cdylib)" ON)
+
+find_package(Python REQUIRED COMPONENTS Interpreter)
+
+if(PYLONGFELLOW_BUILD_GOOGLE)
+
 # --- Vendored upstream (hard-pinned submodule at tag v0.9) ----------------
 # Provides the `mdoc_static` target, which bundles the flatsha/ec/algebra/util
 # object files; its only external link deps are zstd and crypto (OpenSSL).
@@ -26,7 +37,7 @@ add_subdirectory(vendor/longfellow-zk/lib EXCLUDE_FROM_ALL)
 # The cffi build script and the C-linkage log shim are build-input, so they live
 # in src/_cffi_src/ — a sibling of the package, not inside it — to keep them out
 # of the wheel (scikit-build-core copies every file in a package dir verbatim).
-find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
+find_package(Python REQUIRED COMPONENTS Development.Module)
 
 set(_cffi_src "${CMAKE_CURRENT_SOURCE_DIR}/src/_cffi_src")
 set(_ffi_c "${CMAKE_CURRENT_BINARY_DIR}/_longfellow.c")
@@ -47,3 +58,31 @@ target_include_directories(_longfellow PRIVATE
 target_link_libraries(_longfellow PRIVATE mdoc_static zstd crypto)
 
 install(TARGETS _longfellow LIBRARY DESTINATION pylongfellow)
+
+endif()
+
+# --- isrg-rust backend: uniffi cdylib -------------------------------------
+# scripts/build_isrg_rust_backend.py runs cargo build and uniffi-bindgen
+# against the vendored submodule and stages libzk_cred_longfellow.so plus the
+# generated bindings into src/pylongfellow/backends/_zk_cred/. That directory
+# is gitignored and scikit-build-core's package copy skips gitignored files, so
+# the install() rule below is what carries the staged files into the wheel —
+# the same route the cffi extension takes. The target runs on every build;
+# cargo's own freshness check makes the repeat cheap. The script locates cargo
+# itself (PATH, then ~/.cargo/bin) and fails with an install pointer when the
+# Rust toolchain is missing.
+if(PYLONGFELLOW_BUILD_ISRG)
+  add_custom_target(zk_cred_backend ALL
+    COMMAND "${Python_EXECUTABLE}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/scripts/build_isrg_rust_backend.py"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    VERBATIM
+  )
+  set(_zk_cred "${CMAKE_CURRENT_SOURCE_DIR}/src/pylongfellow/backends/_zk_cred")
+  install(FILES
+    "${_zk_cred}/__init__.py"
+    "${_zk_cred}/zk_cred_longfellow.py"
+    "${_zk_cred}/libzk_cred_longfellow.so"
+    DESTINATION pylongfellow/backends/_zk_cred
+  )
+endif()
