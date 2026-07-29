@@ -23,8 +23,18 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Record pinned bound surface
+        id: pin
+        shell: bash
+        run: |
+          goog_fp=$(git -C vendor/longfellow-zk rev-parse HEAD:lib HEAD:CMakeLists.txt | sha256sum | cut -c1-12)
+          isrg_fp=$(git -C vendor/zk-cred-longfellow rev-parse HEAD:src HEAD:Cargo.toml HEAD:Cargo.lock | sha256sum | cut -c1-12)
+          echo "goog_fp=$goog_fp" >> "$GITHUB_OUTPUT"
+          echo "isrg_fp=$isrg_fp" >> "$GITHUB_OUTPUT"
+
       - name: Check out both upstreams at HEAD
         id: heads
+        shell: bash
         run: |
           for dir in vendor/longfellow-zk vendor/zk-cred-longfellow; do
             git -C "$dir" fetch origin
@@ -33,22 +43,32 @@ jobs:
           done
           goog=$(git -C vendor/longfellow-zk rev-parse HEAD)
           isrg=$(git -C vendor/zk-cred-longfellow rev-parse HEAD)
-          echo "goog=$goog" >> "$GITHUB_OUTPUT"
-          echo "isrg=$isrg" >> "$GITHUB_OUTPUT"
-          echo "google/longfellow-zk HEAD: $goog"
-          echo "abetterinternet/zk-cred-longfellow HEAD: $isrg"
+          goog_fp=$(git -C vendor/longfellow-zk rev-parse HEAD:lib HEAD:CMakeLists.txt | sha256sum | cut -c1-12)
+          isrg_fp=$(git -C vendor/zk-cred-longfellow rev-parse HEAD:src HEAD:Cargo.toml HEAD:Cargo.lock | sha256sum | cut -c1-12)
+          if [ "$goog_fp" = "${{ steps.pin.outputs.goog_fp }}" ]; then goog_delta=unchanged; else goog_delta=changed; fi
+          if [ "$isrg_fp" = "${{ steps.pin.outputs.isrg_fp }}" ]; then isrg_delta=unchanged; else isrg_delta=changed; fi
+          {
+            echo "goog=$goog"
+            echo "isrg=$isrg"
+            echo "goog_fp=$goog_fp"
+            echo "isrg_fp=$isrg_fp"
+            echo "goog_delta=$goog_delta"
+            echo "isrg_delta=$isrg_delta"
+          } >> "$GITHUB_OUTPUT"
+          echo "google/longfellow-zk HEAD: $goog (bound surface $goog_fp, $goog_delta since pin)"
+          echo "abetterinternet/zk-cred-longfellow HEAD: $isrg (bound surface $isrg_fp, $isrg_delta since pin)"
 
       - name: Skip-guard lookup
         id: guard
         uses: actions/cache/restore@v4
         with:
           path: .canary-marker
-          key: canary-${{ steps.heads.outputs.goog }}-${{ steps.heads.outputs.isrg }}
+          key: canary-tree-${{ steps.heads.outputs.goog_fp }}-${{ steps.heads.outputs.isrg_fp }}
           lookup-only: true
 
       - name: Upstream pair already run
         if: steps.guard.outputs.cache-hit == 'true'
-        run: echo "Pair ${{ steps.heads.outputs.goog }} / ${{ steps.heads.outputs.isrg }} already run; skipping build and test."
+        run: echo "Bound surface ${{ steps.heads.outputs.goog_fp }} / ${{ steps.heads.outputs.isrg_fp }} already run; skipping build and test."
 
       - name: Prepare skip-guard marker
         if: steps.guard.outputs.cache-hit != 'true'
@@ -96,6 +116,7 @@ jobs:
 
       - name: Report drift
         if: failure()
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -107,8 +128,8 @@ jobs:
           {
             echo "## Canary drift — $(date -u +%Y-%m-%dT%H:%MZ)"
             echo
-            echo "- google/longfellow-zk: \`${{ steps.heads.outputs.goog }}\`"
-            echo "- abetterinternet/zk-cred-longfellow: \`${{ steps.heads.outputs.isrg }}\`"
+            echo "- google/longfellow-zk: \`${{ steps.heads.outputs.goog }}\` (bound surface \`${{ steps.heads.outputs.goog_fp }}\`, ${{ steps.heads.outputs.goog_delta }} since pin)"
+            echo "- abetterinternet/zk-cred-longfellow: \`${{ steps.heads.outputs.isrg }}\` (bound surface \`${{ steps.heads.outputs.isrg_fp }}\`, ${{ steps.heads.outputs.isrg_delta }} since pin)"
             echo "- Failed phase: \`$phase\`"
             echo
             echo '```'
@@ -117,9 +138,39 @@ jobs:
           } > comment.md
           gh issue comment 21 --repo pipe23-org/pylongfellow --body-file comment.md
 
+      - name: Report run
+        if: success() && steps.guard.outputs.cache-hit != 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          summary=$(grep -E '^=+.*(passed|failed|error).*=+$' pytest-output.txt | tail -n 1 || true)
+          observations=$(grep 'observation:' pytest-output.txt || true)
+          {
+            echo "## Canary run — $(date -u +%Y-%m-%dT%H:%MZ)"
+            echo
+            echo "- google/longfellow-zk: \`${{ steps.heads.outputs.goog }}\` (bound surface \`${{ steps.heads.outputs.goog_fp }}\`, ${{ steps.heads.outputs.goog_delta }} since pin)"
+            echo "- abetterinternet/zk-cred-longfellow: \`${{ steps.heads.outputs.isrg }}\` (bound surface \`${{ steps.heads.outputs.isrg_fp }}\`, ${{ steps.heads.outputs.isrg_delta }} since pin)"
+            echo
+            echo "Green run. Suite summary:"
+            echo
+            echo '```'
+            echo "$summary"
+            echo '```'
+            if [ -n "$observations" ]; then
+              echo
+              echo "### Observations"
+              echo
+              echo '```'
+              echo "$observations"
+              echo '```'
+            fi
+          } > run-comment.md
+          gh issue comment 21 --repo pipe23-org/pylongfellow --body-file run-comment.md
+
       - name: Save skip-guard marker
         if: always() && steps.guard.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: .canary-marker
-          key: canary-${{ steps.heads.outputs.goog }}-${{ steps.heads.outputs.isrg }}
+          key: canary-tree-${{ steps.heads.outputs.goog_fp }}-${{ steps.heads.outputs.isrg_fp }}
