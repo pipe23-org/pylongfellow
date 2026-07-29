@@ -1,5 +1,80 @@
 # Changelog
 
+## 0.3.0
+
+Breaking. The module-level `mdoc` functions are replaced by an instantiated client:
+`Pylongfellow(backend=...)` binds one backend at construction, and circuit operations are
+methods on it. Adds the `pylongfellow.backends` submodule and a second backend over
+abetterinternet/zk-cred-longfellow (ISRG). Wheels ship the `google-cpp` backend only.
+
+### Breaking
+
+- **`Pylongfellow(*, backend)`** — new entry point, exported from the package root. `backend`
+  is required: a registry name (`"google-cpp"`, `"isrg-rust"`) or a `Backend` instance. Construction
+  raises `ValueError` for an unknown name and `BackendUnavailableError` when the backend's
+  native dependency is not built. There is no default backend.
+- **`mdoc.load_circuit`, `mdoc.prove`, `mdoc.verify`, `mdoc.generate_circuit`** — removed; use
+  the client methods. `mdoc` keeps the data types and errors.
+- **`mdoc.ZkSpec` → `mdoc.CircuitSpec`** — the circuit-spec dataclass is renamed. Field names
+  are unchanged.
+- **`mdoc.circuit_id`, `mdoc.find_zk_spec`, `mdoc.zk_specs`** — moved to
+  `pylongfellow.backends.google_cpp`; they read that backend's compiled-in spec table. `mdoc`
+  no longer binds any backend.
+- **`.prove(handle, mdoc, issuer_pk, transcript, attrs, timestamp)`** — was
+  `prove(circuit, mdoc, issuer_pk, transcript, attrs, timestamp, spec)` in 0.2.x. The leading
+  `circuit` bytes and trailing `spec` are replaced by `handle`, from `.load_circuit`.
+- **`.verify(handle, issuer_pk, transcript, attrs, timestamp, proof, doctype, *, device_namespaces=None)`**
+  — was `verify(circuit, issuer_pk, transcript, attrs, timestamp, proof, doctype, spec)` in
+  0.2.x. The leading `circuit` bytes and trailing `spec` are replaced by `handle`.
+  `device_namespaces` (`bytes | None`) is new and keyword-only: the inner bytes of the tag-24
+  `DeviceNameSpacesBytes`, required by the `isrg-rust` backend and ignored by `google-cpp`.
+- **`ProverError.code`, `VerifierError.code`** — now `Optional`. The `google-cpp` backend
+  populates the code; the `isrg-rust` backend leaves it `None`. Catch by class. Both exceptions
+  accept a keyword-only `message`.
+
+### Added
+
+- **`pylongfellow.backends`** — the `Backend` protocol (the SPI), `CircuitHandle`,
+  `get_backend`, `GenerationUnsupportedError`, and `BackendUnavailableError`. Registry names
+  distinguish implementation, not just institution: `google-cpp` and `isrg-rust` are registered,
+  `google-rust` is reserved for upstream's next-generation Rust implementation.
+- **`google-cpp`** (`backends.google_cpp.BACKEND`) — the backend over the vendored
+  google/longfellow-zk C++ library. `can_generate` is `True`. Checks at load that
+  `spec.circuit_hash` matches the circuit bytes.
+- **`isrg-rust`** (`backends.isrg_rust.BACKEND`) — a backend over
+  [abetterinternet/zk-cred-longfellow](https://github.com/abetterinternet/zk-cred-longfellow)
+  (ISRG; vendored submodule, MPL-2.0). `can_generate` is `False`: circuits come from a
+  `google-cpp` client or from disk. Circuit identity checking is backend-native behaviour:
+  this backend does not check `spec.circuit_hash` at load. Source-build only; run
+  `uv run python scripts/build_isrg_rust_backend.py` (needs cargo 1.85 or newer for edition 2024). The
+  `isrg-rust` extra (`pip install pylongfellow[isrg-rust]`) adds `zstandard`. Not shipped in wheels.
+
+### Recorded divergence
+
+- **Device namespaces in ZK verification** — the differential suite records a divergence
+  between the backends over the mdoc `DeviceNameSpacesBytes` value. `DeviceNameSpacesBytes`
+  is not a circuit input: both implementations hash the `DeviceAuthentication` structure
+  outside the circuit and bind the digest as a public input. google/longfellow-zk assembles
+  it over the constant `D8 18 41 A0` (tag 24 wrapping an empty map) in
+  `compute_transcript_hash`: at the vendored pin `fe83ec6`,
+  `lib/circuits/mdoc/mdoc_witness.h:413`; unchanged at upstream HEAD `3dfaac7`
+  (`mdoc_witness.h:466`); present in the next-generation Rust implementation at `598816b`,
+  `rust/applications/mdoc_zk/circuits/src/cbor/mdoc.rs:354`.
+  abetterinternet/zk-cred-longfellow at `4f3d1b3` takes the value as a prove and verify
+  parameter (`src/mdoc_zk/mod.rs`). On a credential whose device signed a non-empty
+  namespace map (`tests/differential/presentations/device-namespaces-nonempty/`), the
+  isrg-rust backend proves and verifies on both 1-attribute circuits; the google-cpp
+  backend fails as prover with `MDOC_PROVER_DEVICE_SIGNATURE_FAILURE` (30) and rejects the
+  valid isrg-rust proof as verifier with `MDOC_VERIFIER_GENERAL_FAILURE` (5), codes as
+  defined in `lib/circuits/mdoc/mdoc_zk.h` and observed at run time. The circuit blobs
+  loaded into both backends are byte-identical. Deployed wallets emit an empty
+  device-namespace map, over which the implementations agree. The full record is in
+  `tests/differential/README.md`, Recorded divergences.
+
+### Unchanged
+
+- The vendored longfellow revision (v0.9, `fe83ec6`) is unchanged.
+
 ## 0.2.3
 
 Backend-free test-credential construction in `pylongfellow.mdoc`. None of the new

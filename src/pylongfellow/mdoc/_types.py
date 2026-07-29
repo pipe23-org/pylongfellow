@@ -1,4 +1,8 @@
-"""Plain-dataclass mirrors of the two C structs."""
+"""Plain-dataclass request and circuit-spec records.
+
+`RequestedAttribute` mirrors the upstream C struct of the same name.
+`CircuitSpec` corresponds to google/longfellow-zk's `ZkSpecStruct`.
+"""
 
 from dataclasses import dataclass
 
@@ -19,8 +23,11 @@ class RequestedAttribute:
 
 
 @dataclass(frozen=True)
-class ZkSpec:
+class CircuitSpec:
     """A circuit's identity, agreed between prover and verifier.
+
+    Every backend reads `version` and `num_attributes`; the google-cpp backend
+    additionally requires the whole record to match its compiled-in spec table.
 
     Attributes:
         system: ZK system name and version (e.g. `longfellow-libzk-v*`).

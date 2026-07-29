@@ -27,11 +27,16 @@ jobs:
 
   types:
     runs-on: ubuntu-latest
+    env:
+      CMAKE_ARGS: "-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
     steps:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
       - run: sudo apt-get update && sudo apt-get install -y libssl-dev libzstd-dev libgtest-dev libbenchmark-dev
+      - uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: types
       - uses: astral-sh/setup-uv@v8.3.2
         with:
           python-version: "3.14"
@@ -41,11 +46,16 @@ jobs:
   test-fast:
     if: ${{ github.event_name == 'push' && github.ref != 'refs/heads/main' }}
     runs-on: ubuntu-latest
+    env:
+      CMAKE_ARGS: "-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
     steps:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
       - run: sudo apt-get update && sudo apt-get install -y libssl-dev libzstd-dev libgtest-dev libbenchmark-dev
+      - uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: test-fast
       - uses: astral-sh/setup-uv@v8.3.2
         with:
           python-version: "3.14"
@@ -71,13 +81,24 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.11", "3.12", "3.13", "3.14"]
+    env:
+      CMAKE_ARGS: "-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
     steps:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
       - run: sudo apt-get update && sudo apt-get install -y libssl-dev libzstd-dev libgtest-dev libbenchmark-dev
+      - uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: test
       - uses: astral-sh/setup-uv@v8.3.2
         with:
           python-version: ${{ matrix.python-version }}
       - run: uv sync --locked
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: vendor/zk-cred-longfellow
+          shared-key: zk-cred
+      - run: uv run --no-sync python scripts/build_isrg_rust_backend.py
       - run: uv run --no-sync pytest -m "slow or not slow" --cov

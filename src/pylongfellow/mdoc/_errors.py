@@ -78,24 +78,56 @@ class Error(LongfellowError):
 
 
 class ProverError(Error):
-    """A prover call failed; `code` is a `ProverErrorCode`."""
+    """A prover call failed.
 
-    def __init__(self, code: ProverErrorCode) -> None:
+    Attributes:
+        code: The `ProverErrorCode` when the backend supplies one, else None.
+            The google/longfellow-zk backend always supplies it; other backends may not. Catch by
+            class; do not branch on the code.
+    """
+
+    def __init__(self, code: ProverErrorCode | None = None, *, message: str | None = None) -> None:
         self.code = code
-        super().__init__(f"{code.name} ({code.value})")
+        if message is not None:
+            super().__init__(message)
+        elif code is not None:
+            super().__init__(f"{code.name} ({code.value})")
+        else:
+            super().__init__("prover call failed")
 
 
 class VerifierError(Error):
-    """A verifier call failed; `code` is a `VerifierErrorCode`."""
+    """A verifier call failed.
 
-    def __init__(self, code: VerifierErrorCode) -> None:
+    Attributes:
+        code: The `VerifierErrorCode` when the backend supplies one, else None.
+            The google backend always supplies it; other backends may not. Catch by
+            class; do not branch on the code.
+    """
+
+    def __init__(
+        self, code: VerifierErrorCode | None = None, *, message: str | None = None
+    ) -> None:
         self.code = code
-        super().__init__(f"{code.name} ({code.value})")
+        if message is not None:
+            super().__init__(message)
+        elif code is not None:
+            super().__init__(f"{code.name} ({code.value})")
+        else:
+            super().__init__("verifier call failed")
 
 
 class CircuitError(Error):
-    """Circuit generation failed; `code` is a `CircuitGenerationErrorCode`."""
+    """Circuit generation failed.
 
-    def __init__(self, code: CircuitGenerationErrorCode) -> None:
+    Attributes:
+        code: The `CircuitGenerationErrorCode` when the backend supplies one,
+            else None. The google backend always supplies it; other backends may
+            not. Catch by class; do not branch on the code.
+    """
+
+    def __init__(self, code: CircuitGenerationErrorCode | None = None) -> None:
         self.code = code
-        super().__init__(f"{code.name} ({code.value})")
+        super().__init__(
+            f"{code.name} ({code.value})" if code is not None else "circuit generation failed"
+        )

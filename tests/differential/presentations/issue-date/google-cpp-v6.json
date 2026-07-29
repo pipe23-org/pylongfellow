@@ -1,0 +1,8 @@
+{
+  "prover": "google-cpp",
+  "prover_source": "abetterinternet/zk-cred-longfellow@4f3d1b3 test-vectors/mdoc_zk/v6_1attr_issue_date.proof (C++-generated, committed upstream)",
+  "circuit_id": "137e5a75ce72735a37c8a72da1a8a0a5df8d13365c2ae3d2c2bd6a0e7197c7c6",
+  "circuit_byte_sha256": "12050d8baaa37eb8225a3dcf5cb6139a0ccd4fa63a0e0ac2555ecb4810ada8a3",
+  "byte_sha256": "075842910f814a5e20e7719d112de8c5d856cb1d01f4ec9dc78d5d7c7dfc2d85",
+  "origin": "abetterinternet/zk-cred-longfellow@4f3d1b3 test-vectors/mdoc_zk/v6_1attr_issue_date.proof"
+}
