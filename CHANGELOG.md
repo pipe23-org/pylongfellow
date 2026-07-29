@@ -20,6 +20,9 @@ pinned at `4f3d1b3`) is built into the cp311–cp314 wheels alongside the google
 - **`scripts/build_isrg_rust_backend.py` runs inside the CMake build** — `uv sync` and wheel
   builds produce the backend without a separate step; the script still works standalone for
   incremental dev builds.
+- **musllinux builds set `RUSTFLAGS="-C target-feature=-crt-static"`** — the musl target's
+  default static CRT drops the `cdylib` crate type, so cargo builds no `.so` without it. The
+  build script fails with a named error when cargo produces no cdylib.
 
 ## 0.3.0
 
