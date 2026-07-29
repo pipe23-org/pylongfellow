@@ -76,7 +76,8 @@ CMAKE_BUILD_TYPE = "Release"
 # excluded. Run it with `-m slow`, or everything with `-m "slow or not slow"`.
 [tool.pytest.ini_options]
 markers = ["slow: real circuit generation (~15s); excluded by default, run with -m slow"]
-addopts = "-m 'not slow' -rxX"
+# -rsxX: the untestable-cell census is a per-run report, so skips print too.
+addopts = "-m 'not slow' -rsxX"
 
 # Branch coverage, gated at 100%. The gate is only reachable with the slow test
 # run (generate_circuit's path is slow-only): `pytest -m "slow or not slow" --cov`.

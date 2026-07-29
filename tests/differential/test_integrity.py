@@ -1,12 +1,20 @@
-"""Corpus integrity: sidecar presence, byte hashes, and cross-references, every run.
+"""Corpus integrity: sidecars, byte hashes, cross-references, untestable cells, every run.
 
 circuit_id claims are verified by scripts/add_test_data.py, not here; the
 byte_sha256 checks pin the artifacts instead.
 """
 
 import hashlib
+import json
 
-from .conftest import CIRCUITS, CIRCUITS_DIR, PRESENTATIONS, PRESENTATIONS_DIR
+from .conftest import (
+    CIRCUITS,
+    CIRCUITS_DIR,
+    CORPUS,
+    PRESENTATIONS,
+    PRESENTATIONS_DIR,
+    UNTESTABLE_CELLS,
+)
 
 _CIRCUITS_BY_ID = {c.circuit_id: c for c in CIRCUITS}
 
@@ -59,3 +67,8 @@ def test_presentations_with_mdoc_carry_device_namespaces():
     for presentation in PRESENTATIONS:
         if presentation.mdoc_bytes is not None:
             assert presentation.device_namespaces is not None, presentation.name
+
+
+def test_untestable_cells_match_the_census():
+    committed = json.loads((CORPUS / "untestable-cells.json").read_text())
+    assert list(UNTESTABLE_CELLS) == committed

@@ -28,9 +28,34 @@ decompressed serialization that changed while the `circuit_id` held. Warnings ar
 corpus census, not standing states. Pin-tree runs are warning-free; a warning at the pin is a
 reproducibility break.
 
+## Untestable cells
+
+A cell whose inputs the corpus cannot supply is emitted as a skip carrying the reason. Two
+classes occur:
+
+- a verify-only capture carries no mdoc bytes, which the prover requires as input;
+- a capture whose wire data carries no device namespaces cannot feed a verifier backend whose
+  FFI takes `device_namespaces` as a required parameter (`isrg-rust`).
+
+The cells are skips. An xfail executes the call and requires it to fail; these cells have no
+call to execute without fabricating an input the wire format does not carry. Nothing in
+`pylongfellow` defaults or supplies the missing input.
+
+Untestable cells carry no `slow` mark, so they appear in the summary of every run, fast or
+full. The cell id is repeated inside the skip reason because pytest groups summary lines by
+(location, reason).
+
+The full set of (cell id, reason) is committed in `untestable-cells.json` and asserted by the
+integrity test, so the set cannot grow or shrink without a diff. Rewrite it after a corpus or
+backend-set change:
+
+```
+uv run python -c "import json;from tests.differential.conftest import UNTESTABLE_CELLS as c;print(json.dumps(list(c),indent=2))" > tests/differential/untestable-cells.json
+```
+
 ## Backend set
 
-Backends are a set. Cross-tests are computed over every compatible (prover backend, verifier
+Backends are a set. Cross-tests are computed over every (prover backend, verifier
 backend) pair at collection time. No test names a specific pair. An added backend adds matrix
 rows.
 
@@ -53,6 +78,7 @@ tests/differential/
       presentation.json
       google-cpp-v7.proof + google-cpp-v7.json
       isrg-rust-v6.proof + isrg-rust-v6.json
+  untestable-cells.json
 ```
 
 - The corpus is data. Behaviour lives in `pylongfellow`; the corpus never grows methods.
@@ -102,10 +128,11 @@ All modes write the same schemas.
 ## Pairing
 
 Pairing is computed in `conftest.py` at collection time. Sidecars are read into plain records,
-and compatible (circuit, presentation, prover backend, verifier backend) tuples are generated
-over the backend set. A presentation pairs with every circuit whose attribute count matches;
-a committed proof pairs with the circuit its sidecar's `circuit_id` names. Directory nesting
-carries no pairing semantics.
+and (circuit, presentation, prover backend, verifier backend) tuples are generated over the
+backend set. A presentation pairs with every circuit whose attribute count matches; a committed
+proof pairs with the circuit its sidecar's `circuit_id` names. Directory nesting carries no
+pairing semantics. A tuple the corpus cannot supply inputs for is emitted as an untestable
+cell, never dropped.
 
 ## Integrity
 
@@ -113,8 +140,9 @@ An integrity test checks on every run: every `.circuit` and `.proof` has a same-
 every sidecar's `byte_sha256` matches its file; every proof's `circuit_id` names a circuit in
 `circuits/` and its `circuit_byte_sha256` matches that circuit's sidecar; every presentation's
 `circuit_id` names a circuit in `circuits/` and its attribute count matches the circuit;
-every presentation with mdoc bytes carries `device_namespaces`. `circuit_id` claims are
-checked when the artifact is written, not per run.
+every presentation with mdoc bytes carries `device_namespaces`; the untestable cells the join
+emits match `untestable-cells.json` exactly. `circuit_id` claims are checked when the artifact
+is written, not per run.
 
 ## Recorded divergences
 
