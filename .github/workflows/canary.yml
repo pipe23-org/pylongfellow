@@ -27,7 +27,7 @@ jobs:
         id: pin
         shell: bash
         run: |
-          goog_fp=$(git -C vendor/longfellow-zk rev-parse HEAD:lib HEAD:CMakeLists.txt | sha256sum | cut -c1-12)
+          goog_fp=$(git -C vendor/longfellow-zk rev-parse HEAD:lib | sha256sum | cut -c1-12)
           isrg_fp=$(git -C vendor/zk-cred-longfellow rev-parse HEAD:src HEAD:Cargo.toml HEAD:Cargo.lock | sha256sum | cut -c1-12)
           echo "goog_fp=$goog_fp" >> "$GITHUB_OUTPUT"
           echo "isrg_fp=$isrg_fp" >> "$GITHUB_OUTPUT"
@@ -43,7 +43,7 @@ jobs:
           done
           goog=$(git -C vendor/longfellow-zk rev-parse HEAD)
           isrg=$(git -C vendor/zk-cred-longfellow rev-parse HEAD)
-          goog_fp=$(git -C vendor/longfellow-zk rev-parse HEAD:lib HEAD:CMakeLists.txt | sha256sum | cut -c1-12)
+          goog_fp=$(git -C vendor/longfellow-zk rev-parse HEAD:lib | sha256sum | cut -c1-12)
           isrg_fp=$(git -C vendor/zk-cred-longfellow rev-parse HEAD:src HEAD:Cargo.toml HEAD:Cargo.lock | sha256sum | cut -c1-12)
           if [ "$goog_fp" = "${{ steps.pin.outputs.goog_fp }}" ]; then goog_delta=unchanged; else goog_delta=changed; fi
           if [ "$isrg_fp" = "${{ steps.pin.outputs.isrg_fp }}" ]; then isrg_delta=unchanged; else isrg_delta=changed; fi
@@ -128,8 +128,8 @@ jobs:
           {
             echo "## Canary drift — $(date -u +%Y-%m-%dT%H:%MZ)"
             echo
-            echo "- google/longfellow-zk: \`${{ steps.heads.outputs.goog }}\` (bound surface \`${{ steps.heads.outputs.goog_fp }}\`, ${{ steps.heads.outputs.goog_delta }} since pin)"
-            echo "- abetterinternet/zk-cred-longfellow: \`${{ steps.heads.outputs.isrg }}\` (bound surface \`${{ steps.heads.outputs.isrg_fp }}\`, ${{ steps.heads.outputs.isrg_delta }} since pin)"
+            echo "- google/longfellow-zk: \`${{ steps.heads.outputs.goog || 'unavailable' }}\` (bound surface \`${{ steps.heads.outputs.goog_fp || 'unavailable' }}\`, ${{ steps.heads.outputs.goog_delta || 'unknown' }} since pin)"
+            echo "- abetterinternet/zk-cred-longfellow: \`${{ steps.heads.outputs.isrg || 'unavailable' }}\` (bound surface \`${{ steps.heads.outputs.isrg_fp || 'unavailable' }}\`, ${{ steps.heads.outputs.isrg_delta || 'unknown' }} since pin)"
             echo "- Failed phase: \`$phase\`"
             echo
             echo '```'
@@ -149,8 +149,8 @@ jobs:
           {
             echo "## Canary run — $(date -u +%Y-%m-%dT%H:%MZ)"
             echo
-            echo "- google/longfellow-zk: \`${{ steps.heads.outputs.goog }}\` (bound surface \`${{ steps.heads.outputs.goog_fp }}\`, ${{ steps.heads.outputs.goog_delta }} since pin)"
-            echo "- abetterinternet/zk-cred-longfellow: \`${{ steps.heads.outputs.isrg }}\` (bound surface \`${{ steps.heads.outputs.isrg_fp }}\`, ${{ steps.heads.outputs.isrg_delta }} since pin)"
+            echo "- google/longfellow-zk: \`${{ steps.heads.outputs.goog || 'unavailable' }}\` (bound surface \`${{ steps.heads.outputs.goog_fp || 'unavailable' }}\`, ${{ steps.heads.outputs.goog_delta || 'unknown' }} since pin)"
+            echo "- abetterinternet/zk-cred-longfellow: \`${{ steps.heads.outputs.isrg || 'unavailable' }}\` (bound surface \`${{ steps.heads.outputs.isrg_fp || 'unavailable' }}\`, ${{ steps.heads.outputs.isrg_delta || 'unknown' }} since pin)"
             echo
             echo "Green run. Suite summary:"
             echo
