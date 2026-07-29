@@ -37,14 +37,10 @@ Wheels are published for **CPython 3.11–3.14 on Linux x86_64** (manylinux and 
 any other platform `pip` falls back to the source distribution, which builds the vendored C++
 locally and needs a C++ toolchain — see [Build from source](#build-from-source).
 
-The wheel's runtime dependencies are **`cffi`**, **`cryptography`**, and **`cbor2`**. It ships
-the google/longfellow-zk backend. The abetterinternet/zk-cred-longfellow (ISRG) backend is not
-in any wheel: it is source-build only (see [Backends](#backends)), and its `zstandard` runtime
-dependency comes from the `isrg-rust` extra:
-
-```
-pip install pylongfellow[isrg-rust]
-```
+The wheel's runtime dependencies are **`cffi`**, **`cryptography`**, **`cbor2`**, and
+**`zstandard`**. Every wheel ships both backends: the google/longfellow-zk cffi extension and
+the abetterinternet/zk-cred-longfellow (ISRG) cdylib. Construction selects one by registry name
+(see [Backends](#backends)); neither requires an extra or a separate install.
 
 ## What it binds
 
@@ -145,10 +141,10 @@ package and the bundled fixture; circuit generation takes ~15s.
 A client is bound to one backend at construction. `Pylongfellow(backend=...)` takes a registry
 name or a `Backend` instance and raises `BackendUnavailableError` when the backend's native
 dependency is not built. `prove` and `verify` dispatch through the backend a circuit was loaded
-into: the `CircuitHandle` carries it, so a handle works on any client. Two backends ship in the
-source tree.
+into: the `CircuitHandle` carries it, so a handle works on any client. Two backends ship in
+every wheel.
 
-**`google-cpp`** binds the vendored longfellow-zk C++ library and is in every wheel.
+**`google-cpp`** binds the vendored longfellow-zk C++ library.
 `can_generate` is `True`. It populates `.code` on the exceptions it raises, ignores
 `device_namespaces` on `verify`, and checks at load that `spec.circuit_hash` matches the
 circuit bytes.
@@ -170,17 +166,17 @@ client = Pylongfellow(backend="isrg-rust")
 handle = client.load_circuit(spec, compressed)
 ```
 
-The isrg-rust backend is not in any wheel. Build it from source:
+In a dev checkout the backend builds with:
 
 ```
 git submodule update --init vendor/zk-cred-longfellow
 uv run python scripts/build_isrg_rust_backend.py # needs cargo 1.85+; ~4 min cold build
-pip install pylongfellow[isrg-rust]              # zstandard runtime dependency
 ```
 
-`build_isrg_rust_backend.py` stages the UniFFI-generated Python module and the cdylib into
-`src/pylongfellow/backends/_zk_cred/` (gitignored). If the module is not built or `zstandard` is
-not installed, the backend raises `BackendUnavailableError`.
+`build_isrg_rust_backend.py` runs `cargo build` and `uniffi-bindgen` and stages the generated
+Python module and the cdylib into `src/pylongfellow/backends/_zk_cred/` (gitignored). The CMake
+build runs the same script, so wheel and sdist builds ship the same files. A backend whose
+native piece is absent raises `BackendUnavailableError`.
 
 Engine init on the isrg-rust backend takes about 18 seconds per role and about 740 MB resident for a
 v6 1-attribute circuit. Init is lazy and cached on the handle. `prove` then takes about 1.3
@@ -191,7 +187,7 @@ vendored v6 1-attribute circuit, and both backends verify zk-cred-longfellow's c
 proof, which google/longfellow-zk generated. For the same statement the isrg-rust proof is larger than
 the google proof (562228 versus 323868 bytes).
 
-zk-cred-longfellow is licensed MPL-2.0. `pylongfellow` remains Apache-2.0.
+zk-cred-longfellow is licensed MPL-2.0; see [Licensing](#licensing).
 
 ## Logging
 
@@ -212,13 +208,26 @@ sudo apt install -y cmake libssl-dev libzstd-dev libstdc++-13-dev libgtest-dev l
 git submodule update --init --recursive
 ```
 
-The default `c++` (g++) works. Build and test with [uv](https://docs.astral.sh/uv/):
+The default `c++` (g++) works. The isrg-rust cdylib additionally needs cargo 1.85+
+([rustup](https://rustup.rs)). Build and test with [uv](https://docs.astral.sh/uv/):
 
 ```
-uv sync                                   # builds the extension + dev group, writes uv.lock
+uv sync                                   # builds both backends + dev group, writes uv.lock
 uv run pytest                             # fast suite
 uv run pytest -m "slow or not slow" --cov # full suite incl. real circuit generation
 ```
+
+Each backend builds behind a CMake switch, default ON. A source install that omits one passes
+the switch as a [config setting](https://scikit-build-core.readthedocs.io/en/latest/configuration/index.html):
+
+```
+pip install pylongfellow -C cmake.define.PYLONGFELLOW_BUILD_ISRG=OFF   # google-cpp only
+pip install pylongfellow -C cmake.define.PYLONGFELLOW_BUILD_GOOGLE=OFF # isrg-rust only
+```
+
+The omitted backend raises `BackendUnavailableError` at first use; everything else works
+unchanged. A `PYLONGFELLOW_BUILD_GOOGLE=OFF` build needs no C++ toolchain and none of the apt
+packages above, only cargo.
 
 [scikit-build-core](https://scikit-build-core.readthedocs.io/) drives the vendored CMake build
 and packages the cffi extension. The internal upstream object libraries are built
@@ -237,8 +246,10 @@ Two gotchas worth knowing:
 
 - **Wheels:** [cibuildwheel](https://cibuildwheel.pypa.io/) builds cp311–cp314 ×
   {manylinux, musllinux}, x86_64, with the test suite run inside each build container as the
-  gate; `auditwheel` repairs them. A source distribution bundling the pinned upstream ships
-  alongside.
+  gate; `auditwheel` repairs them. Each wheel carries the cffi extension and the isrg-rust
+  cdylib; the cargo build runs once per libc family (the container is shared across the
+  CPython passes, so cargo's cache makes the repeats cheap). A source distribution bundling
+  both pinned upstreams ships alongside.
 - **Publish:** PyPI [Trusted Publishing](https://docs.pypi.org/trusted-publishers/) (OIDC, no
   long-lived tokens), which emits [PEP 740](https://peps.python.org/pep-0740/) build
   attestations binding each wheel to its source commit.
@@ -251,13 +262,23 @@ specific commit (currently **v0.9**, `fe83ec6`) and built from source into each 
 not float: the upstream ABI and circuits can change between releases, and the test fixtures are
 pinned to a particular circuit and version.
 
-The isrg-rust backend vendors `abetterinternet/zk-cred-longfellow` (ISRG, MPL-2.0) as a second git
-submodule, hard-pinned to `4f3d1b3`. It is built on demand by `scripts/build_isrg_rust_backend.py`
-and is not built into any wheel. `pylongfellow` itself is Apache-2.0.
+The isrg-rust backend vendors `abetterinternet/zk-cred-longfellow` (ISRG, MPL-2.0) as a second
+git submodule, hard-pinned to `4f3d1b3`, built from source into each wheel.
 
-Not affiliated with Google or the European Commission — an independent binding to a public
-Apache-2.0 library.
+Not affiliated with Google or the European Commission — an independent binding to public
+libraries.
 
-## License
+## Licensing
 
-Apache-2.0, matching upstream.
+`pylongfellow`'s own code is Apache-2.0. The distribution's licence expression is
+**`Apache-2.0 AND MPL-2.0`** because each artifact also carries compiled code from the two
+vendored upstreams:
+
+- `google/longfellow-zk` — Apache-2.0, compiled into the `_longfellow` extension.
+- `abetterinternet/zk-cred-longfellow` (ISRG) — MPL-2.0, compiled into the
+  `libzk_cred_longfellow` cdylib.
+
+All three licence texts ship in the wheel and sdist metadata (`license-files`). MPL-2.0 is
+file-level copyleft: its terms apply to the zk-cred-longfellow files only and place no
+obligations on `pylongfellow`'s code or its users. The vendored files are unmodified; their
+source is the pinned upstream commit named above and is included in full in the sdist.

@@ -948,16 +948,12 @@ wheels = [
 
 [[package]]
 name = "pylongfellow"
-version = "0.3.0"
+version = "0.4.0"
 source = { editable = "." }
 dependencies = [
     { name = "cbor2" },
     { name = "cffi" },
     { name = "cryptography" },
-]
-
-[package.optional-dependencies]
-isrg-rust = [
     { name = "zstandard" },
 ]
 
@@ -971,7 +967,6 @@ dev = [
     { name = "pytest-cov" },
     { name = "ruff" },
     { name = "types-cffi" },
-    { name = "zstandard" },
 ]
 docs = [
     { name = "interrogate" },
@@ -987,9 +982,8 @@ requires-dist = [
     { name = "cbor2", specifier = ">=6" },
     { name = "cffi", specifier = ">=2.0" },
     { name = "cryptography", specifier = ">=49" },
-    { name = "zstandard", marker = "extra == 'isrg-rust'" },
+    { name = "zstandard" },
 ]
-provides-extras = ["isrg-rust"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1001,7 +995,6 @@ dev = [
     { name = "pytest-cov", specifier = ">=7.1.0" },
     { name = "ruff" },
     { name = "types-cffi", specifier = ">=2.0.0.20260518" },
-    { name = "zstandard" },
 ]
 docs = [
     { name = "interrogate" },

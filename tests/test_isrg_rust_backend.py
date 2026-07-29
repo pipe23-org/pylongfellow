@@ -43,12 +43,6 @@ def test_load_rejects_bad_version(vendored_vector):
         isrg_rust.BACKEND.load_circuit(spec, vendored_vector.compressed)
 
 
-def test_load_rejects_missing_zstandard(monkeypatch, vendored_vector):
-    monkeypatch.setitem(sys.modules, "zstandard", None)
-    with pytest.raises(BackendUnavailableError, match="zstandard"):
-        isrg_rust.BACKEND.load_circuit(vendored_vector.spec, vendored_vector.compressed)
-
-
 def test_prove_rejects_mixed_namespaces():
     attrs = [
         mdoc.RequestedAttribute("ns.a", "x", b"\x01"),

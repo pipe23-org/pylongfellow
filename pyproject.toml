@@ -4,12 +4,20 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "pylongfellow"
-version = "0.3.0"
+version = "0.4.0"
 description = "Thin Python binding to Google's Longfellow zero-knowledge mdoc library"
 readme = "README.md"
 requires-python = ">=3.11"
-license = "Apache-2.0"
-license-files = ["LICENSE", "vendor/longfellow-zk/LICENSE"]
+# Composite expression: the wheel carries our Apache-2.0 code plus the compiled
+# MPL-2.0 zk-cred-longfellow cdylib. MPL is file-level copyleft; the vendored
+# files are unmodified at a pinned upstream SHA and their full source ships in
+# the sdist. See the README's Licensing section.
+license = "Apache-2.0 AND MPL-2.0"
+license-files = [
+  "LICENSE",
+  "vendor/longfellow-zk/LICENSE",
+  "vendor/zk-cred-longfellow/LICENSE",
+]
 authors = [{ name = "Nathan Schepers" }]
 keywords = ["zero-knowledge", "mdoc", "longfellow", "eudi", "iso18013-5", "cffi"]
 classifiers = [
@@ -24,13 +32,10 @@ classifiers = [
 ]
 # cffi API-mode extensions import _cffi_backend at runtime, so cffi is a real
 # runtime dependency (as for cryptography, bcrypt, PyNaCl). cryptography and
-# cbor2 carry mdoc.create_credential and its companions.
-dependencies = ["cffi>=2.0", "cbor2>=6", "cryptography>=49"]
-
-# The isrg-rust backend decompresses circuit blobs with zstandard; install with
-# `pip install pylongfellow[isrg-rust]` after building the backend (scripts/build_isrg_rust_backend.py).
-[project.optional-dependencies]
-isrg-rust = ["zstandard"]
+# cbor2 carry mdoc.create_credential and its companions. zstandard decompresses
+# the isrg-rust backend's circuit blobs; both backends ship in the default
+# install, so it is a plain runtime dependency.
+dependencies = ["cffi>=2.0", "cbor2>=6", "cryptography>=49", "zstandard"]
 
 [project.urls]
 Homepage = "https://github.com/pipe23-org/pylongfellow"
@@ -50,15 +55,16 @@ dev = [
     "mypy",
     "types-cffi>=2.0.0.20260518",
     "pytest-cov>=7.1.0",
-    "zstandard",
 ]
 
+# No build.targets: the default target covers whichever backends the
+# PYLONGFELLOW_BUILD_* switches leave on (naming a switched-off target would
+# fail the build).
 [tool.scikit-build]
 minimum-version = "build-system.requires"
 wheel.packages = ["src/pylongfellow"]
 cmake.version = ">=3.15"
 build-dir = "build/{wheel_tag}"
-build.targets = ["_longfellow"]
 
 [tool.scikit-build.cmake.define]
 # Internal upstream object libs (ec/algebra/...) aren't PIC by default; the
@@ -138,20 +144,26 @@ ignore-magic = true
 ignore-nested-functions = true
 exclude = ["tests", "scripts", "scratch", "src/_cffi_src", "build", "vendor", "src/pylongfellow/backends/_zk_cred"]
 
-# before-all installs gtest + benchmark because upstream's CMake REQUIREs them at
-# configure time, even though we build only the library.
+# before-all installs gtest + benchmark because upstream's CMake REQUIREs them
+# at configure time, even though we build only the library, and rustup because
+# the isrg-rust cdylib builds inside the same container. The four CPython
+# passes share the container, so cargo builds cold once per libc family and is
+# incremental for the rest.
 [tool.cibuildwheel]
 build = "cp311-* cp312-* cp313-* cp314-*"
 build-frontend = "build[uv]"
 build-verbosity = 1
 test-groups = ["test"]
-test-command = 'pytest {project}/tests -m "slow or not slow"'
+# The require-backends variable turns absent-backend skips into failures: the
+# wheel under test must carry both backends (tests/test_required_backends.py).
+test-command = 'PYLONGFELLOW_REQUIRE_BACKENDS=google-cpp,isrg-rust pytest {project}/tests -m "slow or not slow"'
 
 [tool.cibuildwheel.linux]
 manylinux-x86_64-image = "manylinux_2_28"
-before-all = "dnf install -y epel-release && dnf install -y openssl-devel libzstd-devel gtest-devel google-benchmark-devel"
+before-all = "dnf install -y epel-release && dnf install -y openssl-devel libzstd-devel gtest-devel google-benchmark-devel && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal"
 
-# musllinux is Alpine — override the dnf before-all with apk.
+# musllinux is Alpine — override the dnf before-all with apk. rustup installs
+# the musl host toolchain there.
 [[tool.cibuildwheel.overrides]]
 select = "*-musllinux*"
-before-all = "apk add --no-cache openssl-dev zstd-dev gtest-dev benchmark-dev"
+before-all = "apk add --no-cache curl openssl-dev zstd-dev gtest-dev benchmark-dev && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal"

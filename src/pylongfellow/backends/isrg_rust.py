@@ -23,19 +23,16 @@ def _zk() -> Any:
         from ._zk_cred import zk_cred_longfellow
     except ImportError as e:
         raise BackendUnavailableError(
-            "the isrg-rust backend is not built; run scripts/build_isrg_rust_backend.py"
+            "the isrg-rust backend is not built; source builds omit it when configured "
+            "with PYLONGFELLOW_BUILD_ISRG=OFF, and a dev checkout builds it with "
+            "scripts/build_isrg_rust_backend.py"
         ) from e
     return zk_cred_longfellow
 
 
 def _decompress(compressed: bytes) -> bytes:
-    try:
-        import zstandard
-    except ImportError as e:
-        raise BackendUnavailableError(
-            "the zstandard package is required by the isrg-rust backend; "
-            "install pylongfellow[isrg-rust]"
-        ) from e
+    import zstandard
+
     return zstandard.ZstdDecompressor().stream_reader(io.BytesIO(compressed)).read()
 
 

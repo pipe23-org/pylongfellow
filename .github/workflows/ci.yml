@@ -37,6 +37,13 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1
         with:
           key: types
+      # uv sync builds the project, which builds both backends; the isrg-rust
+      # cdylib needs the runner's Rust toolchain and benefits from the cache.
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: vendor/zk-cred-longfellow
+          shared-key: zk-cred
       - uses: astral-sh/setup-uv@v8.3.2
         with:
           python-version: "3.14"
@@ -56,6 +63,11 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1
         with:
           key: test-fast
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: vendor/zk-cred-longfellow
+          shared-key: zk-cred
       - uses: astral-sh/setup-uv@v8.3.2
         with:
           python-version: "3.14"
@@ -91,14 +103,16 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1
         with:
           key: test
-      - uses: astral-sh/setup-uv@v8.3.2
-        with:
-          python-version: ${{ matrix.python-version }}
-      - run: uv sync --locked
+      # Toolchain and cache before uv sync: the editable build runs the cargo
+      # build via CMake (scripts/build_isrg_rust_backend.py, zk_cred_backend
+      # target), so no separate build step remains.
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: vendor/zk-cred-longfellow
           shared-key: zk-cred
-      - run: uv run --no-sync python scripts/build_isrg_rust_backend.py
+      - uses: astral-sh/setup-uv@v8.3.2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: uv sync --locked
       - run: uv run --no-sync pytest -m "slow or not slow" --cov
