@@ -154,7 +154,8 @@ def _verifier_input_clauses(presentation: Presentation, verifier: str) -> tuple[
     if presentation.device_namespaces is None and verifier in _NEEDS_DEVICE_NAMESPACES:
         return (
             "the ZK response format carries no device namespaces, "
-            f"which the {verifier} verifier requires as input",
+            f"which the {verifier} verifier requires as input "
+            "(https://github.com/pipe23-org/pylongfellow/issues/29)",
         )
     return ()
 
