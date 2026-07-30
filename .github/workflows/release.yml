@@ -110,9 +110,12 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
+      # Pinning to the tag's version makes the retry loop wait for the new
+      # wheels to become visible instead of resolving to an older release.
       - run: |
+          version="${GITHUB_REF_NAME#v}"
           n=0
-          until pip install --no-cache-dir pylongfellow; do
+          until pip install --no-cache-dir "pylongfellow==$version"; do
             n=$((n + 1))
             [ "$n" -ge 5 ] && exit 1
             sleep 20
