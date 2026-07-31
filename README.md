@@ -109,13 +109,13 @@ from pylongfellow.backends.google_cpp import find_zk_spec
 client = Pylongfellow(backend="google-cpp")
 
 spec = find_zk_spec("longfellow-libzk-v1", circuit_hash)
-compressed = client.generate_circuit(spec)       # or Path(...).read_bytes()
+compressed = client.generate_circuit(spec)  # or Path(...).read_bytes()
 handle = client.load_circuit(spec, compressed)
 
 attrs = [mdoc.RequestedAttribute("org.iso.18013.5.1", "age_over_18", b"\xf5")]  # CBOR true
 
 proof = client.prove(handle, credential, issuer_pk, transcript, attrs, now)
-client.verify(handle, issuer_pk, transcript, attrs, now, proof, doctype)   # raises on failure
+client.verify(handle, issuer_pk, transcript, attrs, now, proof, doctype)  # raises on failure
 ```
 
 Migrating from 0.2.x: the module-level `mdoc` functions are gone; operations are methods on a
