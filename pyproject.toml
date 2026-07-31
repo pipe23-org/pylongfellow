@@ -100,11 +100,12 @@ line-length = 100
 src = ["src", "tests"]
 extend-exclude = ["vendor", "src/pylongfellow/backends/_zk_cred"]
 
-# Rule families beyond ruff's defaults: I=imports, UP=pyupgrade, B=bugbear,
-# S=bandit (security), RUF=ruff-native, SIM=simplify, C4=comprehensions,
-# PT=pytest-style, PERF=perf, D=pydocstyle.
+# Closed list via `select`, never `extend-select`: a ruff upgrade must not change
+# which rules run. E4/E7/E9 + F are ruff's 0.15 defaults; the families beyond them:
+# I=imports, UP=pyupgrade, B=bugbear, S=bandit (security), RUF=ruff-native,
+# SIM=simplify, C4=comprehensions, PT=pytest-style, PERF=perf, D=pydocstyle.
 [tool.ruff.lint]
-extend-select = ["I", "UP", "B", "S", "RUF", "SIM", "C4", "PT", "PERF", "D"]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B", "S", "RUF", "SIM", "C4", "PT", "PERF", "D"]
 ignore = ["D107"]
 
 [tool.ruff.lint.pydocstyle]
