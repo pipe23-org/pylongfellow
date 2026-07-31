@@ -128,7 +128,6 @@ class _IsrgRustBackend:
 
         Raises:
             ValueError: `spec.version` is not 6 or 7.
-            BackendUnavailableError: the `zstandard` package is not installed.
         """
         if spec.version not in _VERSIONS:
             raise ValueError(f"unsupported circuit version {spec.version} (expected 6 or 7)")

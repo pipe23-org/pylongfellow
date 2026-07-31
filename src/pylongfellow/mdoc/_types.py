@@ -12,7 +12,7 @@ class RequestedAttribute:
     r"""A claim to prove or verify: attribute (namespace, id) holds cbor_value.
 
     Attributes:
-        namespace: the mdoc namespace of the attribute.
+        namespace: The mdoc namespace of the attribute.
         id: Attribute identifier within the namespace.
         cbor_value: Raw CBOR encoding of the value (e.g. `b"\xf5"` for true).
     """
