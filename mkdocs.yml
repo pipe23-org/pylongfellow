@@ -1,5 +1,5 @@
 site_name: pylongfellow
-site_description: Thin Python binding to Google's Longfellow zero-knowledge mdoc library
+site_description: Python binding for the Longfellow zero-knowledge mdoc scheme, over C++ and Rust backends
 repo_url: https://github.com/pipe23-org/pylongfellow
 
 theme:
