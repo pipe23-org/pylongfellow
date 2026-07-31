@@ -1,10 +1,10 @@
 # pylongfellow
 
 [![CI](https://github.com/pipe23-org/pylongfellow/actions/workflows/ci.yml/badge.svg)](https://github.com/pipe23-org/pylongfellow/actions/workflows/ci.yml)
-[![Docs](https://app.readthedocs.org/projects/pylongfellow/badge/?version=latest)](https://pylongfellow.readthedocs.io/en/latest/)
+[![Docs](https://app.readthedocs.org/projects/pylongfellow/badge/?version=stable)](https://pylongfellow.readthedocs.io/en/stable/)
 [![PyPI](https://img.shields.io/pypi/v/pylongfellow)](https://pypi.org/project/pylongfellow/)
 [![Python](https://img.shields.io/pypi/pyversions/pylongfellow)](https://pypi.org/project/pylongfellow/)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache--2.0%20AND%20MPL--2.0-blue.svg)](#licensing)
 
 ## Overview
 
@@ -47,8 +47,8 @@ the abetterinternet/zk-cred-longfellow (ISRG) cdylib. Construction selects one b
 `Pylongfellow` is the entry point: a client bound to one backend at construction. Data types and
 errors are in the `pylongfellow.mdoc` submodule; the spec-table functions are in the
 `pylongfellow.backends.google_cpp` module, which reads the google-cpp backend's compiled-in
-table. Each client method wraps one native entry point. The wrappers marshal inputs, copy
-results out, and turn non-success return codes into typed exceptions.
+table. Each client method dispatches to a backend, which marshals the inputs, copies the
+results out, and turns a non-success return into a typed exception.
 
 | Python | Role |
 |---|---|
@@ -98,7 +98,7 @@ an ISO 18013-5 `DeviceResponse` test credential under locally held keys, with
 caller-controlled issuer-signed claims and device namespaces; `create_certificate`,
 `sign_device_authentication`, and `verify_device_authentication` are its trust-chain and
 device-signature companions. They run on `cryptography` and `cbor2` alone; signatures are
-in the [API reference](https://pylongfellow.readthedocs.io/).
+in the [API reference](https://pylongfellow.readthedocs.io/en/stable/reference/).
 
 ## Usage
 
@@ -166,35 +166,39 @@ client = Pylongfellow(backend="isrg-rust")
 handle = client.load_circuit(spec, compressed)
 ```
 
-In a dev checkout the backend builds with:
+In a dev checkout the vendored submodule is initialized first; `uv sync` then builds the backend
+as part of the CMake build:
 
 ```
 git submodule update --init vendor/zk-cred-longfellow
-uv run python scripts/build_isrg_rust_backend.py # needs cargo 1.85+; ~4 min cold build
+uv sync
 ```
 
-`build_isrg_rust_backend.py` runs `cargo build` and `uniffi-bindgen` and stages the generated
-Python module and the cdylib into `src/pylongfellow/backends/_zk_cred/` (gitignored). The CMake
-build runs the same script, so wheel and sdist builds ship the same files. A backend whose
+`scripts/build_isrg_rust_backend.py` runs `cargo build` (cargo 1.85 or newer) and
+`uniffi-bindgen`, and stages the generated Python module and the cdylib into
+`src/pylongfellow/backends/_zk_cred/` (gitignored). The CMake build runs it, so `uv sync`, wheel
+builds, and sdist builds produce the same files. Running the script directly rebuilds the
+backend without a full `uv sync`; the cold cargo build takes about 4 minutes. A backend whose
 native piece is absent raises `BackendUnavailableError`.
 
 Engine init on the isrg-rust backend takes about 18 seconds per role and about 740 MB resident for a
 v6 1-attribute circuit. Init is lazy and cached on the handle. `prove` then takes about 1.3
 seconds and `verify` about 0.8 seconds on the reference machine.
 
-The differential tests exchange proofs between the two backends in both directions over the
-vendored v6 1-attribute circuit, and both backends verify zk-cred-longfellow's committed interop
-proof, which google/longfellow-zk generated. For the same statement the isrg-rust proof is larger than
-the google proof (562228 versus 323868 bytes).
+The differential tests exchange proofs over every (prover backend, verifier backend) pair,
+across the committed v6 and v7 circuits at one to four attributes. Both backends verify the two
+proofs imported from zk-cred-longfellow's test vectors, which google/longfellow-zk generated.
+For the same statement the isrg-rust proof is larger than the google proof, about 562 kB against
+about 324 kB.
 
 zk-cred-longfellow is licensed MPL-2.0; see [Licensing](#licensing).
 
 ## Logging
 
-Upstream logs to stderr (not Python `logging`, and it exposes no callback to bridge). The one
-control is the **`PYLONGFELLOW_LOG_LEVEL`** environment variable, read **once** when the
-extension loads — there is no Python API and no runtime reconfiguration, following the
-`TF_CPP_MIN_LOG_LEVEL` / `GRPC_VERBOSITY` convention.
+google/longfellow-zk logs to stderr, not through Python `logging`, and exposes no callback to
+bridge. The **`PYLONGFELLOW_LOG_LEVEL`** environment variable sets its level, read **once** when
+the `_longfellow` extension loads, following the `TF_CPP_MIN_LOG_LEVEL` / `GRPC_VERBOSITY`
+convention. There is no Python API and no runtime reconfiguration.
 
 Values (case-insensitive): `error`, `warning`, `info`, `silent`. The default is `warning`,
 which hides upstream's per-call info output but keeps genuine errors and warnings.
@@ -226,8 +230,8 @@ pip install pylongfellow -C cmake.define.PYLONGFELLOW_BUILD_GOOGLE=OFF # isrg-ru
 ```
 
 The omitted backend raises `BackendUnavailableError` at first use; everything else works
-unchanged. A `PYLONGFELLOW_BUILD_GOOGLE=OFF` build needs no C++ toolchain and none of the apt
-packages above, only cargo.
+unchanged. A `PYLONGFELLOW_BUILD_GOOGLE=OFF` build needs cargo and none of the apt packages
+above. The CMake project enables C and C++, so a C++ compiler is still required to configure.
 
 [scikit-build-core](https://scikit-build-core.readthedocs.io/) drives the vendored CMake build
 and packages the cffi extension. The internal upstream object libraries are built
