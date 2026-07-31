@@ -98,18 +98,14 @@ docstrings and carries the exact types of every function.
 
 ## Development
 
-The vendored upstream is a standard CMake project. Prerequisites (Debian/Ubuntu):
-
-```
-sudo apt install -y cmake libssl-dev libzstd-dev libstdc++-13-dev libgtest-dev libbenchmark-dev
-git submodule update --init --recursive
-```
-
-The default `c++` (g++) works. The isrg-rust cdylib additionally needs cargo 1.85+
+The google-cpp backend needs the `vendor/longfellow-zk` submodule, a C++ compiler, and the
+Debian packages `cmake libssl-dev libzstd-dev libstdc++-13-dev libgtest-dev libbenchmark-dev`.
+The isrg-rust backend needs the `vendor/zk-cred-longfellow` submodule and cargo 1.85 or newer
 ([rustup](https://rustup.rs)). Build, test, lint, and type-check with
 [uv](https://docs.astral.sh/uv/):
 
 ```
+git submodule update --init --recursive
 uv sync                                   # builds both backends + dev group, writes uv.lock
 uv run pytest                             # fast suite
 uv run pytest -m "slow or not slow" --cov # full suite incl. real circuit generation
@@ -117,20 +113,8 @@ uv run ruff check . && uv run ruff format --check .
 uv run mypy
 ```
 
-The dev toolchain is uv (envs, lock), ruff (lint + format), mypy (strict), pytest, and mkdocs.
-
-[scikit-build-core](https://scikit-build-core.readthedocs.io/) drives the vendored CMake build
-and packages the cffi extension. The internal upstream object libraries are built
-position-independent and linked into a single shared object that cffi binds.
-
-Two gotchas worth knowing:
-
-- **`uv sync` won't rebuild on a C/C++-source-only change** — it keys off version and
-  dependencies, not native source mtimes, so it silently leaves the old `.so` installed. Force
-  it with `uv sync --reinstall-package pylongfellow`.
-- **Use a current `uv`.** A stale one can serve a Python alpha (e.g. 3.14.0a4) whose GC
-  segfaults at finalization after circuit generation; a shutdown `SIGSEGV` is the symptom.
-  Update `uv` and check the interpreter version first.
+Per-backend build layout and the known build gotchas are on the
+[development page](https://pylongfellow.readthedocs.io/en/stable/development/).
 
 ## API
 
