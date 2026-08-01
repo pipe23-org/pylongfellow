@@ -4,6 +4,17 @@ Each backend builds from its own submodule under `vendor/`.
 [scikit-build-core](https://scikit-build-core.readthedocs.io/) drives the CMake build and
 packages the result. The google-cpp backend binds through
 [cffi](https://cffi.readthedocs.io/); the isrg-rust backend through UniFFI.
+[uv](https://docs.astral.sh/uv/) owns the environment and the lock:
+
+```
+$ git submodule update --init --recursive
+$ uv sync                                   # builds both backends + dev group, writes uv.lock
+$ uv run pytest                             # fast suite
+$ uv run pytest -m "slow or not slow" --cov # full suite incl. real circuit generation
+$ uv run ruff check . && uv run ruff format --check .
+$ uv run mypy
+$ uv run mkdocs build --strict
+```
 
 ## google-cpp backend
 
@@ -42,17 +53,3 @@ about 4 minutes.
 A target with a static CRT drops the `cdylib` crate type, and cargo then succeeds without
 producing the library. musl targets need `RUSTFLAGS="-C target-feature=-crt-static"`; the
 build script fails with a named error when cargo produces no cdylib.
-
-## uv workflow
-
-[uv](https://docs.astral.sh/uv/) owns the environment and the lock:
-
-```
-$ git submodule update --init --recursive
-$ uv sync                                   # builds both backends + dev group, writes uv.lock
-$ uv run pytest                             # fast suite
-$ uv run pytest -m "slow or not slow" --cov # full suite incl. real circuit generation
-$ uv run ruff check . && uv run ruff format --check .
-$ uv run mypy
-$ uv run mkdocs build --strict
-```
