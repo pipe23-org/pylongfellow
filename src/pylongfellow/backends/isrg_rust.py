@@ -41,7 +41,7 @@ def _circuit_version(zk: Any, version: int) -> Any:
 
 
 def _fmt_timestamp(timestamp: datetime) -> str:
-    """Render timestamp as `YYYY-MM-DDTHH:MM:SSZ`, the form the circuit compares against."""
+    """Render timestamp as `YYYY-MM-DDTHH:MM:SSZ`."""
     return timestamp.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
