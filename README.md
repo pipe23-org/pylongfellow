@@ -62,4 +62,4 @@ The vendored backends are licensed as follows:
 - `google/longfellow-zk` — Apache-2.0
 - `abetterinternet/zk-cred-longfellow` — MPL-2.0
 
-`pylongfellow` is not affiliated with Google or the European Commission.
+`pylongfellow` is not affiliated with Google, ISRG, or the European Commission.
