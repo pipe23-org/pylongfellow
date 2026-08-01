@@ -1,4 +1,4 @@
-"""The Pylongfellow client: backend binding, registry resolution, and dispatch."""
+"""The Pylongfellow longfellow: backend binding, registry resolution, and dispatch."""
 
 import sys
 from datetime import UTC, datetime
@@ -60,14 +60,14 @@ class _RecordingBackend:
 
 
 def test_registry_name_resolves_to_singleton():
-    client = Pylongfellow(backend="google-cpp")
-    assert client.backend is google_cpp.BACKEND
+    longfellow = Pylongfellow(backend="google-cpp")
+    assert longfellow.backend is google_cpp.BACKEND
 
 
 def test_backend_instance_is_bound_and_probed():
     stub = _RecordingBackend()
-    client = Pylongfellow(backend=stub)
-    assert client.backend is stub
+    longfellow = Pylongfellow(backend=stub)
+    assert longfellow.backend is stub
     assert stub.calls == ["ensure_available"]
 
 
@@ -86,19 +86,19 @@ def test_construction_reports_unbuilt_google_extension(monkeypatch):
 
 def test_generate_circuit_routes_to_bound_backend():
     stub = _RecordingBackend()
-    client = Pylongfellow(backend=stub)
-    assert client.generate_circuit(_SPEC) == b""
+    longfellow = Pylongfellow(backend=stub)
+    assert longfellow.generate_circuit(_SPEC) == b""
     assert stub.calls == ["ensure_available", "generate_circuit"]
 
 
 def test_prove_and_verify_dispatch_through_handle_backend():
     # A handle loaded on one backend keeps its dispatch even on another
-    # client: prove/verify route through handle.backend, not client.backend.
+    # longfellow: prove/verify route through handle.backend, not longfellow.backend.
     loader, other = _RecordingBackend(), _RecordingBackend()
     handle = loader.load_circuit(_SPEC, b"")
-    client = Pylongfellow(backend=other)
-    client.prove(handle, b"", (1, 2), b"", [], _AWARE)
-    client.verify(handle, (1, 2), b"", [], _AWARE, b"", "doc")
+    longfellow = Pylongfellow(backend=other)
+    longfellow.prove(handle, b"", (1, 2), b"", [], _AWARE)
+    longfellow.verify(handle, (1, 2), b"", [], _AWARE, b"", "doc")
     assert loader.calls == ["load_circuit", "prove", "verify"]
     assert other.calls == ["ensure_available"]
 
@@ -107,28 +107,28 @@ def test_prove_rejects_naive_timestamp():
     # The tz-aware check sits above backend dispatch: prove is never reached.
     backend = _RecordingBackend()
     handle = backend.load_circuit(_SPEC, b"")
-    client = Pylongfellow(backend=backend)
+    longfellow = Pylongfellow(backend=backend)
     with pytest.raises(ValueError, match="timezone-aware"):
-        client.prove(handle, b"", (1, 2), b"", [], _NAIVE)
+        longfellow.prove(handle, b"", (1, 2), b"", [], _NAIVE)
     assert "prove" not in backend.calls
 
 
 def test_verify_rejects_naive_timestamp():
     backend = _RecordingBackend()
     handle = backend.load_circuit(_SPEC, b"")
-    client = Pylongfellow(backend=backend)
+    longfellow = Pylongfellow(backend=backend)
     with pytest.raises(ValueError, match="timezone-aware"):
-        client.verify(handle, (1, 2), b"", [], _NAIVE, b"", "doc")
+        longfellow.verify(handle, (1, 2), b"", [], _NAIVE, b"", "doc")
     assert "verify" not in backend.calls
 
 
-def test_handle_carries_spec(google_client, mdoc_eu_av):
-    handle = google_client.load_circuit(mdoc_eu_av.spec, mdoc_eu_av.circuit)
+def test_handle_carries_spec(google, mdoc_eu_av):
+    handle = google.load_circuit(mdoc_eu_av.spec, mdoc_eu_av.circuit)
     assert handle.spec is mdoc_eu_av.spec
     assert handle.state == mdoc_eu_av.circuit
 
 
-def test_load_circuit_rejects_hash_spec_mismatch(google_client, mdoc_eu_av):
+def test_load_circuit_rejects_hash_spec_mismatch(google, mdoc_eu_av):
     # A spec naming a different circuit than the bytes is rejected at load
     # (google-native identity check).
     wrong = google_cpp.find_zk_spec(
@@ -137,16 +137,16 @@ def test_load_circuit_rejects_hash_spec_mismatch(google_client, mdoc_eu_av):
     )
     assert wrong is not None
     with pytest.raises(ValueError, match="does not match the circuit"):
-        google_client.load_circuit(wrong, mdoc_eu_av.circuit)
+        google.load_circuit(wrong, mdoc_eu_av.circuit)
 
 
-def test_google_error_populates_code(google_client, proof_age_over_18):
+def test_google_error_populates_code(google, proof_age_over_18):
     inputs = proof_age_over_18
-    handle = google_client.load_circuit(inputs.spec, inputs.circuit)
+    handle = google.load_circuit(inputs.spec, inputs.circuit)
     bad_proof = bytearray(inputs.proof)
     bad_proof[len(bad_proof) // 2] ^= 0x01
     with pytest.raises(mdoc.VerifierError) as excinfo:
-        google_client.verify(
+        google.verify(
             handle,
             inputs.issuer_pk,
             inputs.transcript,
@@ -158,10 +158,10 @@ def test_google_error_populates_code(google_client, proof_age_over_18):
     assert isinstance(excinfo.value.code, mdoc.VerifierErrorCode)
 
 
-def test_device_namespaces_ignored_on_google_verify(google_client, proof_age_over_18):
+def test_device_namespaces_ignored_on_google_verify(google, proof_age_over_18):
     inputs = proof_age_over_18
-    handle = google_client.load_circuit(inputs.spec, inputs.circuit)
-    google_client.verify(
+    handle = google.load_circuit(inputs.spec, inputs.circuit)
+    google.verify(
         handle,
         inputs.issuer_pk,
         inputs.transcript,

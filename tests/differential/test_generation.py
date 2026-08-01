@@ -36,8 +36,8 @@ GENERATION_PARAMS = [pytest.param(circuit, id=circuit.stem) for circuit in _late
 
 @pytest.mark.slow
 @pytest.mark.parametrize("circuit", GENERATION_PARAMS)
-def test_generation(circuit: Circuit, client_for):
-    client = client_for("google-cpp")
+def test_generation(circuit: Circuit, longfellow_for):
+    longfellow = longfellow_for("google-cpp")
     spec = mdoc.CircuitSpec(
         system=str(circuit.sidecar["system"]),
         circuit_hash=circuit.circuit_id,
@@ -46,7 +46,7 @@ def test_generation(circuit: Circuit, client_for):
         block_enc_hash=int(circuit.sidecar["block_enc_hash"]),
         block_enc_sig=int(circuit.sidecar["block_enc_sig"]),
     )
-    generated = client.generate_circuit(spec)
+    generated = longfellow.generate_circuit(spec)
     assert google_cpp.circuit_id(generated) == circuit.circuit_id
     # The comparison is over decompressed bytes: the zstd envelope differs
     # between upstream's export pipeline and the runtime generate path (and

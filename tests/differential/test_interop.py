@@ -18,9 +18,9 @@ def _corrupted(proof: bytes) -> bytes:
     return bytes(flipped)
 
 
-def _verify(client, handle, case, proof: bytes) -> None:
+def _verify(longfellow, handle, case, proof: bytes) -> None:
     p = case.presentation
-    client.verify(
+    longfellow.verify(
         handle,
         p.issuer_pk,
         p.transcript,
@@ -33,28 +33,26 @@ def _verify(client, handle, case, proof: bytes) -> None:
 
 
 @pytest.mark.parametrize("case", VERIFY_PARAMS)
-def test_committed_proof(case: VerifyCase, client_for, handle_for):
-    client = client_for(case.verifier)
+def test_committed_proof(case: VerifyCase, longfellow_for, handle_for):
+    verifier = longfellow_for(case.verifier)
     handle = handle_for(case.verifier, case.circuit)
     proof = case.proof.path.read_bytes()
-    _verify(client, handle, case, proof)
+    _verify(verifier, handle, case, proof)
     with pytest.raises(mdoc.VerifierError):
-        _verify(client, handle, case, _corrupted(proof))
+        _verify(verifier, handle, case, _corrupted(proof))
 
 
 @pytest.mark.parametrize("case", ROUND_TRIP_PARAMS)
-def test_round_trip(case: RoundTripCase, client_for, handle_for):
+def test_round_trip(case: RoundTripCase, longfellow_for, handle_for):
     p = case.presentation
     mdoc_bytes = p.mdoc_bytes
     assert mdoc_bytes is not None  # a presentation without mdoc bytes is skipped as untestable
-    prover_client = client_for(case.prover)
+    prover = longfellow_for(case.prover)
     prove_handle = handle_for(case.prover, case.circuit)
-    proof = prover_client.prove(
-        prove_handle, mdoc_bytes, p.issuer_pk, p.transcript, p.attrs, p.timestamp
-    )
+    proof = prover.prove(prove_handle, mdoc_bytes, p.issuer_pk, p.transcript, p.attrs, p.timestamp)
     assert proof
-    verifier_client = client_for(case.verifier)
+    verifier = longfellow_for(case.verifier)
     verify_handle = handle_for(case.verifier, case.circuit)
-    _verify(verifier_client, verify_handle, case, proof)
+    _verify(verifier, verify_handle, case, proof)
     with pytest.raises(mdoc.VerifierError):
-        _verify(verifier_client, verify_handle, case, _corrupted(proof))
+        _verify(verifier, verify_handle, case, _corrupted(proof))

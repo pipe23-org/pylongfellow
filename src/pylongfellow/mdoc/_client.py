@@ -17,10 +17,10 @@ class Pylongfellow:
 
     Example:
         ```python
-        client = Pylongfellow(backend="google-cpp")
-        handle = client.load_circuit(spec, compressed)
-        proof = client.prove(handle, mdoc, issuer_pk, transcript, attrs, timestamp)
-        client.verify(handle, issuer_pk, transcript, attrs, timestamp, proof, doctype)
+        longfellow = Pylongfellow(backend="google-cpp")
+        handle = longfellow.load_circuit(spec, compressed)
+        proof = longfellow.prove(handle, mdoc, issuer_pk, transcript, attrs, timestamp)
+        longfellow.verify(handle, issuer_pk, transcript, attrs, timestamp, proof, doctype)
         ```
 
     Attributes:

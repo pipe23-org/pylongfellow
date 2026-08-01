@@ -265,8 +265,8 @@ UNTESTABLE_CELLS = tuple(
 
 
 @pytest.fixture(scope="session")
-def client_for() -> Callable[[str], Pylongfellow]:
-    """Return a session-cached client for a registry name, skipping if unbuilt."""
+def longfellow_for() -> Callable[[str], Pylongfellow]:
+    """Return a session-cached Pylongfellow for a registry name, skipping if unbuilt."""
     cache: dict[str, Pylongfellow | None] = {}
 
     def get(name: str) -> Pylongfellow:
@@ -275,17 +275,17 @@ def client_for() -> Callable[[str], Pylongfellow]:
                 cache[name] = Pylongfellow(backend=name)
             except BackendUnavailableError:
                 cache[name] = None
-        client = cache[name]
-        if client is None:
+        longfellow = cache[name]
+        if longfellow is None:
             pytest.skip(f"{name} backend not built")
-        return client
+        return longfellow
 
     return get
 
 
 @pytest.fixture(scope="session")
 def handle_for(
-    client_for: Callable[[str], Pylongfellow],
+    longfellow_for: Callable[[str], Pylongfellow],
 ) -> Callable[[str, Circuit], mdoc.CircuitHandle]:
     """Return a session-cached CircuitHandle for (registry name, corpus circuit).
 
@@ -297,7 +297,7 @@ def handle_for(
     def get(name: str, circuit: Circuit) -> mdoc.CircuitHandle:
         key = (name, circuit.stem)
         if key not in cache:
-            client = client_for(name)
+            longfellow = longfellow_for(name)
             spec = mdoc.CircuitSpec(
                 system=str(circuit.sidecar["system"]),
                 circuit_hash=circuit.circuit_id,
@@ -306,7 +306,7 @@ def handle_for(
                 block_enc_hash=int(circuit.sidecar["block_enc_hash"]),
                 block_enc_sig=int(circuit.sidecar["block_enc_sig"]),
             )
-            cache[key] = client.load_circuit(spec, circuit.path.read_bytes())
+            cache[key] = longfellow.load_circuit(spec, circuit.path.read_bytes())
         return cache[key]
 
     return get

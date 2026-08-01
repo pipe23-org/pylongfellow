@@ -163,29 +163,25 @@ def vendored_vector() -> VendoredVector:
 
 
 @pytest.fixture(scope="session")
-def google_client() -> Pylongfellow:
+def google() -> Pylongfellow:
     return Pylongfellow(backend="google-cpp")
 
 
 @pytest.fixture(scope="session")
-def isrg_rust_client() -> Pylongfellow:
+def isrg() -> Pylongfellow:
     return Pylongfellow(backend="isrg-rust")
 
 
 @pytest.fixture(scope="session")
-def isrg_rust_handle(
-    isrg_rust_client: Pylongfellow, vendored_vector: VendoredVector
-) -> mdoc.CircuitHandle:
-    return isrg_rust_client.load_circuit(vendored_vector.spec, vendored_vector.compressed)
+def isrg_handle(isrg: Pylongfellow, vendored_vector: VendoredVector) -> mdoc.CircuitHandle:
+    return isrg.load_circuit(vendored_vector.spec, vendored_vector.compressed)
 
 
 @pytest.fixture(scope="session")
-def isrg_rust_proof(
-    isrg_rust_client: Pylongfellow,
-    isrg_rust_handle: mdoc.CircuitHandle,
+def isrg_proof(
+    isrg: Pylongfellow,
+    isrg_handle: mdoc.CircuitHandle,
     vendored_vector: VendoredVector,
 ) -> bytes:
     v = vendored_vector
-    return isrg_rust_client.prove(
-        isrg_rust_handle, v.mdoc_bytes, v.issuer_pk, v.transcript, v.attrs, v.timestamp
-    )
+    return isrg.prove(isrg_handle, v.mdoc_bytes, v.issuer_pk, v.transcript, v.attrs, v.timestamp)
