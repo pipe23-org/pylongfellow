@@ -298,9 +298,7 @@ def create_presentation(name: str) -> None:
 
     The credential comes from mdoc.testing.create_credential; the
     presentation.json fields are read from it with the same helpers the capture
-    paths use. No deployed wallet produces a non-empty device-namespace map, so
-    this presentation cannot be captured; it exists to put that boundary in the
-    test matrix.
+    paths use.
     """
     doc_type = "eu.europa.ec.av.1"
     claims = {"eu.europa.ec.av.1": {"age_over_18": True}}
