@@ -5,7 +5,7 @@ build-backend = "scikit_build_core.build"
 [project]
 name = "pylongfellow"
 version = "0.4.0"
-description = "Python interface to libraries implementing Longfellow zero-knowledge proofs over ISO 18013-5 mdoc credentials"
+description = "Python interface to implementations of Longfellow zero-knowledge proofs over ISO 18013-5 mdoc credentials"
 readme = "README.md"
 requires-python = ">=3.11"
 # Composite expression: the wheel carries our Apache-2.0 code plus the compiled

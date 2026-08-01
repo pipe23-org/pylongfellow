@@ -1,7 +1,7 @@
 site_name: pylongfellow
 watch:
   - src
-site_description: Python interface to libraries implementing Longfellow zero-knowledge proofs over ISO 18013-5 mdoc credentials
+site_description: Python interface to implementations of Longfellow zero-knowledge proofs over ISO 18013-5 mdoc credentials
 repo_url: https://github.com/pipe23-org/pylongfellow
 
 theme:
