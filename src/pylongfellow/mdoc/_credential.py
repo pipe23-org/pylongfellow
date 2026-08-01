@@ -152,8 +152,7 @@ def sign_device_authentication(
             ``deviceSigned.nameSpaces``: tag 24 over the encoded namespace map.
 
     Returns:
-        The raw 64-byte ``r || s`` signature, the fourth element of
-        ``deviceAuth.deviceSignature``.
+        The raw 64-byte ``r || s`` signature, the fourth element of ``deviceAuth.deviceSignature``.
     """
     payload = _device_authentication_bytes(transcript, doc_type, device_namespaces)
     return _cose_sign(device_key, payload)
@@ -280,8 +279,7 @@ def create_credential(
             generated when None.
 
     Returns:
-        The credential bytes together with the keys and certificate that
-        signed them.
+        The credential bytes together with the keys and certificate that signed them.
 
     Raises:
         ValueError: `valid_from` or `valid_until` is naive.

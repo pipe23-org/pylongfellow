@@ -57,7 +57,7 @@ class Pylongfellow:
 
         Returns:
             A handle to pass to [`prove`][pylongfellow.Pylongfellow.prove]
-            and [`verify`][pylongfellow.Pylongfellow.verify].
+                and [`verify`][pylongfellow.Pylongfellow.verify].
 
         Raises:
             ValueError: `spec` is rejected by the backend, e.g. it is not

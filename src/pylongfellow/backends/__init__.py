@@ -113,8 +113,8 @@ def get_backend(name: str) -> Backend:
         name: Registry name, one of `google-cpp` or `isrg-rust`.
 
     Returns:
-        The backend singleton. Availability is not checked here; construction
-        of [`Pylongfellow`][pylongfellow.Pylongfellow] probes it.
+        The backend singleton. [`Pylongfellow`][pylongfellow.Pylongfellow]
+            checks availability at construction.
 
     Raises:
         ValueError: `name` is not a registered backend name.
