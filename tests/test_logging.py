@@ -1,4 +1,4 @@
-"""PYLONGFELLOW_LOG_LEVEL sets upstream's stderr level at load (default WARNING).
+"""PYLONGFELLOW_GOOGLE_CPP_LOG_LEVEL sets upstream's stderr level at load (default WARNING).
 
 Read once in a load-time constructor, so each value needs its own process: every
 test re-runs this file as a subprocess with the env controlled. "ms]" is upstream's
@@ -18,9 +18,9 @@ from pylongfellow.backends.google_cpp import find_zk_spec
 
 
 def _stderr(level: str | None) -> str:
-    env = {k: v for k, v in os.environ.items() if k != "PYLONGFELLOW_LOG_LEVEL"}
+    env = {k: v for k, v in os.environ.items() if k != "PYLONGFELLOW_GOOGLE_CPP_LOG_LEVEL"}
     if level is not None:
-        env["PYLONGFELLOW_LOG_LEVEL"] = level
+        env["PYLONGFELLOW_GOOGLE_CPP_LOG_LEVEL"] = level
     result = subprocess.run(  # noqa: S603 - our own interpreter re-running this file
         [sys.executable, __file__], env=env, capture_output=True, text=True, check=False
     )
