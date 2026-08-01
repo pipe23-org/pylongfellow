@@ -26,6 +26,8 @@ class RequestedAttribute:
 class CircuitSpec:
     """A circuit's identity, agreed between prover and verifier.
 
+    Constructed directly, or looked up from a spec table.
+
     Attributes:
         system: ZK system name and version (e.g. `longfellow-libzk-v*`).
         circuit_hash: SHA-256 (hex) pinning which circuit this is.
