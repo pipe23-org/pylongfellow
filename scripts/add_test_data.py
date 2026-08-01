@@ -294,13 +294,13 @@ def import_proof(
 
 
 def create_presentation(name: str) -> None:
-    """Create a credential with non-empty device namespaces and write its presentation."""
+    """Create a presentation with non-empty device namespaces and write it."""
     doc_type = "eu.europa.ec.av.1"
     claims = {"eu.europa.ec.av.1": {"age_over_18": True}}
     device_namespaces = {"eu.europa.ec.av.1": {"specimen": "non-empty device namespaces"}}
     handover = hashlib.sha256(b"pylongfellow constructed specimen").digest()
     transcript = cbor2.dumps([None, None, ["dcapi", handover]])
-    created = testing.create_credential(
+    created = testing.create_presentation(
         doc_type,
         claims,
         transcript,

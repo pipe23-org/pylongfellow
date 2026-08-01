@@ -35,7 +35,7 @@ LongfellowError
 
 ### Functions
 
-::: pylongfellow.mdoc.testing.create_credential
+::: pylongfellow.mdoc.testing.create_presentation
 ::: pylongfellow.mdoc.testing.create_certificate
 ::: pylongfellow.mdoc.testing.sign_device_authentication
 ::: pylongfellow.mdoc.testing.verify_device_authentication

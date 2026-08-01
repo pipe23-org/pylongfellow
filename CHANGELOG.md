@@ -17,8 +17,9 @@ docs to the PyPI project page.
   there from `pylongfellow.mdoc`. Imports change. `CreatedCredential` is renamed
   `PresentationSpecimen`: its `mdoc` field holds a `DeviceResponse` bound to the transcript
   passed at creation. The `issuer_key` field and the `issuer_pk` property are replaced by the
-  field `issuer_public_key`, the `(x, y)` tuple `prove` and `verify` take. There is no
-  compatibility shim.
+  field `issuer_public_key`, the `(x, y)` tuple `prove` and `verify` take. `create_credential`
+  is renamed `create_presentation`: it assembles and signs a `DeviceResponse`, and the name
+  follows the artifact. There is no compatibility shim.
 - **Breaking: `PYLONGFELLOW_GOOGLE_CPP_LOG_LEVEL`** — replaces `PYLONGFELLOW_LOG_LEVEL`. The
   variable configures the google-cpp backend only and the old name claimed package scope. There
   is no compatibility shim.

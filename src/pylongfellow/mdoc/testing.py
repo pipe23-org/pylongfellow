@@ -1,4 +1,4 @@
-"""Helpers that build test credentials under locally held keys.
+"""Helpers that build test presentations under locally held keys.
 
 An mdoc ``DeviceResponse`` is assembled and signed without loading a backend.
 """
@@ -184,14 +184,14 @@ def verify_device_authentication(mdoc: bytes, transcript: bytes) -> None:
         raise Error("device signature does not verify over the transcript") from e
 
 
-def _check_issuer_auth(credential: bytes) -> None:
+def _check_issuer_auth(presentation: bytes) -> None:
     """Verify the issuer signature against the embedded certificate.
 
-    Decodes the credential back the way a consumer would, so a certificate that
-    does not certify the signing key, or drift between encode and decode,
+    Decodes the presentation back the way a consumer would, so a certificate
+    that does not certify the signing key, or drift between encode and decode,
     fails here.
     """
-    issuer_auth = cbor2.loads(credential)["documents"][0]["issuerSigned"]["issuerAuth"]
+    issuer_auth = cbor2.loads(presentation)["documents"][0]["issuerSigned"]["issuerAuth"]
     certificate = x509.load_der_x509_certificate(issuer_auth[1][33])
     public = certificate.public_key()
     if not isinstance(public, ec.EllipticCurvePublicKey):
@@ -221,7 +221,7 @@ class PresentationSpecimen:
     device_key: ec.EllipticCurvePrivateKey
 
 
-def create_credential(
+def create_presentation(
     doc_type: str,
     claims: Mapping[str, Mapping[str, object]],
     transcript: bytes,
@@ -233,7 +233,7 @@ def create_credential(
     device_key: ec.EllipticCurvePrivateKey | None = None,
     issuer_certificate: x509.Certificate | None = None,
 ) -> PresentationSpecimen:
-    """Create a test mdoc credential under locally held keys.
+    """Create a presentation under locally held keys.
 
     Assembles an ISO 18013-5 ``DeviceResponse`` holding one document. The
     claims are issuer-signed into an MSO. The device signature covers the
@@ -334,7 +334,7 @@ def create_credential(
         device_key, transcript, doc_type, device_namespaces_item
     )
 
-    credential = cbor2.dumps(
+    presentation = cbor2.dumps(
         {
             "version": "1.0",
             "documents": [
@@ -365,9 +365,9 @@ def create_credential(
             "status": 0,
         }
     )
-    _check_issuer_auth(credential)
-    verify_device_authentication(credential, transcript)
+    _check_issuer_auth(presentation)
+    verify_device_authentication(presentation, transcript)
     issuer_numbers = issuer_key.public_key().public_numbers()
     return PresentationSpecimen(
-        credential, (issuer_numbers.x, issuer_numbers.y), issuer_certificate, device_key
+        presentation, (issuer_numbers.x, issuer_numbers.y), issuer_certificate, device_key
     )
