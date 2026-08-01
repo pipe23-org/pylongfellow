@@ -7,9 +7,7 @@ credentials.
 Two backends are supported:
 
 - [`google/longfellow-zk`](https://github.com/google/longfellow-zk)
-  (vendored at [v0.9](https://github.com/google/longfellow-zk/commit/fe83ec6c4efa5f98bc2439c8b06e5eccd153aca0))
 - [`abetterinternet/zk-cred-longfellow`](https://github.com/abetterinternet/zk-cred-longfellow)
-  (vendored at [`4f3d1b3`](https://github.com/abetterinternet/zk-cred-longfellow/commit/4f3d1b3fc6818901f8e532b20daa3e9faf6d3b57))
 
 The package is experimental and unstable.
 
