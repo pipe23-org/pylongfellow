@@ -1,9 +1,8 @@
 """A Python interface to implementations of Longfellow zero-knowledge mdoc proofs.
 
-The proofs cover ISO 18013-5 mdoc credentials.
-[`Pylongfellow`][pylongfellow.Pylongfellow] is the entry point, bound to one backend
-(`google-cpp` or `isrg-rust`) at construction. `pylongfellow.mdoc` holds the data types,
-errors, and credential helpers.
+A [`Pylongfellow`][pylongfellow.Pylongfellow] selects an implementation (`google-cpp` or
+`isrg-rust`) at construction. `pylongfellow.mdoc` holds the data types, errors, and
+credential helpers.
 """
 
 from importlib.metadata import version

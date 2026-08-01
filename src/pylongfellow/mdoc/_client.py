@@ -13,16 +13,16 @@ if TYPE_CHECKING:
 
 
 class Pylongfellow:
-    """A client bound to one backend; every circuit operation routes through it.
+    """Circuit operations over one implementation, selected at construction.
 
     Attributes:
-        backend: The bound [`Backend`][pylongfellow.backends.Backend].
+        backend: The selected [`Backend`][pylongfellow.backends.Backend].
     """
 
     backend: Backend
 
     def __init__(self, *, backend: str | Backend) -> None:
-        """Bind a backend and probe its availability.
+        """Select a backend and probe its availability.
 
         Args:
             backend: Registry name (`google-cpp` or `isrg-rust`) or a Backend
