@@ -33,7 +33,7 @@ LongfellowError
 
 ## `pylongfellow.mdoc.testing`
 
-The helpers build test credentials under locally held keys and run without a backend.
+The helpers build test credentials under locally held keys.
 
 ### Functions
 
