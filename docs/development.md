@@ -30,14 +30,15 @@ and links them into one shared object.
 ## isrg-rust backend
 
 The backend compiles `abetterinternet/zk-cred-longfellow` from the `vendor/zk-cred-longfellow`
-submodule and binds it through UniFFI. Prerequisites are cargo 1.85 or newer, from
+submodule and binds it through UniFFI. Prerequisites are cargo, from
 [rustup](https://rustup.rs), and the submodule:
 
 ```
 git submodule update --init vendor/zk-cred-longfellow
 ```
 
-The vendored crate is edition 2024, which sets the cargo floor at 1.85.
+The vendored crate's edition sets the cargo floor; check `edition` in
+`vendor/zk-cred-longfellow/Cargo.toml` after a submodule bump.
 `scripts/build_isrg_rust_backend.py` runs `cargo build --release --features uniffi` and
 `uniffi-bindgen`, then stages `zk_cred_longfellow.py` and `libzk_cred_longfellow.so` into
 `src/pylongfellow/backends/_zk_cred/`, which is gitignored. The script finds cargo on `PATH`,
@@ -82,12 +83,3 @@ uv run mkdocs build --strict
 imported at run time. Coverage is gated at 100% branch coverage and is only reachable with the
 full suite: `generate_circuit`'s path runs in a `slow`-marked test. The dev toolchain is uv
 (envs, lock), ruff (lint + format), mypy (strict), pytest, and mkdocs.
-
-## Build gotchas
-
-- **`uv sync` won't rebuild on a C/C++-source-only change.** It keys off version and
-  dependencies, not native source mtimes, so it leaves the old `.so` installed. Force it with
-  `uv sync --reinstall-package pylongfellow`.
-- **Use a current `uv`.** A stale one can serve a Python alpha (e.g. 3.14.0a4) whose GC
-  segfaults at finalization after circuit generation; a shutdown `SIGSEGV` is the symptom.
-  Update `uv` and check the interpreter version first.
