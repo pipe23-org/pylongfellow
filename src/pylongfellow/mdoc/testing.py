@@ -235,7 +235,7 @@ def create_presentation(
 ) -> PresentationSpecimen:
     """Create a presentation under locally held keys.
 
-    Assembles an ISO 18013-5 ``DeviceResponse`` holding one document. The
+    Assembles a ``DeviceResponse`` holding one document. The
     claims are issuer-signed into an MSO. The device signature covers the
     transcript, the doctype, and the device namespaces. Both signatures are
     verified before returning.
