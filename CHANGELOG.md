@@ -2,13 +2,16 @@
 
 ## Unreleased
 
-Breaking rename and a documentation overhaul. The release carries the rewritten README and
+Breaking renames and a documentation overhaul. The release carries the rewritten README and
 docs to the PyPI project page.
 
 - **Breaking: `Pylongfellow.load_circuit(spec, circuit)`** — the second parameter was named
   `compressed`. The API has no uncompressed circuit, so the name said nothing. Keyword
   callers change; positional callers do not. The `Backend` protocol renames the same
   parameter.
+- **Breaking: `PYLONGFELLOW_GOOGLE_CPP_LOG_LEVEL`** — replaces `PYLONGFELLOW_LOG_LEVEL`. The
+  variable configures the google-cpp backend only and the old name claimed package scope. There
+  is no compatibility shim.
 - The distribution `description` reads "Python interface to implementations of Longfellow
   zero-knowledge proofs over ISO 18013-5 mdoc credentials". The package docstring, the docs
   landing page, and the mkdocs `site_description` carry the same sentence.
@@ -16,8 +19,7 @@ docs to the PyPI project page.
   Upstream, API, Backends, Status, and Configuration sections move to the docs site, the
   code, or the tracker.
 - The API reference renders per-backend behaviour from the docstrings; the development page
-  opens with the dev-loop commands; `PYLONGFELLOW_LOG_LEVEL` is documented as affecting the
-  google-cpp backend only.
+  opens with the dev-loop commands.
 - Examples and tests name instances `longfellow`, `prover`, and `verifier`; `client` is
   gone from the documentation vocabulary.
 - The `Documentation` project URL now points at

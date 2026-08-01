@@ -1,11 +1,10 @@
 // Set upstream's stderr log level once, when the extension loads.
 //
 // Upstream logs to stderr through proofs::set_log_level (util/log.h), a C++
-// symbol in `namespace proofs` (not part of the extern "C" mdoc_zk.h ABI). We
-// don't expose a Python knob — instead, following the TF_CPP_MIN_LOG_LEVEL /
-// GRPC_VERBOSITY convention, the level is read once from the PYLONGFELLOW_LOG_LEVEL
-// environment variable when the extension's shared object loads. Set-once: there
-// is no runtime reconfiguration.
+// symbol in `namespace proofs` (not part of the extern "C" mdoc_zk.h ABI). The
+// level is read once from the PYLONGFELLOW_GOOGLE_CPP_LOG_LEVEL environment
+// variable when the extension's shared object loads; there is no runtime
+// reconfiguration and no Python API.
 //
 // The attribute puts this function's address in .init_array; the dynamic loader
 // calls it during dlopen (inside the binding's first extension import), before
@@ -22,7 +21,7 @@
 #include "util/log.h"
 
 __attribute__((constructor)) static void init_log_level(void) {
-  const char* v = std::getenv("PYLONGFELLOW_LOG_LEVEL");
+  const char* v = std::getenv("PYLONGFELLOW_GOOGLE_CPP_LOG_LEVEL");
   if (v == nullptr || strcasecmp(v, "warning") == 0) {
     proofs::set_log_level(proofs::WARNING);
   } else if (strcasecmp(v, "error") == 0) {
