@@ -30,6 +30,7 @@ import cbor2
 import pylongfellow.mdoc as mdoc
 from pylongfellow import Pylongfellow
 from pylongfellow.backends import google_cpp
+from pylongfellow.mdoc import testing
 
 ROOT = Path(__file__).resolve().parent.parent
 VENDOR = ROOT / "vendor" / "longfellow-zk"
@@ -295,7 +296,7 @@ def import_proof(
 def create_presentation(name: str) -> None:
     """Create a credential with non-empty device namespaces and write its presentation.
 
-    The credential comes from mdoc.create_credential with fresh keys; every
+    The credential comes from mdoc.testing.create_credential with fresh keys; every
     presentation.json field is then extracted back out of the credential's own
     bytes through the same helpers the capture paths use. No deployed wallet
     produces a non-empty device-namespace map, so this presentation cannot be
@@ -306,7 +307,7 @@ def create_presentation(name: str) -> None:
     device_namespaces = {"eu.europa.ec.av.1": {"specimen": "non-empty device namespaces"}}
     handover = hashlib.sha256(b"pylongfellow constructed specimen").digest()
     transcript = cbor2.dumps([None, None, ["dcapi", handover]])
-    created = mdoc.create_credential(
+    created = testing.create_credential(
         doc_type,
         claims,
         transcript,

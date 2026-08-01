@@ -7,22 +7,11 @@
 
 ## `pylongfellow.mdoc`
 
-The credential helpers build test credentials under locally held keys and run without a
-backend.
-
-### Functions
-
-::: pylongfellow.mdoc.create_credential
-::: pylongfellow.mdoc.create_certificate
-::: pylongfellow.mdoc.sign_device_authentication
-::: pylongfellow.mdoc.verify_device_authentication
-
 ### Data types
 
 ::: pylongfellow.mdoc.CircuitHandle
 ::: pylongfellow.mdoc.RequestedAttribute
 ::: pylongfellow.mdoc.CircuitSpec
-::: pylongfellow.mdoc.CreatedCredential
 
 ### Errors
 
@@ -41,6 +30,21 @@ LongfellowError
 ::: pylongfellow.mdoc.ProverErrorCode
 ::: pylongfellow.mdoc.VerifierErrorCode
 ::: pylongfellow.mdoc.CircuitGenerationErrorCode
+
+## `pylongfellow.mdoc.testing`
+
+The helpers build test credentials under locally held keys and run without a backend.
+
+### Functions
+
+::: pylongfellow.mdoc.testing.create_credential
+::: pylongfellow.mdoc.testing.create_certificate
+::: pylongfellow.mdoc.testing.sign_device_authentication
+::: pylongfellow.mdoc.testing.verify_device_authentication
+
+### Data types
+
+::: pylongfellow.mdoc.testing.CreatedCredential
 
 ## `pylongfellow.backends`
 

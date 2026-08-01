@@ -1,8 +1,7 @@
-"""Test-credential construction: an mdoc DeviceResponse issued under locally held keys.
+"""Test credentials issued under locally held keys.
 
-Everything in this module runs on `cryptography` and `cbor2` alone; no ZK backend is
-loaded or called. Whether a backend can prove or verify over a created credential is a
-property of that backend.
+An mdoc ``DeviceResponse`` is assembled and signed without loading a backend. Whether a
+backend can prove or verify over a created credential is a property of that backend.
 """
 
 import hashlib
@@ -206,7 +205,7 @@ def _check_issuer_auth(credential: bytes) -> None:
 
 @dataclass(frozen=True)
 class CreatedCredential:
-    """A credential from [`create_credential`][pylongfellow.mdoc.create_credential].
+    """A credential from [`create_credential`][pylongfellow.mdoc.testing.create_credential].
 
     Attributes:
         mdoc: CBOR-encoded ``DeviceResponse`` bytes.
@@ -255,7 +254,7 @@ def create_credential(
         transcript: CBOR-encoded session transcript the device signature is
             bound to. Presenting under another transcript requires re-signing,
             see
-            [`sign_device_authentication`][pylongfellow.mdoc.sign_device_authentication].
+            [`sign_device_authentication`][pylongfellow.mdoc.testing.sign_device_authentication].
         valid_from: MSO ``signed``/``validFrom`` timestamp, and the generated
             certificate's window start; timezone-aware.
         valid_until: MSO ``validUntil`` timestamp, and the generated
