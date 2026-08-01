@@ -39,7 +39,7 @@ class CircuitHandle:
 
 
 class Backend(Protocol):
-    """A proving and verifying implementation for longfellow mdoc circuits."""
+    """The operations a backend provides."""
 
     name: str
     can_generate: bool
