@@ -82,8 +82,8 @@ class Pylongfellow:
     ) -> bytes:
         """Prove the requested attributes hold over the mdoc, bound to the transcript.
 
-        Dispatches through the handle's backend, which may differ from the
-        client's when the handle was loaded elsewhere.
+        Runs on the handle's backend, which may differ from this instance's
+        when the handle was loaded elsewhere.
 
         Args:
             handle: A CircuitHandle from
@@ -122,8 +122,8 @@ class Pylongfellow:
     ) -> None:
         """Verify a proof that the requested attributes hold, against the transcript.
 
-        Dispatches through the handle's backend, which may differ from the
-        client's when the handle was loaded elsewhere.
+        Runs on the handle's backend, which may differ from this instance's
+        when the handle was loaded elsewhere.
 
         Args:
             handle: A CircuitHandle from
@@ -135,8 +135,8 @@ class Pylongfellow:
             timestamp: Timezone-aware verification time.
             proof: Proof bytes from [`prove`][pylongfellow.Pylongfellow.prove].
             doctype: mdoc doctype the proof is scoped to.
-            device_namespaces: Inner bytes of the tag-24 DeviceNameSpacesBytes,
-                required by the isrg-rust backend; ignored by the google-cpp backend.
+            device_namespaces: Inner bytes of the tag-24 DeviceNameSpacesBytes;
+                required by the isrg-rust backend.
 
         Raises:
             ValueError: `timestamp` is naive; `len(attrs)` does not match
