@@ -54,7 +54,8 @@ LongfellowError
 The backend SPI. A `Backend` implements load, generate, prove, and verify for one longfellow
 implementation; `Pylongfellow` binds one at construction, by registry name (`google-cpp`,
 `isrg-rust`) or instance. `prove` and `verify` dispatch through the backend a circuit was
-loaded into: the `CircuitHandle` carries it, so a handle works on any client.
+loaded into: the `CircuitHandle` carries it, so a handle works on any client. A backend whose
+native piece is not installed raises `BackendUnavailableError`.
 
 ::: pylongfellow.backends.Backend
 ::: pylongfellow.backends.get_backend
