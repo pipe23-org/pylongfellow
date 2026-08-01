@@ -65,10 +65,9 @@ Binds the vendored google/longfellow-zk C++ library through cffi.
 ### Logging
 
 **`PYLONGFELLOW_GOOGLE_CPP_LOG_LEVEL`** sets the stderr log level of google/longfellow-zk, read
-once when the `_longfellow` extension loads, following the `TF_CPP_MIN_LOG_LEVEL` /
-`GRPC_VERBOSITY` convention. Values (case-insensitive): `error`, `warning`, `info`, `silent`.
-The default is `warning`, which hides upstream's per-call info output but keeps genuine errors
-and warnings.
+once when the `_longfellow` extension loads. Values (case-insensitive): `error`, `warning`,
+`info`, `silent`. The default is `warning`, which hides upstream's per-call info output but
+keeps genuine errors and warnings.
 
 google/longfellow-zk logs to stderr, not through Python `logging`, and exposes no callback to
 bridge. There is no Python API and no runtime reconfiguration. The isrg-rust backend emits no
