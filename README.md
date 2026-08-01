@@ -1,15 +1,16 @@
 # pylongfellow
 
-`pylongfellow` is a Python binding for the Longfellow zero-knowledge scheme, which proves
-attributes of an ISO 18013-5 mdoc credential without revealing the credential. Two backends
-implement the scheme behind one client interface: `google/longfellow-zk` (C++, bound through
-[cffi](https://cffi.readthedocs.io/)) and `abetterinternet/zk-cred-longfellow` (Rust, ISRG,
-bound through UniFFI). Both ship in every wheel, and a client names one at construction. The
-binding is attribute-agnostic: it proves and verifies `(namespace, id, cbor_value)` statements
-over an mdoc and has no notion of what any attribute means. `age_over_18` is the attribute the
-examples and tests use. The scheme is described in
-[*Anonymous credentials from ECDSA*](https://eprint.iacr.org/2024/2010). It is experimental and
-unstable.
+`pylongfellow` provides a single Python interface to libraries that implement
+[Longfellow](https://eprint.iacr.org/2024/2010) zero-knowledge proofs over ISO 18013-5 mdoc
+credentials.
+
+Two backends are supported:
+[`google/longfellow-zk`](https://github.com/google/longfellow-zk) (C++, bound through
+[cffi](https://cffi.readthedocs.io/)) and
+[`abetterinternet/zk-cred-longfellow`](https://github.com/abetterinternet/zk-cred-longfellow)
+(Rust, ISRG, bound through UniFFI). A client is bound to one at construction.
+
+The package is experimental and unstable.
 
 [![CI](https://github.com/pipe23-org/pylongfellow/actions/workflows/ci.yml/badge.svg)](https://github.com/pipe23-org/pylongfellow/actions/workflows/ci.yml)
 [![Docs](https://app.readthedocs.org/projects/pylongfellow/badge/?version=stable)](https://pylongfellow.readthedocs.io/en/stable/)
