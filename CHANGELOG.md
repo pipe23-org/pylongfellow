@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+Metadata and documentation release. The package code is unchanged from 0.4.0; the release
+carries the corrected README and reference docs to the PyPI project page.
+
+- The distribution `description` now reads "Python binding for the Longfellow zero-knowledge
+  mdoc scheme, over C++ and Rust backends", replacing "Thin Python binding to Google's
+  Longfellow zero-knowledge mdoc library", which predated the second backend
+  ([#34](https://github.com/pipe23-org/pylongfellow/pull/34)).
+- The `Documentation` project URL now points at
+  `https://pylongfellow.readthedocs.io/en/stable/`, replacing the Read the Docs root, which
+  serves the `latest` build of `main`
+  ([#34](https://github.com/pipe23-org/pylongfellow/pull/34)).
+
 ## 0.4.0
 
 Every wheel now ships both backends. The isrg-rust cdylib (abetterinternet/zk-cred-longfellow,
