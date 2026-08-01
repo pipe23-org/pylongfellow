@@ -1,8 +1,8 @@
 """A Python interface to implementations of Longfellow zero-knowledge mdoc proofs.
 
-[`Pylongfellow`][pylongfellow.Pylongfellow], constructed with an implementation
-(`google-cpp` or `isrg-rust`), provides functions for proving, verifying, and
-circuit generation.
+[`Pylongfellow`][pylongfellow.Pylongfellow] is constructed with a choice of backend
+(`google-cpp` or `isrg-rust`). It provides functions for proving, verifying, and circuit
+generation.
 """
 
 from importlib.metadata import version
