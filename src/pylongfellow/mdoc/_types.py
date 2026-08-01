@@ -26,8 +26,7 @@ class RequestedAttribute:
 class CircuitSpec:
     """A circuit's identity, agreed between prover and verifier.
 
-    Every backend reads `version` and `num_attributes`; the google-cpp backend
-    additionally requires the whole record to match its compiled-in spec table.
+    Constructed directly, or looked up from a spec table.
 
     Attributes:
         system: ZK system name and version (e.g. `longfellow-libzk-v*`).

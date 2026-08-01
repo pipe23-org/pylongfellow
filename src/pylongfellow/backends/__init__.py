@@ -23,7 +23,7 @@ class BackendUnavailableError(LongfellowError):
 
 @dataclass(frozen=True)
 class CircuitHandle:
-    """A circuit loaded by a backend, ready for prove and verify.
+    """A circuit loaded by a backend.
 
     Attributes:
         spec: The CircuitSpec the circuit was loaded against.
@@ -47,11 +47,11 @@ class Backend(Protocol):
     def ensure_available(self) -> None:
         """Raise BackendUnavailableError unless the backend's native dependency is built."""
 
-    def load_circuit(self, spec: CircuitSpec, compressed: bytes) -> CircuitHandle:
-        """Bind a compressed circuit to this backend as a CircuitHandle."""
+    def load_circuit(self, spec: CircuitSpec, circuit: bytes) -> CircuitHandle:
+        """Load a circuit and return a CircuitHandle."""
 
     def generate_circuit(self, spec: CircuitSpec) -> bytes:
-        """Generate the compressed circuit named by spec."""
+        """Generate the circuit named by spec."""
 
     def prove(
         self,
@@ -64,7 +64,8 @@ class Backend(Protocol):
     ) -> bytes:
         """Prove the requested attributes over the mdoc, bound to the transcript.
 
-        `timestamp` is timezone-aware; the client rejects naive datetimes before dispatch.
+        `timestamp` is timezone-aware. `Pylongfellow` rejects naive datetimes before the
+        backend is called.
         """
 
     def verify(
@@ -80,7 +81,8 @@ class Backend(Protocol):
     ) -> None:
         """Verify a proof of the requested attributes against the transcript.
 
-        `timestamp` is timezone-aware; the client rejects naive datetimes before dispatch.
+        `timestamp` is timezone-aware. `Pylongfellow` rejects naive datetimes before the
+        backend is called.
         """
 
 
@@ -105,14 +107,14 @@ _REGISTRY = {
 
 
 def get_backend(name: str) -> Backend:
-    """Return the registered backend singleton for a registry name.
+    """Return the named backend.
 
     Args:
         name: Registry name, one of `google-cpp` or `isrg-rust`.
 
     Returns:
-        The backend singleton. Availability is not checked here; construction
-        of [`Pylongfellow`][pylongfellow.Pylongfellow] probes it.
+        The backend singleton. [`Pylongfellow`][pylongfellow.Pylongfellow]
+            checks availability at construction.
 
     Raises:
         ValueError: `name` is not a registered backend name.

@@ -1,5 +1,7 @@
 site_name: pylongfellow
-site_description: Python binding for the Longfellow zero-knowledge mdoc scheme, over C++ and Rust backends
+watch:
+  - src
+site_description: Python interface to implementations of Longfellow zero-knowledge proofs over ISO 18013-5 mdoc credentials
 repo_url: https://github.com/pipe23-org/pylongfellow
 
 theme:
@@ -27,5 +29,5 @@ plugins:
 
 nav:
   - Home: index.md
-  - API Reference: reference.md
   - Development: development.md
+  - API Reference: reference.md

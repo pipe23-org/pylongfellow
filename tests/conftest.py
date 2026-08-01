@@ -122,7 +122,7 @@ _ISSUE_DATE_CBOR = b"\xd9\x03\xec\x6a" + b"2024-03-15"
 @dataclass(frozen=True)
 class VendoredVector:
     spec: mdoc.CircuitSpec
-    compressed: bytes
+    circuit: bytes
     mdoc_bytes: bytes
     transcript: bytes
     attrs: list[mdoc.RequestedAttribute]
@@ -146,7 +146,7 @@ def vendored_vector() -> VendoredVector:
     assert spec is not None
     return VendoredVector(
         spec=spec,
-        compressed=(_VECTORS / _CIRCUIT_V6_1).read_bytes(),
+        circuit=(_VECTORS / _CIRCUIT_V6_1).read_bytes(),
         mdoc_bytes=bytes.fromhex(payload["mdoc"]),
         transcript=bytes.fromhex(payload["transcript"]),
         attrs=[mdoc.RequestedAttribute(_NAMESPACE, "issue_date", _ISSUE_DATE_CBOR)],
@@ -163,29 +163,25 @@ def vendored_vector() -> VendoredVector:
 
 
 @pytest.fixture(scope="session")
-def google_client() -> Pylongfellow:
+def google() -> Pylongfellow:
     return Pylongfellow(backend="google-cpp")
 
 
 @pytest.fixture(scope="session")
-def isrg_rust_client() -> Pylongfellow:
+def isrg() -> Pylongfellow:
     return Pylongfellow(backend="isrg-rust")
 
 
 @pytest.fixture(scope="session")
-def isrg_rust_handle(
-    isrg_rust_client: Pylongfellow, vendored_vector: VendoredVector
-) -> mdoc.CircuitHandle:
-    return isrg_rust_client.load_circuit(vendored_vector.spec, vendored_vector.compressed)
+def isrg_handle(isrg: Pylongfellow, vendored_vector: VendoredVector) -> mdoc.CircuitHandle:
+    return isrg.load_circuit(vendored_vector.spec, vendored_vector.circuit)
 
 
 @pytest.fixture(scope="session")
-def isrg_rust_proof(
-    isrg_rust_client: Pylongfellow,
-    isrg_rust_handle: mdoc.CircuitHandle,
+def isrg_proof(
+    isrg: Pylongfellow,
+    isrg_handle: mdoc.CircuitHandle,
     vendored_vector: VendoredVector,
 ) -> bytes:
     v = vendored_vector
-    return isrg_rust_client.prove(
-        isrg_rust_handle, v.mdoc_bytes, v.issuer_pk, v.transcript, v.attrs, v.timestamp
-    )
+    return isrg.prove(isrg_handle, v.mdoc_bytes, v.issuer_pk, v.transcript, v.attrs, v.timestamp)

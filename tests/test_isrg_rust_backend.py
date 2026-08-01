@@ -40,7 +40,7 @@ def test_generate_circuit_unsupported():
 def test_load_rejects_bad_version(vendored_vector):
     spec = dataclasses.replace(vendored_vector.spec, version=5)
     with pytest.raises(ValueError, match="unsupported circuit version"):
-        isrg_rust.BACKEND.load_circuit(spec, vendored_vector.compressed)
+        isrg_rust.BACKEND.load_circuit(spec, vendored_vector.circuit)
 
 
 def test_prove_rejects_mixed_namespaces():
@@ -94,16 +94,16 @@ def test_verify_reports_unavailable_backend(monkeypatch):
 
 @pytest.mark.slow
 @skip_without_isrg_rust
-def test_round_trip_verifies(isrg_rust_client, isrg_rust_handle, isrg_rust_proof, vendored_vector):
+def test_round_trip_verifies(isrg, isrg_handle, isrg_proof, vendored_vector):
     v = vendored_vector
-    assert isrg_rust_proof
-    isrg_rust_client.verify(
-        isrg_rust_handle,
+    assert isrg_proof
+    isrg.verify(
+        isrg_handle,
         v.issuer_pk,
         v.transcript,
         v.attrs,
         v.timestamp,
-        isrg_rust_proof,
+        isrg_proof,
         v.doctype,
         device_namespaces=v.device_namespaces,
     )
@@ -111,15 +111,13 @@ def test_round_trip_verifies(isrg_rust_client, isrg_rust_handle, isrg_rust_proof
 
 @pytest.mark.slow
 @skip_without_isrg_rust
-def test_verify_rejects_tampered_proof(
-    isrg_rust_client, isrg_rust_handle, isrg_rust_proof, vendored_vector
-):
+def test_verify_rejects_tampered_proof(isrg, isrg_handle, isrg_proof, vendored_vector):
     v = vendored_vector
-    tampered = bytearray(isrg_rust_proof)
+    tampered = bytearray(isrg_proof)
     tampered[100] ^= 0xFF
     with pytest.raises(mdoc.VerifierError) as excinfo:
-        isrg_rust_client.verify(
-            isrg_rust_handle,
+        isrg.verify(
+            isrg_handle,
             v.issuer_pk,
             v.transcript,
             v.attrs,
@@ -134,12 +132,10 @@ def test_verify_rejects_tampered_proof(
 
 @pytest.mark.slow
 @skip_without_isrg_rust
-def test_prove_rejects_unknown_claim(isrg_rust_client, isrg_rust_handle, vendored_vector):
+def test_prove_rejects_unknown_claim(isrg, isrg_handle, vendored_vector):
     v = vendored_vector
     attrs = [dataclasses.replace(v.attrs[0], id="definitely_not_present")]
     with pytest.raises(mdoc.ProverError) as excinfo:
-        isrg_rust_client.prove(
-            isrg_rust_handle, v.mdoc_bytes, v.issuer_pk, v.transcript, attrs, v.timestamp
-        )
+        isrg.prove(isrg_handle, v.mdoc_bytes, v.issuer_pk, v.transcript, attrs, v.timestamp)
     assert excinfo.value.code is None
     assert str(excinfo.value) == str(excinfo.value.__cause__)

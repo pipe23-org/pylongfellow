@@ -111,17 +111,17 @@ class _IsrgRustBackend:
         """Raise BackendUnavailableError unless the UniFFI extension is built."""
         _zk()
 
-    def load_circuit(self, spec: CircuitSpec, compressed: bytes) -> CircuitHandle:
+    def load_circuit(self, spec: CircuitSpec, circuit: bytes) -> CircuitHandle:
         """Decompress and bind a circuit to this backend as a CircuitHandle.
 
         Circuit identity is backend-native behaviour: this backend does not
-        check that `spec.circuit_hash` matches `compressed`. A wrong circuit of
+        check that `spec.circuit_hash` matches `circuit`. A wrong circuit of
         the same version and attribute count is not detected at load;
         version/count mismatches surface as errors at prove/verify.
 
         Args:
             spec: CircuitSpec naming the circuit; its version must be 6 or 7.
-            compressed: zstd-compressed circuit bytes.
+            circuit: zstd-compressed circuit bytes.
 
         Returns:
             A CircuitHandle carrying the decompressed circuit as backend state.
@@ -131,7 +131,7 @@ class _IsrgRustBackend:
         """
         if spec.version not in _VERSIONS:
             raise ValueError(f"unsupported circuit version {spec.version} (expected 6 or 7)")
-        decompressed = _decompress(compressed)
+        decompressed = _decompress(circuit)
         holder = _Circuit(decompressed, spec.version, spec.num_attributes)
         return CircuitHandle(spec=spec, backend=self, state=holder)
 

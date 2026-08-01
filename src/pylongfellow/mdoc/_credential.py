@@ -87,10 +87,9 @@ def create_certificate(
     *,
     ca: bool = False,
 ) -> x509.Certificate:
-    """Build one X.509 certificate of a test trust chain.
+    """Create a test X.509 certificate, CA or leaf.
 
-    The subject and issuer names carry a single common-name attribute. The
-    certificate is signed with ECDSA over SHA-256.
+    The certificate is signed with ECDSA over SHA-256.
 
     Args:
         subject: Subject common name.
@@ -152,8 +151,7 @@ def sign_device_authentication(
             ``deviceSigned.nameSpaces``: tag 24 over the encoded namespace map.
 
     Returns:
-        The raw 64-byte ``r || s`` signature, the fourth element of
-        ``deviceAuth.deviceSignature``.
+        The raw 64-byte ``r || s`` signature, the fourth element of ``deviceAuth.deviceSignature``.
     """
     payload = _device_authentication_bytes(transcript, doc_type, device_namespaces)
     return _cose_sign(device_key, payload)
@@ -162,10 +160,8 @@ def sign_device_authentication(
 def verify_device_authentication(mdoc: bytes, transcript: bytes) -> None:
     """Verify an mdoc's device signature over a session transcript.
 
-    Takes the device public key from the first document's MSO ``deviceKeyInfo``,
-    rebuilds the detached ``DeviceAuthenticationBytes`` payload from the
-    document's own doctype and device namespaces, and checks the document's
-    ``deviceSignature`` against it. The check runs on `cryptography` alone.
+    The device key comes from the document's MSO. The signed payload is
+    rebuilt from the document's own doctype and device namespaces.
 
     Args:
         mdoc: CBOR-encoded mdoc credential.
@@ -246,15 +242,10 @@ def create_credential(
 ) -> CreatedCredential:
     """Create a test mdoc credential under locally held keys.
 
-    Assembles an ISO 18013-5 ``DeviceResponse`` holding one document. Each
-    claim becomes an ``IssuerSignedItem`` with a fresh 16-byte ``random`` and a
-    per-namespace sequential ``digestID``, digested into an MSO signed by the
-    issuer key. The device signature covers ``DeviceAuthentication`` over the
-    transcript, the doctype, and the device namespaces. Before returning, both
-    signatures are verified back off the encoded bytes with `cryptography`.
-
-    Deployed wallets emit an empty device-namespace map; `device_namespaces`
-    yields a credential whose device signature covers a non-empty one.
+    Assembles an ISO 18013-5 ``DeviceResponse`` holding one document. The
+    claims are issuer-signed into an MSO. The device signature covers the
+    transcript, the doctype, and the device namespaces. Both signatures are
+    verified before returning.
 
     Args:
         doc_type: Doctype of the single document.
@@ -280,8 +271,7 @@ def create_credential(
             generated when None.
 
     Returns:
-        The credential bytes together with the keys and certificate that
-        signed them.
+        The credential bytes together with the keys and certificate that signed them.
 
     Raises:
         ValueError: `valid_from` or `valid_until` is naive.

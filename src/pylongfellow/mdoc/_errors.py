@@ -82,8 +82,6 @@ class ProverError(Error):
 
     Attributes:
         code: The `ProverErrorCode` when the backend supplies one, else None.
-            The google-cpp backend always supplies it; the isrg-rust backend
-            leaves it None. Catch by class; do not branch on the code.
     """
 
     def __init__(self, code: ProverErrorCode | None = None, *, message: str | None = None) -> None:
@@ -101,8 +99,6 @@ class VerifierError(Error):
 
     Attributes:
         code: The `VerifierErrorCode` when the backend supplies one, else None.
-            The google-cpp backend always supplies it; the isrg-rust backend
-            leaves it None. Catch by class; do not branch on the code.
     """
 
     def __init__(
@@ -122,8 +118,7 @@ class CircuitError(Error):
 
     Attributes:
         code: The `CircuitGenerationErrorCode` when the backend supplies one,
-            else None. The google-cpp backend always supplies it; other backends
-            may not. Catch by class; do not branch on the code.
+            else None.
     """
 
     def __init__(self, code: CircuitGenerationErrorCode | None = None) -> None:
