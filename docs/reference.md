@@ -44,7 +44,7 @@ The helpers build test credentials under locally held keys.
 
 ### Data types
 
-::: pylongfellow.mdoc.testing.CreatedCredential
+::: pylongfellow.mdoc.testing.PresentationSpecimen
 
 ## `pylongfellow.backends`
 

@@ -47,10 +47,9 @@ def _device_auth_payload(transcript, doc_type, namespaces):
     return cbor2.dumps(cbor2.CBORTag(24, cbor2.dumps(authentication)))
 
 
-def _point(public_key):
-    return public_key.public_bytes(
-        serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint
-    )
+def _public_key(point):
+    x, y = point
+    return ec.EllipticCurvePublicNumbers(x, y, ec.SECP256R1()).public_key()
 
 
 def test_device_response_shape():
@@ -76,7 +75,7 @@ def test_issuer_signature_digests_and_claims():
     created = testing.create_credential(DOC_TYPE, claims, TRANSCRIPT, VALID_FROM, VALID_UNTIL)
     document = _document(created)
     issuer_auth = document["issuerSigned"]["issuerAuth"]
-    _verify_cose(created.issuer_key.public_key(), issuer_auth[2], issuer_auth[3])
+    _verify_cose(_public_key(created.issuer_public_key), issuer_auth[2], issuer_auth[3])
     mso = _mso(document)
     assert mso["docType"] == DOC_TYPE
     assert mso["digestAlgorithm"] == "SHA-256"
@@ -145,7 +144,8 @@ def test_supplied_keys_and_certificate_are_used():
         device_key=device_key,
         issuer_certificate=leaf,
     )
-    assert created.issuer_key is issuer_key
+    issuer_numbers = issuer_key.public_key().public_numbers()
+    assert created.issuer_public_key == (issuer_numbers.x, issuer_numbers.y)
     assert created.device_key is device_key
     assert created.issuer_certificate is leaf
     document = _document(created)
@@ -156,8 +156,6 @@ def test_supplied_keys_and_certificate_are_used():
     cose_key = _mso(document)["deviceKeyInfo"]["deviceKey"]
     assert cose_key[-2] == device_numbers.x.to_bytes(32, "big")
     assert cose_key[-3] == device_numbers.y.to_bytes(32, "big")
-    issuer_numbers = issuer_key.public_key().public_numbers()
-    assert created.issuer_pk == (issuer_numbers.x, issuer_numbers.y)
 
 
 def test_generated_leaf_is_self_signed_over_issuer_key():
@@ -165,7 +163,7 @@ def test_generated_leaf_is_self_signed_over_issuer_key():
     certificate = created.issuer_certificate
     assert certificate.subject == certificate.issuer
     certificate.verify_directly_issued_by(certificate)
-    assert _point(certificate.public_key()) == _point(created.issuer_key.public_key())
+    assert certificate.public_key() == _public_key(created.issuer_public_key)
 
 
 def test_mismatched_certificate_fails_self_check():

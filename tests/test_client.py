@@ -37,7 +37,7 @@ class _RecordingBackend:
         self,
         handle: CircuitHandle,
         mdoc: bytes,
-        issuer_pk: tuple[int, int],
+        issuer_public_key: tuple[int, int],
         transcript: bytes,
         attrs: list[mdoc.RequestedAttribute],
         timestamp: datetime,
@@ -48,7 +48,7 @@ class _RecordingBackend:
     def verify(
         self,
         handle: CircuitHandle,
-        issuer_pk: tuple[int, int],
+        issuer_public_key: tuple[int, int],
         transcript: bytes,
         attrs: list[mdoc.RequestedAttribute],
         timestamp: datetime,

@@ -57,7 +57,7 @@ class Backend(Protocol):
         self,
         handle: CircuitHandle,
         mdoc: bytes,
-        issuer_pk: tuple[int, int],
+        issuer_public_key: tuple[int, int],
         transcript: bytes,
         attrs: list[RequestedAttribute],
         timestamp: datetime,
@@ -71,7 +71,7 @@ class Backend(Protocol):
     def verify(
         self,
         handle: CircuitHandle,
-        issuer_pk: tuple[int, int],
+        issuer_public_key: tuple[int, int],
         transcript: bytes,
         attrs: list[RequestedAttribute],
         timestamp: datetime,

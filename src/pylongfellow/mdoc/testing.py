@@ -203,27 +203,22 @@ def _check_issuer_auth(credential: bytes) -> None:
 
 
 @dataclass(frozen=True)
-class CreatedCredential:
-    """A credential from [`create_credential`][pylongfellow.mdoc.testing.create_credential].
+class PresentationSpecimen:
+    """A test presentation with the keys and certificate behind it.
 
     Attributes:
         mdoc: CBOR-encoded ``DeviceResponse`` bytes.
-        issuer_key: Private key whose signature the MSO carries.
+        issuer_public_key: Issuer public key as ``(x, y)``, the form the prover
+            and verifier take.
         issuer_certificate: Leaf certificate embedded in ``issuerAuth``'s
             x5chain header.
         device_key: Private key matching the MSO's ``deviceKeyInfo``.
     """
 
     mdoc: bytes
-    issuer_key: ec.EllipticCurvePrivateKey
+    issuer_public_key: tuple[int, int]
     issuer_certificate: x509.Certificate
     device_key: ec.EllipticCurvePrivateKey
-
-    @property
-    def issuer_pk(self) -> tuple[int, int]:
-        """The issuer public key as ``(x, y)``, the form the prover and verifier take."""
-        numbers = self.issuer_key.public_key().public_numbers()
-        return (numbers.x, numbers.y)
 
 
 def create_credential(
@@ -237,7 +232,7 @@ def create_credential(
     issuer_key: ec.EllipticCurvePrivateKey | None = None,
     device_key: ec.EllipticCurvePrivateKey | None = None,
     issuer_certificate: x509.Certificate | None = None,
-) -> CreatedCredential:
+) -> PresentationSpecimen:
     """Create a test mdoc credential under locally held keys.
 
     Assembles an ISO 18013-5 ``DeviceResponse`` holding one document. The
@@ -269,7 +264,7 @@ def create_credential(
             generated when None.
 
     Returns:
-        The credential bytes together with the keys and certificate that signed them.
+        The presentation bytes together with the keys and certificate behind them.
 
     Raises:
         ValueError: `valid_from` or `valid_until` is naive.
@@ -372,4 +367,7 @@ def create_credential(
     )
     _check_issuer_auth(credential)
     verify_device_authentication(credential, transcript)
-    return CreatedCredential(credential, issuer_key, issuer_certificate, device_key)
+    issuer_numbers = issuer_key.public_key().public_numbers()
+    return PresentationSpecimen(
+        credential, (issuer_numbers.x, issuer_numbers.y), issuer_certificate, device_key
+    )

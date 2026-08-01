@@ -22,8 +22,8 @@ class Pylongfellow:
         ```python
         longfellow = Pylongfellow(backend="google-cpp")
         handle = longfellow.load_circuit(spec, circuit)
-        proof = longfellow.prove(handle, mdoc, issuer_pk, transcript, attrs, timestamp)
-        longfellow.verify(handle, issuer_pk, transcript, attrs, timestamp, proof, doctype)
+        proof = longfellow.prove(handle, mdoc, issuer_public_key, transcript, attrs, timestamp)
+        longfellow.verify(handle, issuer_public_key, transcript, attrs, timestamp, proof, doctype)
         ```
 
     Attributes:
@@ -86,7 +86,7 @@ class Pylongfellow:
         self,
         handle: CircuitHandle,
         mdoc: bytes,
-        issuer_pk: tuple[int, int],
+        issuer_public_key: tuple[int, int],
         transcript: bytes,
         attrs: list[RequestedAttribute],
         timestamp: datetime,
@@ -100,7 +100,7 @@ class Pylongfellow:
             handle: A CircuitHandle from
                 [`load_circuit`][pylongfellow.Pylongfellow.load_circuit].
             mdoc: CBOR-encoded mdoc credential.
-            issuer_pk: Issuer public key, as `(x, y)`.
+            issuer_public_key: Issuer public key, as `(x, y)`.
             transcript: Session transcript the proof is bound to.
             attrs: Attributes to prove; `len(attrs)` must equal
                 `handle.spec.num_attributes`.
@@ -117,12 +117,12 @@ class Pylongfellow:
         """
         if timestamp.tzinfo is None:
             raise ValueError("timestamp must be timezone-aware")
-        return handle.backend.prove(handle, mdoc, issuer_pk, transcript, attrs, timestamp)
+        return handle.backend.prove(handle, mdoc, issuer_public_key, transcript, attrs, timestamp)
 
     def verify(
         self,
         handle: CircuitHandle,
-        issuer_pk: tuple[int, int],
+        issuer_public_key: tuple[int, int],
         transcript: bytes,
         attrs: list[RequestedAttribute],
         timestamp: datetime,
@@ -139,7 +139,7 @@ class Pylongfellow:
         Args:
             handle: A CircuitHandle from
                 [`load_circuit`][pylongfellow.Pylongfellow.load_circuit].
-            issuer_pk: Issuer public key, as `(x, y)`.
+            issuer_public_key: Issuer public key, as `(x, y)`.
             transcript: Session transcript the proof is bound to.
             attrs: Attributes the proof claims; `len(attrs)` must equal
                 `handle.spec.num_attributes`.
@@ -158,5 +158,12 @@ class Pylongfellow:
         if timestamp.tzinfo is None:
             raise ValueError("timestamp must be timezone-aware")
         handle.backend.verify(
-            handle, issuer_pk, transcript, attrs, timestamp, proof, doctype, device_namespaces
+            handle,
+            issuer_public_key,
+            transcript,
+            attrs,
+            timestamp,
+            proof,
+            doctype,
+            device_namespaces,
         )

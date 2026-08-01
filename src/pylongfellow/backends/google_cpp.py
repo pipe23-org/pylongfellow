@@ -244,7 +244,7 @@ class _GoogleBackend:
         self,
         handle: CircuitHandle,
         mdoc: bytes,
-        issuer_pk: tuple[int, int],
+        issuer_public_key: tuple[int, int],
         transcript: bytes,
         attrs: list[RequestedAttribute],
         timestamp: datetime,
@@ -257,7 +257,7 @@ class _GoogleBackend:
             handle: A CircuitHandle from
                 [`load_circuit`][pylongfellow.Pylongfellow.load_circuit].
             mdoc: CBOR-encoded mdoc credential.
-            issuer_pk: Issuer public key, as `(x, y)`.
+            issuer_public_key: Issuer public key, as `(x, y)`.
             transcript: Session transcript the proof is bound to.
             attrs: Attributes to prove; `len(attrs)` must equal
                 `handle.spec.num_attributes`.
@@ -274,7 +274,7 @@ class _GoogleBackend:
         spec = handle.spec
         circuit = cast(bytes, handle.state)
         _require_attrs_match_spec(attrs, spec)
-        pk_x, pk_y = issuer_pk
+        pk_x, pk_y = issuer_public_key
         c_attrs = _fill_attrs(ffi, attrs)
         c_spec, _keepalive = _build_spec(ffi, spec)
         proof_ptr = ffi.new("uint8_t**")
@@ -306,7 +306,7 @@ class _GoogleBackend:
     def verify(
         self,
         handle: CircuitHandle,
-        issuer_pk: tuple[int, int],
+        issuer_public_key: tuple[int, int],
         transcript: bytes,
         attrs: list[RequestedAttribute],
         timestamp: datetime,
@@ -321,7 +321,7 @@ class _GoogleBackend:
         Args:
             handle: A CircuitHandle from
                 [`load_circuit`][pylongfellow.Pylongfellow.load_circuit].
-            issuer_pk: Issuer public key, as `(x, y)`.
+            issuer_public_key: Issuer public key, as `(x, y)`.
             transcript: Session transcript the proof is bound to.
             attrs: Attributes the proof claims; `len(attrs)` must equal
                 `handle.spec.num_attributes`.
@@ -344,7 +344,7 @@ class _GoogleBackend:
         # proof against the wrong scope with no error. Refuse rather than mislead.
         if len(doctype.encode()) >= 256:
             raise ValueError(f"doctype too long ({len(doctype.encode())} >= 256 bytes)")
-        pk_x, pk_y = issuer_pk
+        pk_x, pk_y = issuer_public_key
         c_attrs = _fill_attrs(ffi, attrs)
         c_spec, _keepalive = _build_spec(ffi, spec)
         status = lib.run_mdoc_verifier(

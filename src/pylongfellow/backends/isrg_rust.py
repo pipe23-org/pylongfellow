@@ -52,16 +52,16 @@ def _fmt_timestamp(timestamp: datetime) -> str:
     return timestamp.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def _sec1(issuer_pk: tuple[int, int]) -> bytes:
+def _sec1(issuer_public_key: tuple[int, int]) -> bytes:
     """Encode a public key `(x, y)` as a 65-byte SEC1 uncompressed point.
 
     Args:
-        issuer_pk: Public key coordinates.
+        issuer_public_key: Public key coordinates.
 
     Returns:
         The 65-byte uncompressed point: the 0x04 prefix followed by x and y.
     """
-    x, y = issuer_pk
+    x, y = issuer_public_key
     return b"\x04" + x.to_bytes(32, "big") + y.to_bytes(32, "big")
 
 
@@ -150,7 +150,7 @@ class _IsrgRustBackend:
         self,
         handle: CircuitHandle,
         mdoc: bytes,
-        issuer_pk: tuple[int, int],
+        issuer_public_key: tuple[int, int],
         transcript: bytes,
         attrs: list[RequestedAttribute],
         timestamp: datetime,
@@ -160,7 +160,7 @@ class _IsrgRustBackend:
         Args:
             handle: A CircuitHandle from `load_circuit`.
             mdoc: CBOR-encoded mdoc credential, passed through as the device response.
-            issuer_pk: Issuer public key, as `(x, y)`; unused on the prover side.
+            issuer_public_key: Issuer public key, as `(x, y)`; unused on the prover side.
             transcript: Session transcript the proof is bound to.
             attrs: Attributes to prove; all must share one namespace.
             timestamp: Timezone-aware verification time.
@@ -186,7 +186,7 @@ class _IsrgRustBackend:
     def verify(
         self,
         handle: CircuitHandle,
-        issuer_pk: tuple[int, int],
+        issuer_public_key: tuple[int, int],
         transcript: bytes,
         attrs: list[RequestedAttribute],
         timestamp: datetime,
@@ -198,7 +198,7 @@ class _IsrgRustBackend:
 
         Args:
             handle: A CircuitHandle from `load_circuit`.
-            issuer_pk: Issuer public key, as `(x, y)`.
+            issuer_public_key: Issuer public key, as `(x, y)`.
             transcript: Session transcript the proof is bound to.
             attrs: Attributes the proof claims.
             timestamp: Timezone-aware verification time.
@@ -216,7 +216,7 @@ class _IsrgRustBackend:
                 "device_namespaces is required (inner bytes of the tag-24 DeviceNameSpacesBytes)"
             )
         time = _fmt_timestamp(timestamp)
-        issuer_public_key = _sec1(issuer_pk)
+        sec1_public_key = _sec1(issuer_public_key)
         zk, verifier = _ensure_verifier(cast("_Circuit", handle.state))
         attributes = [
             zk.Attribute(identifier=attr.id, value_cbor=attr.cbor_value) for attr in attrs
@@ -224,7 +224,7 @@ class _IsrgRustBackend:
         try:
             zk.verify(
                 verifier,
-                issuer_public_key,
+                sec1_public_key,
                 attributes,
                 doctype,
                 device_namespaces,
