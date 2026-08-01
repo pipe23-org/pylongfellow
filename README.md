@@ -6,10 +6,8 @@ credentials.
 
 Two backends are supported:
 
-- [`google/longfellow-zk`](https://github.com/google/longfellow-zk) (C++, bound through
-  [cffi](https://cffi.readthedocs.io/))
+- [`google/longfellow-zk`](https://github.com/google/longfellow-zk)
 - [`abetterinternet/zk-cred-longfellow`](https://github.com/abetterinternet/zk-cred-longfellow)
-  (Rust, ISRG, bound through [UniFFI](https://mozilla.github.io/uniffi-rs/))
 
 Differential tests exchange proofs over every (prover backend, verifier backend) pair.
 
