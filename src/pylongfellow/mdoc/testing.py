@@ -1,4 +1,4 @@
-"""Test credentials issued under locally held keys.
+"""Helpers that build test credentials under locally held keys.
 
 An mdoc ``DeviceResponse`` is assembled and signed without loading a backend.
 """
