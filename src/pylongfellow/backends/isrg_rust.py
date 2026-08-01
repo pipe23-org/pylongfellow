@@ -41,14 +41,7 @@ def _circuit_version(zk: Any, version: int) -> Any:
 
 
 def _fmt_timestamp(timestamp: datetime) -> str:
-    """Render timestamp to the exact 20-byte RFC 3339 UTC form the circuit compares against.
-
-    Args:
-        timestamp: Timezone-aware verification time.
-
-    Returns:
-        The `YYYY-MM-DDTHH:MM:SSZ` string.
-    """
+    """Render timestamp as `YYYY-MM-DDTHH:MM:SSZ`, the form the circuit compares against."""
     return timestamp.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 

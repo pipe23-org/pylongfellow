@@ -34,7 +34,7 @@ def _require_utc(value: datetime, name: str) -> datetime:
 
 
 def _tdate(value: datetime) -> cbor2.CBORTag:
-    """Encode a UTC datetime the way deployed MSOs do: tag 0, whole seconds, Zulu."""
+    """Encode a UTC datetime as CBOR tag 0, `YYYY-MM-DDTHH:MM:SSZ`."""
     return cbor2.CBORTag(0, value.strftime("%Y-%m-%dT%H:%M:%SZ"))
 
 
