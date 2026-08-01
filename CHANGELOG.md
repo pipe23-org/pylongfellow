@@ -2,13 +2,24 @@
 
 ## Unreleased
 
-Metadata and documentation release. The package code is unchanged from 0.4.0; the release
-carries the corrected README and reference docs to the PyPI project page.
+Breaking rename and a documentation overhaul. The release carries the rewritten README and
+docs to the PyPI project page.
 
-- The distribution `description` now reads "Python binding for the Longfellow zero-knowledge
-  mdoc scheme, over C++ and Rust backends", replacing "Thin Python binding to Google's
-  Longfellow zero-knowledge mdoc library", which predated the second backend
-  ([#34](https://github.com/pipe23-org/pylongfellow/pull/34)).
+- **Breaking: `Pylongfellow.load_circuit(spec, circuit)`** — the second parameter was named
+  `compressed`. The API has no uncompressed circuit, so the name said nothing. Keyword
+  callers change; positional callers do not. The `Backend` protocol renames the same
+  parameter.
+- The distribution `description` reads "Python interface to implementations of Longfellow
+  zero-knowledge proofs over ISO 18013-5 mdoc credentials". The package docstring, the docs
+  landing page, and the mkdocs `site_description` carry the same sentence.
+- The README is cut to Installation, Usage, Documentation, and Licensing. The Packaging,
+  Upstream, API, Backends, Status, and Configuration sections move to the docs site, the
+  code, or the tracker.
+- The API reference renders per-backend behaviour from the docstrings; the development page
+  opens with the dev-loop commands; `PYLONGFELLOW_LOG_LEVEL` is documented as affecting the
+  google-cpp backend only.
+- Examples and tests name instances `longfellow`, `prover`, and `verifier`; `client` is
+  gone from the documentation vocabulary.
 - The `Documentation` project URL now points at
   `https://pylongfellow.readthedocs.io/en/stable/`, replacing the Read the Docs root, which
   serves the `latest` build of `main`
