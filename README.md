@@ -8,7 +8,8 @@ Two backends are supported:
 [`google/longfellow-zk`](https://github.com/google/longfellow-zk) (C++, bound through
 [cffi](https://cffi.readthedocs.io/)) and
 [`abetterinternet/zk-cred-longfellow`](https://github.com/abetterinternet/zk-cred-longfellow)
-(Rust, ISRG, bound through UniFFI). A client is bound to one at construction.
+(Rust, ISRG, bound through UniFFI). A client is bound to one at construction. Differential
+tests exchange proofs over every (prover backend, verifier backend) pair.
 
 The package is experimental and unstable.
 
