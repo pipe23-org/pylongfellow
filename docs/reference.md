@@ -71,4 +71,4 @@ convention. Values (case-insensitive): `error`, `warning`, `info`, `silent`. The
 
 google/longfellow-zk logs to stderr, not through Python `logging`, and exposes no callback to
 bridge. There is no Python API and no runtime reconfiguration. It affects the google-cpp
-backend only.
+backend only. The isrg-rust backend emits no log output.
