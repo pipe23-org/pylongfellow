@@ -12,14 +12,15 @@ it through cffi. Prerequisites (Debian/Ubuntu):
 ```
 sudo apt install -y cmake libssl-dev libzstd-dev libstdc++-13-dev libgtest-dev libbenchmark-dev
 git submodule update --init vendor/longfellow-zk
+uv sync
 ```
 
-`src/_cffi_src/_ffibuild.py` emits the extension C source; CMake compiles it, links it against
-`mdoc_static`, and installs the result as the `_longfellow` extension. The `cdef` in that file
-transcribes the pinned upstream `lib/circuits/mdoc/mdoc_zk.h` by hand, so a submodule bump calls
-for a re-check against the header. The upstream object libraries are not
-position-independent by default, so the build sets `CMAKE_POSITION_INDEPENDENT_CODE` globally
-and links them into one shared object.
+`uv sync` builds it: `src/_cffi_src/_ffibuild.py` emits the extension C source, CMake compiles
+it, links it against `mdoc_static`, and installs the result as the `_longfellow` extension. The
+`cdef` in `_ffibuild.py` transcribes the pinned upstream `lib/circuits/mdoc/mdoc_zk.h` by hand,
+so a submodule bump calls for a re-check against the header. The upstream object libraries are
+not position-independent by default, so the build sets `CMAKE_POSITION_INDEPENDENT_CODE`
+globally and links them into one shared object.
 
 ## isrg-rust backend
 
@@ -29,6 +30,7 @@ submodule and binds it through UniFFI. Prerequisites are cargo, from
 
 ```
 git submodule update --init vendor/zk-cred-longfellow
+uv sync
 ```
 
 `scripts/build_isrg_rust_backend.py` runs `cargo build --release --features uniffi` and
@@ -53,9 +55,7 @@ pip install pylongfellow -C cmake.define.PYLONGFELLOW_BUILD_ISRG=OFF   # google-
 pip install pylongfellow -C cmake.define.PYLONGFELLOW_BUILD_GOOGLE=OFF # isrg-rust only
 ```
 
-The omitted backend raises `BackendUnavailableError` at first use; everything else works
-unchanged. A `PYLONGFELLOW_BUILD_GOOGLE=OFF` build needs cargo and none of the apt packages
-above. The CMake project enables C and C++, so a C++ compiler is still required to configure.
+Omitted backends raise `BackendUnavailableError`.
 
 ## uv workflow
 
@@ -71,6 +71,4 @@ uv run mkdocs build --strict
 ```
 
 `uv sync` installs the project editable, so the staged backend files under `src/` are the ones
-imported at run time. Coverage is gated at 100% branch coverage and is only reachable with the
-full suite: `generate_circuit`'s path runs in a `slow`-marked test. The dev toolchain is uv
-(envs, lock), ruff (lint + format), mypy (strict), pytest, and mkdocs.
+imported at run time.
