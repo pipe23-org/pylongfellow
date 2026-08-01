@@ -30,11 +30,9 @@ classifiers = [
   "Operating System :: POSIX :: Linux",
   "Topic :: Security :: Cryptography",
 ]
-# cffi API-mode extensions import _cffi_backend at runtime, so cffi is a real
-# runtime dependency (as for cryptography, bcrypt, PyNaCl). cryptography and
-# cbor2 carry mdoc.testing.create_credential and its companions. zstandard
-# decompresses the isrg-rust backend's circuit blobs; both backends ship in the
-# default install, so it is a plain runtime dependency.
+# cffi API-mode extensions import _cffi_backend at runtime, so cffi is a
+# runtime dependency. cryptography and cbor2 carry mdoc.testing only.
+# zstandard decompresses the isrg-rust backend's circuit blobs.
 dependencies = ["cffi>=2.0", "cbor2>=6", "cryptography>=49", "zstandard"]
 
 [project.urls]
