@@ -204,7 +204,7 @@ def _check_issuer_auth(credential: bytes) -> None:
 
 @dataclass(frozen=True)
 class PresentationSpecimen:
-    """A test presentation with the keys and certificate behind it.
+    """A test presentation with the issuer public key, certificate, and device key.
 
     Attributes:
         mdoc: CBOR-encoded ``DeviceResponse`` bytes.
@@ -264,7 +264,7 @@ def create_credential(
             generated when None.
 
     Returns:
-        The presentation bytes together with the keys and certificate behind them.
+        The presentation bytes with the issuer public key, certificate, and device key.
 
     Raises:
         ValueError: `valid_from` or `valid_until` is naive.
