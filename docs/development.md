@@ -25,7 +25,7 @@ The upstream object libraries are not position-independent by default; the build
 ## isrg-rust backend
 
 ```
-$ curl https://sh.rustup.rs -sSf | sh
+$ curl https://sh.rustup.rs | sh
 $ git submodule update --init vendor/zk-cred-longfellow
 $ uv sync --reinstall-package pylongfellow -C cmake.define.PYLONGFELLOW_BUILD_GOOGLE=OFF
 ```
