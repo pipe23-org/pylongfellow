@@ -4,11 +4,10 @@ Each backend builds from its own submodule under `vendor/`.
 [scikit-build-core](https://scikit-build-core.readthedocs.io/) drives the CMake build and
 packages the result. The google-cpp backend binds through
 [cffi](https://cffi.readthedocs.io/); the isrg-rust backend through UniFFI.
-[uv](https://docs.astral.sh/uv/) owns the environment and the lock:
 
 ```
 $ git submodule update --init --recursive
-$ uv sync                                   # builds both backends + dev group, writes uv.lock
+$ uv sync                                   # builds both backends, requires backend build dependencies
 $ uv run pytest                             # fast suite
 $ uv run pytest -m "slow or not slow" --cov # full suite incl. real circuit generation
 $ uv run ruff check . && uv run ruff format --check .
