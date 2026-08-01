@@ -13,7 +13,15 @@ if TYPE_CHECKING:
 
 
 class Pylongfellow:
-    """Circuit operations over one implementation, selected at construction.
+    """A Longfellow prover and verifier.
+
+    Example:
+        ```python
+        client = Pylongfellow(backend="google-cpp")
+        handle = client.load_circuit(spec, compressed)
+        proof = client.prove(handle, mdoc, issuer_pk, transcript, attrs, timestamp)
+        client.verify(handle, issuer_pk, transcript, attrs, timestamp, proof, doctype)
+        ```
 
     Attributes:
         backend: The selected [`Backend`][pylongfellow.backends.Backend].
