@@ -160,7 +160,7 @@ class _IsrgRustBackend:
         Args:
             handle: A CircuitHandle from `load_circuit`.
             mdoc: CBOR-encoded mdoc credential, passed through as the device response.
-            issuer_public_key: Issuer public key, as `(x, y)`; unused on the prover side.
+            issuer_public_key: Issuer public key, as `(x, y)`.
             transcript: Session transcript the proof is bound to.
             attrs: Attributes to prove; all must share one namespace.
             timestamp: Timezone-aware verification time.

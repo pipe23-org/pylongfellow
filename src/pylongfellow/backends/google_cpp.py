@@ -316,7 +316,7 @@ class _GoogleBackend:
     ) -> None:
         """Verify a proof that the requested attributes hold, against the transcript.
 
-        Binds `run_mdoc_verifier`. `device_namespaces` is accepted and ignored.
+        Binds `run_mdoc_verifier`.
 
         Args:
             handle: A CircuitHandle from
@@ -328,8 +328,7 @@ class _GoogleBackend:
             timestamp: Timezone-aware verification time.
             proof: Proof bytes from [`prove`][pylongfellow.Pylongfellow.prove].
             doctype: mdoc doctype the proof is scoped to.
-            device_namespaces: Inner bytes of the tag-24 DeviceNameSpacesBytes;
-                unused by this backend.
+            device_namespaces: Inner bytes of the tag-24 DeviceNameSpacesBytes.
 
         Raises:
             ValueError: `len(attrs)` does not match `handle.spec.num_attributes`,
