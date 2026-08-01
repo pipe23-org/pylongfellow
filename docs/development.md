@@ -14,11 +14,6 @@ sudo apt install -y cmake libssl-dev libzstd-dev libstdc++-13-dev libgtest-dev l
 git submodule update --init vendor/longfellow-zk
 ```
 
-The default `c++` (g++) works. OpenSSL and zstd are link dependencies of the upstream
-`mdoc_static` target. GoogleTest and Benchmark are configure-time requirements: upstream's
-`lib/CMakeLists.txt` calls `find_package` on both with `REQUIRED`, even though only the library
-target is built and upstream's test executables never compile.
-
 `src/_cffi_src/_ffibuild.py` emits the extension C source; CMake compiles it, links it against
 `mdoc_static`, and installs the result as the `_longfellow` extension. The `cdef` in that file
 transcribes the pinned upstream `lib/circuits/mdoc/mdoc_zk.h` by hand, so a submodule bump calls
@@ -38,8 +33,7 @@ git submodule update --init vendor/zk-cred-longfellow
 
 `scripts/build_isrg_rust_backend.py` runs `cargo build --release --features uniffi` and
 `uniffi-bindgen`, then stages `zk_cred_longfellow.py` and `libzk_cred_longfellow.so` into
-`src/pylongfellow/backends/_zk_cred/`, which is gitignored. The script finds cargo on `PATH`,
-then at `~/.cargo/bin`, and exits with an install pointer when it finds neither.
+`src/pylongfellow/backends/_zk_cred/`, which is gitignored.
 
 A CMake target runs the script on every build, so `uv sync`, wheel builds, and sdist builds
 produce the same files; running the script directly rebuilds the backend on its own. The cold
