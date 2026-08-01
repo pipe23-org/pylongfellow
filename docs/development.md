@@ -40,15 +40,7 @@ $ git submodule update --init vendor/zk-cred-longfellow
 $ uv sync --reinstall-package pylongfellow -C cmake.define.PYLONGFELLOW_BUILD_GOOGLE=OFF
 ```
 
-`uv sync` builds the backend through `scripts/build_isrg_rust_backend.py`: `cargo build
---release --features uniffi`, then `uniffi-bindgen`, staging `zk_cred_longfellow.py` and
-`libzk_cred_longfellow.so` into `src/pylongfellow/backends/_zk_cred/` (gitignored).
-
-A CMake target runs the script on every build, so `uv sync`, wheel builds, and sdist builds
-produce the same files. The install is editable and the staged files import from `src/`, so
-running the script directly rebuilds the backend with no reinstall. The cold cargo build takes
-about 4 minutes.
-
-A target with a static CRT drops the `cdylib` crate type, and cargo then succeeds without
-producing the library. musl targets need `RUSTFLAGS="-C target-feature=-crt-static"`; the
-build script fails with a named error when cargo produces no cdylib.
+`uv sync` builds the `zk_cred_longfellow` cdylib and its UniFFI module:
+`scripts/build_isrg_rust_backend.py` runs `cargo build --release --features uniffi` and
+`uniffi-bindgen`, and stages both into `src/pylongfellow/backends/_zk_cred/` (gitignored).
+Running the script directly rebuilds the backend on its own.
