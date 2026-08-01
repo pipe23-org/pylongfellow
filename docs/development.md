@@ -27,12 +27,6 @@ $ uv sync --reinstall-package pylongfellow -C cmake.define.PYLONGFELLOW_BUILD_IS
 `uv sync` builds the `_longfellow` extension: `src/_cffi_src/_ffibuild.py` emits its C source,
 and CMake compiles it and links it against upstream's `mdoc_static`.
 
-The `cdef` in `_ffibuild.py` transcribes the pinned `lib/circuits/mdoc/mdoc_zk.h` by hand, so a
-submodule bump calls for a re-check against the header.
-
-The upstream object libraries are not position-independent by default; the build sets
-`CMAKE_POSITION_INDEPENDENT_CODE` globally and links them into one shared object.
-
 ## isrg-rust backend
 
 ```
@@ -43,5 +37,3 @@ $ uv sync --reinstall-package pylongfellow -C cmake.define.PYLONGFELLOW_BUILD_GO
 
 `uv sync` builds the `_zk_cred` module: `scripts/build_isrg_rust_backend.py` drives cargo
 and `uniffi-bindgen`.
-
-Running the script directly rebuilds the backend on its own.

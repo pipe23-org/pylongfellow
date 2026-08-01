@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.15)
 project(pylongfellow LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
+# Upstream's object libraries are not position-independent by default; PIC is
+# required to link them into the extension's shared object.
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Each backend's native piece builds behind its own switch, default ON. A build
