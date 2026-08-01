@@ -37,8 +37,6 @@ submodule and binds it through UniFFI. Prerequisites are cargo, from
 git submodule update --init vendor/zk-cred-longfellow
 ```
 
-The vendored crate's edition sets the cargo floor; check `edition` in
-`vendor/zk-cred-longfellow/Cargo.toml` after a submodule bump.
 `scripts/build_isrg_rust_backend.py` runs `cargo build --release --features uniffi` and
 `uniffi-bindgen`, then stages `zk_cred_longfellow.py` and `libzk_cred_longfellow.so` into
 `src/pylongfellow/backends/_zk_cred/`, which is gitignored. The script finds cargo on `PATH`,
