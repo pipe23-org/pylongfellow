@@ -1,8 +1,9 @@
-"""Python bindings for the [longfellow-zk](https://github.com/google/longfellow-zk) library.
+"""A single Python interface to libraries that implement Longfellow zero-knowledge proofs
+over ISO 18013-5 mdoc credentials.
 
-[`Pylongfellow`][pylongfellow.Pylongfellow] is the entry point: a client bound to one
-backend. `pylongfellow.mdoc` holds the mdoc-specific data types and errors, and the
-backend-free test-credential construction functions.
+[`Pylongfellow`][pylongfellow.Pylongfellow] is the entry point, bound to one backend
+(`google-cpp` or `isrg-rust`) at construction. `pylongfellow.mdoc` holds the data types,
+errors, and credential helpers.
 """
 
 from importlib.metadata import version
