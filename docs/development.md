@@ -1,9 +1,8 @@
 # Development
 
-A dev checkout builds both backends from vendored sources. Each backend has its own toolchain
-and its own git submodule, and each builds behind a CMake switch that defaults to ON.
-[scikit-build-core](https://scikit-build-core.readthedocs.io/) drives the CMake build and
-packages the result.
+Each backend builds from its own git submodule with its own toolchain, behind a CMake switch
+that defaults to ON. [scikit-build-core](https://scikit-build-core.readthedocs.io/) drives the
+CMake build and packages the result.
 
 ## google-cpp backend
 
