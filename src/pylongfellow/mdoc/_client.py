@@ -1,4 +1,4 @@
-"""The Pylongfellow client: circuit operations on a backend bound at construction."""
+"""The Pylongfellow prover and verifier."""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ class Pylongfellow:
     backend: Backend
 
     def __init__(self, *, backend: str | Backend) -> None:
-        """Resolve the backend and probe its availability.
+        """Look up the backend and check that it is built.
 
         Args:
             backend: Registry name (`google-cpp` or `isrg-rust`) or a Backend

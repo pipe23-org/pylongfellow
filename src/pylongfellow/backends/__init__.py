@@ -64,7 +64,8 @@ class Backend(Protocol):
     ) -> bytes:
         """Prove the requested attributes over the mdoc, bound to the transcript.
 
-        `timestamp` is timezone-aware; the client rejects naive datetimes before dispatch.
+        `timestamp` is timezone-aware. `Pylongfellow` rejects naive datetimes before the
+        backend is called.
         """
 
     def verify(
@@ -80,7 +81,8 @@ class Backend(Protocol):
     ) -> None:
         """Verify a proof of the requested attributes against the transcript.
 
-        `timestamp` is timezone-aware; the client rejects naive datetimes before dispatch.
+        `timestamp` is timezone-aware. `Pylongfellow` rejects naive datetimes before the
+        backend is called.
         """
 
 
