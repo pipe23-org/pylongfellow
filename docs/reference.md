@@ -53,7 +53,8 @@ LongfellowError
 
 The backend SPI. A `Backend` implements load, generate, prove, and verify for one longfellow
 implementation; `Pylongfellow` binds one at construction, by registry name (`google-cpp`,
-`isrg-rust`) or instance.
+`isrg-rust`) or instance. `prove` and `verify` dispatch through the backend a circuit was
+loaded into: the `CircuitHandle` carries it, so a handle works on any client.
 
 ::: pylongfellow.backends.Backend
 ::: pylongfellow.backends.get_backend
@@ -62,13 +63,27 @@ implementation; `Pylongfellow` binds one at construction, by registry name (`goo
 
 ## google-cpp backend
 
-Binds the vendored google/longfellow-zk C++ library. `circuit_id` recomputes a circuit's
-canonical id from its bytes. `find_zk_spec` and `zk_specs` read the backend's compiled-in spec
-table. All three are `google-cpp`-specific and require the built native extension.
+Binds the vendored google/longfellow-zk C++ library. It supplies `.code` on the exceptions it
+raises and ignores `device_namespaces` on `verify`. At load it checks that `spec.circuit_hash`
+matches the circuit bytes and requires the whole spec record to match its compiled-in table.
+
+`circuit_id` recomputes a circuit's canonical id from its bytes. `find_zk_spec` and `zk_specs`
+read the backend's compiled-in spec table. All three are `google-cpp`-specific and require the
+built native extension.
 
 ::: pylongfellow.backends.google_cpp.circuit_id
 ::: pylongfellow.backends.google_cpp.find_zk_spec
 ::: pylongfellow.backends.google_cpp.zk_specs
+
+### Logging
+
+**`PYLONGFELLOW_LOG_LEVEL`** sets the stderr log level of google/longfellow-zk, read once when
+the `_longfellow` extension loads, following the `TF_CPP_MIN_LOG_LEVEL` / `GRPC_VERBOSITY`
+convention. Values (case-insensitive): `error`, `warning`, `info`, `silent`. The default is
+`warning`, which hides upstream's per-call info output but keeps genuine errors and warnings.
+
+google/longfellow-zk logs to stderr, not through Python `logging`, and exposes no callback to
+bridge. There is no Python API and no runtime reconfiguration.
 
 ## isrg-rust backend
 
@@ -85,4 +100,10 @@ built — the backend raises `BackendUnavailableError`.
 
 Select it by name — `Pylongfellow(backend="isrg-rust")`; `prove` and `verify` then dispatch through
 the handles it loads. It does not check `spec.circuit_hash` against the circuit bytes at load;
-identity checking is backend-native behaviour.
+identity checking is backend-native behaviour. A wrong circuit of the same version and attribute
+count is therefore not detected at load; a mismatched version or attribute count surfaces as an
+error at `prove`/`verify`.
+
+Engine init takes about 18 seconds per role and about 740 MB resident for a v6 1-attribute
+circuit. Init is lazy and cached on the handle. `prove` then takes about 1.3 seconds and
+`verify` about 0.8 seconds on the reference machine.

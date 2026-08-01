@@ -27,8 +27,6 @@ for a re-check against the header. The upstream object libraries are not
 position-independent by default, so the build sets `CMAKE_POSITION_INDEPENDENT_CODE` globally
 and links them into one shared object.
 
-`-C cmake.define.PYLONGFELLOW_BUILD_GOOGLE=OFF` omits the backend from a source install.
-
 ## isrg-rust backend
 
 The backend compiles `abetterinternet/zk-cred-longfellow` from the `vendor/zk-cred-longfellow`
@@ -53,7 +51,19 @@ A target with a static CRT drops the `cdylib` crate type, and cargo then succeed
 producing the library. musl targets need `RUSTFLAGS="-C target-feature=-crt-static"`; the build
 script fails with a named error when cargo produces no cdylib.
 
-`-C cmake.define.PYLONGFELLOW_BUILD_ISRG=OFF` omits the backend from a source install.
+## Single-backend source installs
+
+Each backend builds behind a CMake switch, default ON. A source install that omits one passes
+the switch as a [config setting](https://scikit-build-core.readthedocs.io/en/latest/configuration/index.html):
+
+```
+pip install pylongfellow -C cmake.define.PYLONGFELLOW_BUILD_ISRG=OFF   # google-cpp only
+pip install pylongfellow -C cmake.define.PYLONGFELLOW_BUILD_GOOGLE=OFF # isrg-rust only
+```
+
+The omitted backend raises `BackendUnavailableError` at first use; everything else works
+unchanged. A `PYLONGFELLOW_BUILD_GOOGLE=OFF` build needs cargo and none of the apt packages
+above. The CMake project enables C and C++, so a C++ compiler is still required to configure.
 
 ## uv workflow
 
