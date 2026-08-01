@@ -9,8 +9,6 @@ Two backends are supported:
 - [`google/longfellow-zk`](https://github.com/google/longfellow-zk)
 - [`abetterinternet/zk-cred-longfellow`](https://github.com/abetterinternet/zk-cred-longfellow)
 
-Differential tests exchange proofs over every (prover backend, verifier backend) pair.
-
 The package is experimental and unstable.
 
 [![CI](https://github.com/pipe23-org/pylongfellow/actions/workflows/ci.yml/badge.svg)](https://github.com/pipe23-org/pylongfellow/actions/workflows/ci.yml)
