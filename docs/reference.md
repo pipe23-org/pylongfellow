@@ -33,8 +33,6 @@ LongfellowError
 
 ## `pylongfellow.mdoc.testing`
 
-The helpers build test credentials under locally held keys.
-
 ### Functions
 
 ::: pylongfellow.mdoc.testing.create_credential
