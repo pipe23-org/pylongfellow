@@ -65,7 +65,7 @@ Binds the vendored google/longfellow-zk C++ library through cffi.
 ### Logging
 
 **`PYLONGFELLOW_GOOGLE_CPP_LOG_LEVEL`** sets the stderr log level of google/longfellow-zk, read
-once when the `_longfellow` extension loads. Values (case-insensitive): `error`, `warning`,
+once when the backend first loads in the process. Values (case-insensitive): `error`, `warning`,
 `info`, `silent`. The default is `warning`, which hides upstream's per-call info output but
 keeps genuine errors and warnings.
 
