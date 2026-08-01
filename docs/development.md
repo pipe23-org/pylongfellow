@@ -3,7 +3,8 @@
 Each backend builds from its own submodule under `vendor/`.
 [scikit-build-core](https://scikit-build-core.readthedocs.io/) drives the CMake build and
 packages the result. The google-cpp backend binds through
-[cffi](https://cffi.readthedocs.io/); the isrg-rust backend through UniFFI.
+[cffi](https://cffi.readthedocs.io/); the isrg-rust backend through
+[UniFFI](https://mozilla.github.io/uniffi-rs/).
 
 ```
 $ git submodule update --init --recursive
