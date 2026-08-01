@@ -38,8 +38,9 @@ uv sync
 `src/pylongfellow/backends/_zk_cred/`, which is gitignored.
 
 A CMake target runs the script on every build, so `uv sync`, wheel builds, and sdist builds
-produce the same files; running the script directly rebuilds the backend on its own. The cold
-cargo build takes about 4 minutes.
+produce the same files. `uv sync` installs the project editable and the staged files are
+imported from `src/`, so running the script directly rebuilds the backend with no reinstall.
+The cold cargo build takes about 4 minutes.
 
 A target with a static CRT drops the `cdylib` crate type, and cargo then succeeds without
 producing the library. musl targets need `RUSTFLAGS="-C target-feature=-crt-static"`; the build
@@ -69,6 +70,3 @@ uv run ruff check . && uv run ruff format --check .
 uv run mypy
 uv run mkdocs build --strict
 ```
-
-`uv sync` installs the project editable, so the staged backend files under `src/` are the ones
-imported at run time.
