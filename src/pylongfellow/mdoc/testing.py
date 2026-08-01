@@ -1,7 +1,6 @@
 """Test credentials issued under locally held keys.
 
-An mdoc ``DeviceResponse`` is assembled and signed without loading a backend. Whether a
-backend can prove or verify over a created credential is a property of that backend.
+An mdoc ``DeviceResponse`` is assembled and signed without loading a backend.
 """
 
 import hashlib
