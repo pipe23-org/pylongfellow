@@ -52,7 +52,7 @@ def _fmt_timestamp(timestamp: datetime) -> str:
     return timestamp.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def _sec1(issuer_public_key: tuple[int, int]) -> bytes:
+def _uncompressed_point(issuer_public_key: tuple[int, int]) -> bytes:
     """Encode a public key `(x, y)` as a 65-byte SEC1 uncompressed point.
 
     Args:
@@ -216,7 +216,7 @@ class _IsrgRustBackend:
                 "device_namespaces is required (inner bytes of the tag-24 DeviceNameSpacesBytes)"
             )
         time = _fmt_timestamp(timestamp)
-        sec1_public_key = _sec1(issuer_public_key)
+        point = _uncompressed_point(issuer_public_key)
         zk, verifier = _ensure_verifier(cast("_Circuit", handle.state))
         attributes = [
             zk.Attribute(identifier=attr.id, value_cbor=attr.cbor_value) for attr in attrs
@@ -224,7 +224,7 @@ class _IsrgRustBackend:
         try:
             zk.verify(
                 verifier,
-                sec1_public_key,
+                point,
                 attributes,
                 doctype,
                 device_namespaces,
