@@ -1,6 +1,6 @@
 # pylongfellow
 
-`pylongfellow` provides a single Python interface to libraries that implement
+`pylongfellow` provides a Python interface to libraries that implement
 [Longfellow](https://eprint.iacr.org/2024/2010) zero-knowledge proofs over ISO 18013-5 mdoc
 credentials.
 
