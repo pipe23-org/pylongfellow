@@ -68,18 +68,10 @@ presentation.
 
 ## Corpus layout
 
-```
-tests/differential/
-  circuits/
-    v7-1attr.circuit + v7-1attr.json
-    v6-1attr.circuit + v6-1attr.json
-  presentations/
-    age-over-18/
-      presentation.json
-      google-cpp-v7.proof + google-cpp-v7.json
-      isrg-rust-v6.proof + isrg-rust-v6.json
-  untestable-cells.json
-```
+The corpus lives in this directory: circuits in `circuits/`, presentations and their committed
+proofs in `presentations/`, and the untestable-cell set in `untestable-cells.json`. Circuits and
+proofs are opaque blobs, each with a JSON sidecar. The sidecar is the metadata of record for its
+blob. The join reads the directory at collection time.
 
 - The corpus is data. Behaviour lives in `pylongfellow`; the corpus never grows methods.
 - Circuits: one reference serialization per (version, attribute count), named
@@ -102,8 +94,8 @@ no format bound to a language or a class.
   `version`, `num_attributes`, `block_enc_hash`, `block_enc_sig`, `origin`.
 - Proof sidecar: `prover`, `prover_source`, `circuit_id`, `circuit_byte_sha256`,
   `byte_sha256`, `origin`.
-- `presentation.json` carries `doctype`, the attributes, the transcript, the issuer key, the
-  timestamp, and `origin`. A presentation captured with its mdoc carries the mdoc bytes and
+- `presentation.json` carries `system`, `doctype`, the attributes, the transcript, the issuer
+  key, the timestamp, and `origin`. A presentation captured with its mdoc carries the mdoc bytes and
   the `device_namespaces` extracted from them; a verify-only capture without device namespaces
   omits both fields.
 
@@ -181,6 +173,6 @@ tests run in both. On `main` the submodules are pinned. Test names never carry `
 
 ## Running
 
-The cross-verification tests are marked `slow`; the full suite is
-`uv run pytest -m "slow or not slow"`. The isrg-rust backend must be built first
-(`uv run python scripts/build_isrg_rust_backend.py`) or the cross-tests skip.
+A case involving the isrg-rust backend is marked `slow`; the full suite is
+`uv run pytest -m "slow or not slow"`. `uv sync` builds both backends; a case whose backend is
+not built skips.

@@ -255,7 +255,7 @@ class _GoogleBackend:
 
         Args:
             handle: A CircuitHandle from
-                [`load_circuit`][pylongfellow.mdoc.load_circuit].
+                [`load_circuit`][pylongfellow.Pylongfellow.load_circuit].
             mdoc: CBOR-encoded mdoc credential.
             issuer_pk: Issuer public key, as `(x, y)`.
             transcript: Session transcript the proof is bound to.
@@ -320,13 +320,13 @@ class _GoogleBackend:
 
         Args:
             handle: A CircuitHandle from
-                [`load_circuit`][pylongfellow.mdoc.load_circuit].
+                [`load_circuit`][pylongfellow.Pylongfellow.load_circuit].
             issuer_pk: Issuer public key, as `(x, y)`.
             transcript: Session transcript the proof is bound to.
             attrs: Attributes the proof claims; `len(attrs)` must equal
                 `handle.spec.num_attributes`.
             timestamp: Timezone-aware verification time.
-            proof: Proof bytes from [`prove`][pylongfellow.mdoc.prove].
+            proof: Proof bytes from [`prove`][pylongfellow.Pylongfellow.prove].
             doctype: mdoc doctype the proof is scoped to.
             device_namespaces: Inner bytes of the tag-24 DeviceNameSpacesBytes;
                 unused by this backend.

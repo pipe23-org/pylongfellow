@@ -1,4 +1,4 @@
-"""Backend-agnostic core: the Backend protocol and the circuit handle it hands out."""
+"""Backend-agnostic core: the Backend protocol and the CircuitHandle it returns."""
 
 from __future__ import annotations
 

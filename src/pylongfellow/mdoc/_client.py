@@ -1,4 +1,4 @@
-"""The Pylongfellow client: a backend bound at construction, then load, prove, and verify."""
+"""The Pylongfellow client: circuit operations on a backend bound at construction."""
 
 from __future__ import annotations
 

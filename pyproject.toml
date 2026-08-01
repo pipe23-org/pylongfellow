@@ -5,7 +5,7 @@ build-backend = "scikit_build_core.build"
 [project]
 name = "pylongfellow"
 version = "0.4.0"
-description = "Thin Python binding to Google's Longfellow zero-knowledge mdoc library"
+description = "Python binding for the Longfellow zero-knowledge mdoc scheme, over C++ and Rust backends"
 readme = "README.md"
 requires-python = ">=3.11"
 # Composite expression: the wheel carries our Apache-2.0 code plus the compiled
@@ -39,7 +39,7 @@ dependencies = ["cffi>=2.0", "cbor2>=6", "cryptography>=49", "zstandard"]
 
 [project.urls]
 Homepage = "https://github.com/pipe23-org/pylongfellow"
-Documentation = "https://pylongfellow.readthedocs.io/"
+Documentation = "https://pylongfellow.readthedocs.io/en/stable/"
 Repository = "https://github.com/pipe23-org/pylongfellow"
 Issues = "https://github.com/pipe23-org/pylongfellow/issues"
 Upstream = "https://github.com/google/longfellow-zk"
