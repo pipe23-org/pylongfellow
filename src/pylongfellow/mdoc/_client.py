@@ -9,6 +9,9 @@ from ..backends import Backend, CircuitHandle, get_backend
 if TYPE_CHECKING:
     from datetime import datetime
 
+    # Docstring cross-references resolve through this module's imports.
+    from ..backends import BackendUnavailableError, GenerationUnsupportedError  # noqa: F401
+    from ._errors import CircuitError, ProverError, VerifierError  # noqa: F401
     from ._types import CircuitSpec, RequestedAttribute
 
 
@@ -53,7 +56,7 @@ class Pylongfellow:
                 [`generate_circuit`][pylongfellow.Pylongfellow.generate_circuit].
 
         Returns:
-            A CircuitHandle to pass to [`prove`][pylongfellow.Pylongfellow.prove]
+            A handle to pass to [`prove`][pylongfellow.Pylongfellow.prove]
             and [`verify`][pylongfellow.Pylongfellow.verify].
 
         Raises:
