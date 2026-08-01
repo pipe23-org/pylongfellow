@@ -10,7 +10,7 @@ packages the result. The google-cpp backend binds through
 ```
 $ sudo apt install -y cmake libssl-dev libzstd-dev libstdc++-13-dev libgtest-dev libbenchmark-dev
 $ git submodule update --init vendor/longfellow-zk
-$ uv sync
+$ uv sync --reinstall-package pylongfellow -C cmake.define.PYLONGFELLOW_BUILD_ISRG=OFF
 ```
 
 `uv sync` builds the `_longfellow` extension: `src/_cffi_src/_ffibuild.py` emits its C source,
@@ -25,9 +25,9 @@ The upstream object libraries are not position-independent by default; the build
 ## isrg-rust backend
 
 ```
-$ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+$ curl https://sh.rustup.rs -sSf | sh
 $ git submodule update --init vendor/zk-cred-longfellow
-$ uv sync
+$ uv sync --reinstall-package pylongfellow -C cmake.define.PYLONGFELLOW_BUILD_GOOGLE=OFF
 ```
 
 `uv sync` builds the backend through `scripts/build_isrg_rust_backend.py`: `cargo build
@@ -43,20 +43,12 @@ A target with a static CRT drops the `cdylib` crate type, and cargo then succeed
 producing the library. musl targets need `RUSTFLAGS="-C target-feature=-crt-static"`; the
 build script fails with a named error when cargo produces no cdylib.
 
-## Single-backend source installs
-
-Each backend builds behind a CMake switch, default ON:
-
-```
-$ pip install pylongfellow -C cmake.define.PYLONGFELLOW_BUILD_ISRG=OFF   # google-cpp only
-$ pip install pylongfellow -C cmake.define.PYLONGFELLOW_BUILD_GOOGLE=OFF # isrg-rust only
-```
-
 ## uv workflow
 
 [uv](https://docs.astral.sh/uv/) owns the environment and the lock:
 
 ```
+$ git submodule update --init --recursive
 $ uv sync                                   # builds both backends + dev group, writes uv.lock
 $ uv run pytest                             # fast suite
 $ uv run pytest -m "slow or not slow" --cov # full suite incl. real circuit generation
