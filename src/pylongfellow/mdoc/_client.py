@@ -22,7 +22,7 @@ class Pylongfellow:
     backend: Backend
 
     def __init__(self, *, backend: str | Backend) -> None:
-        """Select a backend and probe its availability.
+        """Resolve the backend and probe its availability.
 
         Args:
             backend: Registry name (`google-cpp` or `isrg-rust`) or a Backend
