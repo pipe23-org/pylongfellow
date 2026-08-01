@@ -33,7 +33,7 @@ class Pylongfellow:
     backend: Backend
 
     def __init__(self, *, backend: str | Backend) -> None:
-        """Look up the backend and check that it is built.
+        """Initialize with the selected backend.
 
         Args:
             backend: Registry name (`google-cpp` or `isrg-rust`) or a Backend
@@ -67,7 +67,7 @@ class Pylongfellow:
         return self.backend.load_circuit(spec, compressed)
 
     def generate_circuit(self, spec: CircuitSpec) -> bytes:
-        """Generate the compressed circuit named by spec.
+        """Generate the circuit named by spec.
 
         Args:
             spec: CircuitSpec naming the circuit to generate.

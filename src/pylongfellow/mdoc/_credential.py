@@ -87,10 +87,9 @@ def create_certificate(
     *,
     ca: bool = False,
 ) -> x509.Certificate:
-    """Build one X.509 certificate of a test trust chain.
+    """Create a test X.509 certificate, CA or leaf.
 
-    The subject and issuer names carry a single common-name attribute. The
-    certificate is signed with ECDSA over SHA-256.
+    The certificate is signed with ECDSA over SHA-256.
 
     Args:
         subject: Subject common name.
@@ -245,15 +244,10 @@ def create_credential(
 ) -> CreatedCredential:
     """Create a test mdoc credential under locally held keys.
 
-    Assembles an ISO 18013-5 ``DeviceResponse`` holding one document. Each
-    claim becomes an ``IssuerSignedItem`` with a fresh 16-byte ``random`` and a
-    per-namespace sequential ``digestID``, digested into an MSO signed by the
-    issuer key. The device signature covers ``DeviceAuthentication`` over the
-    transcript, the doctype, and the device namespaces. Before returning, both
-    signatures are verified back off the encoded bytes with `cryptography`.
-
-    Deployed wallets emit an empty device-namespace map; `device_namespaces`
-    yields a credential whose device signature covers a non-empty one.
+    Assembles an ISO 18013-5 ``DeviceResponse`` holding one document. The
+    claims are issuer-signed into an MSO. The device signature covers the
+    transcript, the doctype, and the device namespaces. Both signatures are
+    verified before returning.
 
     Args:
         doc_type: Doctype of the single document.

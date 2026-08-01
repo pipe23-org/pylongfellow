@@ -23,7 +23,7 @@ class BackendUnavailableError(LongfellowError):
 
 @dataclass(frozen=True)
 class CircuitHandle:
-    """A circuit loaded by a backend, ready for prove and verify.
+    """A circuit loaded by a backend.
 
     Attributes:
         spec: The CircuitSpec the circuit was loaded against.
@@ -107,7 +107,7 @@ _REGISTRY = {
 
 
 def get_backend(name: str) -> Backend:
-    """Return the registered backend singleton for a registry name.
+    """Return the named backend.
 
     Args:
         name: Registry name, one of `google-cpp` or `isrg-rust`.
