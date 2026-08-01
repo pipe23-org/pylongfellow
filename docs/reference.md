@@ -45,15 +45,16 @@ LongfellowError
 ## `pylongfellow.backends`
 
 A `Backend` implements one longfellow implementation. `Pylongfellow` takes a registry name
-(`"google-cpp"`, `"isrg-rust"`) or a `Backend` instance. A `CircuitHandle` remembers the
-backend that loaded it; `prove` and `verify` run on the handle's backend.
+(`"google-cpp"`, `"isrg-rust"`) or a `Backend` instance.
 
 ::: pylongfellow.backends.Backend
+    options:
+      members: false
 ::: pylongfellow.backends.get_backend
 ::: pylongfellow.backends.GenerationUnsupportedError
 ::: pylongfellow.backends.BackendUnavailableError
 
-## google-cpp backend
+## `pylongfellow.backends.google_cpp`
 
 Binds the vendored google/longfellow-zk C++ library through cffi.
 
@@ -71,8 +72,3 @@ convention. Values (case-insensitive): `error`, `warning`, `info`, `silent`. The
 google/longfellow-zk logs to stderr, not through Python `logging`, and exposes no callback to
 bridge. There is no Python API and no runtime reconfiguration. It affects the google-cpp
 backend only.
-
-## isrg-rust backend
-
-Binds [abetterinternet/zk-cred-longfellow](https://github.com/abetterinternet/zk-cred-longfellow)
-(ISRG) through UniFFI.

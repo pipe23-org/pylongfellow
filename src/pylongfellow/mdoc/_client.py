@@ -45,7 +45,7 @@ class Pylongfellow:
         self.backend.ensure_available()
 
     def load_circuit(self, spec: CircuitSpec, compressed: bytes) -> CircuitHandle:
-        """Load a compressed circuit into the bound backend and return a handle over it.
+        """Load a compressed circuit and return a CircuitHandle.
 
         Args:
             spec: CircuitSpec naming the circuit.
@@ -64,7 +64,7 @@ class Pylongfellow:
         return self.backend.load_circuit(spec, compressed)
 
     def generate_circuit(self, spec: CircuitSpec) -> bytes:
-        """Generate a compressed circuit blob on the bound backend.
+        """Generate the compressed circuit named by spec.
 
         Args:
             spec: CircuitSpec naming the circuit to generate.
