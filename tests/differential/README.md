@@ -112,7 +112,7 @@ Artifacts enter the corpus through `scripts/add_test_data.py`.
 - `import` copies an externally produced artifact and writes a sidecar whose `origin` records
   the source repository, ref, and capture date.
 - `create-presentation` builds a credential with `mdoc.testing.create_credential` and writes
-  its presentation through the same extraction path as captures.
+  its presentation.json.
 
 All modes write the same schemas.
 

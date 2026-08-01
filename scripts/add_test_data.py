@@ -294,12 +294,7 @@ def import_proof(
 
 
 def create_presentation(name: str) -> None:
-    """Create a credential with non-empty device namespaces and write its presentation.
-
-    The credential comes from mdoc.testing.create_credential; the
-    presentation.json fields are read from it with the same helpers the capture
-    paths use.
-    """
+    """Create a credential with non-empty device namespaces and write its presentation."""
     doc_type = "eu.europa.ec.av.1"
     claims = {"eu.europa.ec.av.1": {"age_over_18": True}}
     device_namespaces = {"eu.europa.ec.av.1": {"specimen": "non-empty device namespaces"}}
