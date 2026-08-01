@@ -59,8 +59,8 @@ def test_verify_rejects_missing_device_namespaces():
         )
 
 
-def test_uncompressed_point_encoding(vendored_vector):
-    encoded = isrg_rust._uncompressed_point(vendored_vector.issuer_pk)
+def test_encode_public_key(vendored_vector):
+    encoded = isrg_rust._encode_public_key(vendored_vector.issuer_pk)
     assert encoded == vendored_vector.issuer_pk_sec1
     assert len(encoded) == 65
     assert encoded[0] == 0x04
