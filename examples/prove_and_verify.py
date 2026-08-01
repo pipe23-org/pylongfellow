@@ -32,7 +32,7 @@ attrs = [
     mdoc.RequestedAttribute(a["namespace"], a["id"], bytes.fromhex(a["cbor_value_hex"]))
     for a in credential["attrs"]
 ]
-issuer_pk = (int(credential["issuer_pk_x"], 16), int(credential["issuer_pk_y"], 16))
+issuer_pk = mdoc.PublicKey(int(credential["issuer_pk_x"], 16), int(credential["issuer_pk_y"], 16))
 transcript = bytes.fromhex(credential["transcript_hex"])
 credential_mdoc = bytes.fromhex(credential["mdoc_hex"])
 timestamp = datetime.fromisoformat(credential["timestamp"])

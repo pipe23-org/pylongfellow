@@ -10,7 +10,7 @@ from ._errors import (
     VerifierError,
     VerifierErrorCode,
 )
-from ._types import CircuitSpec, RequestedAttribute
+from ._types import CircuitSpec, PublicKey, RequestedAttribute
 
 __all__ = [
     "CircuitError",
@@ -20,6 +20,7 @@ __all__ = [
     "Error",
     "ProverError",
     "ProverErrorCode",
+    "PublicKey",
     "RequestedAttribute",
     "VerifierError",
     "VerifierErrorCode",

@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     # Docstring cross-references resolve through this module's imports.
     from ..backends import BackendUnavailableError, GenerationUnsupportedError  # noqa: F401
     from ._errors import CircuitError, ProverError, VerifierError  # noqa: F401
-    from ._types import CircuitSpec, RequestedAttribute
+    from ._types import CircuitSpec, PublicKey, RequestedAttribute
 
 
 class Pylongfellow:
@@ -22,8 +22,8 @@ class Pylongfellow:
         ```python
         longfellow = Pylongfellow(backend="google-cpp")
         handle = longfellow.load_circuit(spec, circuit)
-        proof = longfellow.prove(handle, mdoc, issuer_public_key, transcript, attrs, timestamp)
-        longfellow.verify(handle, issuer_public_key, transcript, attrs, timestamp, proof, doctype)
+        proof = longfellow.prove(handle, mdoc, issuer_public_key, transcript, claims, timestamp)
+        longfellow.verify(handle, issuer_public_key, transcript, claims, timestamp, proof, doctype)
         ```
 
     Attributes:
@@ -86,12 +86,12 @@ class Pylongfellow:
         self,
         handle: CircuitHandle,
         mdoc: bytes,
-        issuer_public_key: tuple[int, int],
+        issuer_public_key: PublicKey,
         transcript: bytes,
-        attrs: list[RequestedAttribute],
+        claims: list[RequestedAttribute],
         timestamp: datetime,
     ) -> bytes:
-        """Prove the requested attributes hold over the mdoc, bound to the transcript.
+        """Prove the claims hold over the mdoc, bound to the transcript.
 
         Runs on the handle's backend, which may differ from this instance's
         when the handle was loaded elsewhere.
@@ -100,9 +100,9 @@ class Pylongfellow:
             handle: A CircuitHandle from
                 [`load_circuit`][pylongfellow.Pylongfellow.load_circuit].
             mdoc: CBOR-encoded mdoc credential.
-            issuer_public_key: Issuer public key, as `(x, y)`.
+            issuer_public_key: The issuer's public key.
             transcript: Session transcript the proof is bound to.
-            attrs: Attributes to prove; `len(attrs)` must equal
+            claims: Claims to prove; `len(claims)` must equal
                 `handle.spec.num_attributes`.
             timestamp: Timezone-aware verification time.
 
@@ -110,28 +110,28 @@ class Pylongfellow:
             Proof bytes.
 
         Raises:
-            ValueError: `timestamp` is naive; `len(attrs)` does not match
-                `handle.spec.num_attributes` (google-cpp); or `attrs` do not
+            ValueError: `timestamp` is naive; `len(claims)` does not match
+                `handle.spec.num_attributes` (google-cpp); or `claims` do not
                 share one namespace (isrg-rust).
             ProverError: The prover rejected the inputs.
         """
         if timestamp.tzinfo is None:
             raise ValueError("timestamp must be timezone-aware")
-        return handle.backend.prove(handle, mdoc, issuer_public_key, transcript, attrs, timestamp)
+        return handle.backend.prove(handle, mdoc, issuer_public_key, transcript, claims, timestamp)
 
     def verify(
         self,
         handle: CircuitHandle,
-        issuer_public_key: tuple[int, int],
+        issuer_public_key: PublicKey,
         transcript: bytes,
-        attrs: list[RequestedAttribute],
+        claims: list[RequestedAttribute],
         timestamp: datetime,
         proof: bytes,
         doctype: str,
         *,
         device_namespaces: bytes | None = None,
     ) -> None:
-        """Verify a proof that the requested attributes hold, against the transcript.
+        """Verify a proof that the claims hold, against the transcript.
 
         Runs on the handle's backend, which may differ from this instance's
         when the handle was loaded elsewhere.
@@ -139,9 +139,9 @@ class Pylongfellow:
         Args:
             handle: A CircuitHandle from
                 [`load_circuit`][pylongfellow.Pylongfellow.load_circuit].
-            issuer_public_key: Issuer public key, as `(x, y)`.
+            issuer_public_key: The issuer's public key.
             transcript: Session transcript the proof is bound to.
-            attrs: Attributes the proof claims; `len(attrs)` must equal
+            claims: Claims to verify; `len(claims)` must equal
                 `handle.spec.num_attributes`.
             timestamp: Timezone-aware verification time.
             proof: Proof bytes from [`prove`][pylongfellow.Pylongfellow.prove].
@@ -150,7 +150,7 @@ class Pylongfellow:
                 required by the isrg-rust backend.
 
         Raises:
-            ValueError: `timestamp` is naive; `len(attrs)` does not match
+            ValueError: `timestamp` is naive; `len(claims)` does not match
                 `handle.spec.num_attributes` or `doctype` is 256 bytes or longer
                 (google-cpp); or `device_namespaces` is None (isrg-rust).
             VerifierError: The proof does not hold.
@@ -161,7 +161,7 @@ class Pylongfellow:
             handle,
             issuer_public_key,
             transcript,
-            attrs,
+            claims,
             timestamp,
             proof,
             doctype,

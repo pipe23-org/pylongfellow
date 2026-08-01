@@ -48,8 +48,7 @@ def _device_auth_payload(transcript, doc_type, namespaces):
 
 
 def _public_key(point):
-    x, y = point
-    return ec.EllipticCurvePublicNumbers(x, y, ec.SECP256R1()).public_key()
+    return ec.EllipticCurvePublicNumbers(point.x, point.y, ec.SECP256R1()).public_key()
 
 
 def test_device_response_shape():
@@ -145,7 +144,7 @@ def test_supplied_keys_and_certificate_are_used():
         issuer_certificate=leaf,
     )
     issuer_numbers = issuer_key.public_key().public_numbers()
-    assert created.issuer_public_key == (issuer_numbers.x, issuer_numbers.y)
+    assert created.issuer_public_key == mdoc.PublicKey(issuer_numbers.x, issuer_numbers.y)
     assert created.device_key is device_key
     assert created.issuer_certificate is leaf
     document = _document(created)

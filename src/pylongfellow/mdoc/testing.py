@@ -21,6 +21,7 @@ from cryptography.hazmat.primitives.asymmetric.utils import (
 from cryptography.x509.oid import NameOID
 
 from ._errors import Error
+from ._types import PublicKey
 
 # COSE protected header {1: -7}: ES256, the only algorithm on this path.
 _COSE_ES256_PROTECTED = b"\xa1\x01\x26"
@@ -208,15 +209,14 @@ class PresentationSpecimen:
 
     Attributes:
         mdoc: CBOR-encoded ``DeviceResponse`` bytes.
-        issuer_public_key: Issuer public key as ``(x, y)``, the form the prover
-            and verifier take.
+        issuer_public_key: The issuer's public key.
         issuer_certificate: Leaf certificate embedded in ``issuerAuth``'s
             x5chain header.
         device_key: Private key matching the MSO's ``deviceKeyInfo``.
     """
 
     mdoc: bytes
-    issuer_public_key: tuple[int, int]
+    issuer_public_key: PublicKey
     issuer_certificate: x509.Certificate
     device_key: ec.EllipticCurvePrivateKey
 
@@ -369,5 +369,8 @@ def create_presentation(
     verify_device_authentication(presentation, transcript)
     issuer_numbers = issuer_key.public_key().public_numbers()
     return PresentationSpecimen(
-        presentation, (issuer_numbers.x, issuer_numbers.y), issuer_certificate, device_key
+        presentation,
+        PublicKey(issuer_numbers.x, issuer_numbers.y),
+        issuer_certificate,
+        device_key,
     )

@@ -36,7 +36,7 @@ ISRG_RUST_AVAILABLE = _isrg_rust_available()
 @dataclass(frozen=True)
 class VerifyInputs:
     circuit: bytes
-    issuer_pk: tuple[int, int]
+    issuer_pk: mdoc.PublicKey
     transcript: bytes
     attrs: list[mdoc.RequestedAttribute]
     timestamp: datetime
@@ -49,7 +49,7 @@ class VerifyInputs:
 class ProveInputs:
     circuit: bytes
     mdoc_bytes: bytes
-    issuer_pk: tuple[int, int]
+    issuer_pk: mdoc.PublicKey
     transcript: bytes
     attrs: list[mdoc.RequestedAttribute]
     timestamp: datetime
@@ -72,7 +72,7 @@ def _load_verify(name: str) -> VerifyInputs:
     assert spec is not None, f"no spec for {fixture['circuit_hash']}"
     return VerifyInputs(
         circuit=(_DATA / "circuits" / fixture["circuit_hash"]).read_bytes(),
-        issuer_pk=(int(fixture["issuer_pk_x"], 16), int(fixture["issuer_pk_y"], 16)),
+        issuer_pk=mdoc.PublicKey(int(fixture["issuer_pk_x"], 16), int(fixture["issuer_pk_y"], 16)),
         transcript=base64.b64decode(fixture["transcript_b64"]),
         attrs=_attrs(fixture),
         timestamp=datetime.fromisoformat(fixture["timestamp"]),
@@ -89,7 +89,7 @@ def _load_prove(name: str) -> ProveInputs:
     return ProveInputs(
         circuit=(_DATA / "circuits" / fixture["circuit_hash"]).read_bytes(),
         mdoc_bytes=bytes.fromhex(fixture["mdoc_hex"]),
-        issuer_pk=(int(fixture["issuer_pk_x"], 16), int(fixture["issuer_pk_y"], 16)),
+        issuer_pk=mdoc.PublicKey(int(fixture["issuer_pk_x"], 16), int(fixture["issuer_pk_y"], 16)),
         transcript=bytes.fromhex(fixture["transcript_hex"]),
         attrs=_attrs(fixture),
         timestamp=datetime.fromisoformat(fixture["timestamp"]),
@@ -127,7 +127,7 @@ class VendoredVector:
     transcript: bytes
     attrs: list[mdoc.RequestedAttribute]
     timestamp: datetime
-    issuer_pk: tuple[int, int]
+    issuer_pk: mdoc.PublicKey
     issuer_pk_sec1: bytes
     doctype: str
     device_namespaces: bytes
@@ -151,7 +151,7 @@ def vendored_vector() -> VendoredVector:
         transcript=bytes.fromhex(payload["transcript"]),
         attrs=[mdoc.RequestedAttribute(_NAMESPACE, "issue_date", _ISSUE_DATE_CBOR)],
         timestamp=datetime.fromisoformat(payload["now"]),
-        issuer_pk=(
+        issuer_pk=mdoc.PublicKey(
             int.from_bytes(_ISSUER_PK_SEC1[1:33], "big"),
             int.from_bytes(_ISSUER_PK_SEC1[33:65], "big"),
         ),
