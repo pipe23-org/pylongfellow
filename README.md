@@ -37,8 +37,8 @@ from pylongfellow.backends.google_cpp import find_zk_spec
 longfellow = Pylongfellow(backend="google-cpp")
 
 spec = find_zk_spec("longfellow-libzk-v1", circuit_hash)
-compressed = longfellow.generate_circuit(spec)  # or Path(...).read_bytes()
-handle = longfellow.load_circuit(spec, compressed)
+circuit = longfellow.generate_circuit(spec)  # or Path(...).read_bytes()
+handle = longfellow.load_circuit(spec, circuit)
 
 attrs = [mdoc.RequestedAttribute("org.iso.18013.5.1", "age_over_18", b"\xf5")]  # CBOR true
 

@@ -21,7 +21,7 @@ class Pylongfellow:
     Example:
         ```python
         longfellow = Pylongfellow(backend="google-cpp")
-        handle = longfellow.load_circuit(spec, compressed)
+        handle = longfellow.load_circuit(spec, circuit)
         proof = longfellow.prove(handle, mdoc, issuer_pk, transcript, attrs, timestamp)
         longfellow.verify(handle, issuer_pk, transcript, attrs, timestamp, proof, doctype)
         ```
@@ -47,12 +47,12 @@ class Pylongfellow:
         self.backend = get_backend(backend) if isinstance(backend, str) else backend
         self.backend.ensure_available()
 
-    def load_circuit(self, spec: CircuitSpec, compressed: bytes) -> CircuitHandle:
-        """Load a compressed circuit and return a CircuitHandle.
+    def load_circuit(self, spec: CircuitSpec, circuit: bytes) -> CircuitHandle:
+        """Load a circuit and return a CircuitHandle.
 
         Args:
             spec: CircuitSpec naming the circuit.
-            compressed: Compressed circuit bytes, as from
+            circuit: Circuit bytes, as from
                 [`generate_circuit`][pylongfellow.Pylongfellow.generate_circuit].
 
         Returns:
@@ -61,10 +61,10 @@ class Pylongfellow:
 
         Raises:
             ValueError: `spec` is rejected by the backend, e.g. it is not
-                registered or names a different circuit than `compressed`
-                (google-cpp), or its version is unsupported (isrg-rust).
+                registered or does not match `circuit` (google-cpp), or its
+                version is unsupported (isrg-rust).
         """
-        return self.backend.load_circuit(spec, compressed)
+        return self.backend.load_circuit(spec, circuit)
 
     def generate_circuit(self, spec: CircuitSpec) -> bytes:
         """Generate the circuit named by spec.
@@ -73,7 +73,7 @@ class Pylongfellow:
             spec: CircuitSpec naming the circuit to generate.
 
         Returns:
-            Compressed circuit bytes.
+            Circuit bytes.
 
         Raises:
             ValueError: `spec` is not registered on the backend (google-cpp).

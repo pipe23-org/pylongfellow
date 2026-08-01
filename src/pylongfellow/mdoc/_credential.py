@@ -160,10 +160,8 @@ def sign_device_authentication(
 def verify_device_authentication(mdoc: bytes, transcript: bytes) -> None:
     """Verify an mdoc's device signature over a session transcript.
 
-    Takes the device public key from the first document's MSO ``deviceKeyInfo``,
-    rebuilds the detached ``DeviceAuthenticationBytes`` payload from the
-    document's own doctype and device namespaces, and checks the document's
-    ``deviceSignature`` against it. The check runs on `cryptography` alone.
+    The device key comes from the document's MSO. The signed payload is
+    rebuilt from the document's own doctype and device namespaces.
 
     Args:
         mdoc: CBOR-encoded mdoc credential.

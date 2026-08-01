@@ -25,9 +25,9 @@ class _RecordingBackend:
     def ensure_available(self) -> None:
         self.calls.append("ensure_available")
 
-    def load_circuit(self, spec: mdoc.CircuitSpec, compressed: bytes) -> CircuitHandle:
+    def load_circuit(self, spec: mdoc.CircuitSpec, circuit: bytes) -> CircuitHandle:
         self.calls.append("load_circuit")
-        return CircuitHandle(spec=spec, backend=self, state=compressed)
+        return CircuitHandle(spec=spec, backend=self, state=circuit)
 
     def generate_circuit(self, spec: mdoc.CircuitSpec) -> bytes:
         self.calls.append("generate_circuit")

@@ -123,13 +123,13 @@ def _spec_from_struct(ffi: Any, c_spec: Any) -> CircuitSpec:
 
 @functools.cache
 def circuit_id(circuit: bytes) -> str:
-    """Recompute a circuit's canonical id from its compressed bytes.
+    """Recompute a circuit's canonical id from its bytes.
 
     Binds `circuit_id`. The id is 64 hex chars and equals
     [`CircuitSpec.circuit_hash`][pylongfellow.mdoc.CircuitSpec].
 
     Args:
-        circuit: Compressed circuit bytes.
+        circuit: Circuit bytes.
 
     Returns:
         The canonical id, as 64-char hex.
@@ -193,23 +193,23 @@ class _GoogleBackend:
         """Raise BackendUnavailableError unless the native extension is built."""
         _load()
 
-    def load_circuit(self, spec: CircuitSpec, compressed: bytes) -> CircuitHandle:
+    def load_circuit(self, spec: CircuitSpec, circuit: bytes) -> CircuitHandle:
         """Validate the circuit against the spec and return a handle over its bytes.
 
         Args:
             spec: CircuitSpec naming the circuit.
-            compressed: Compressed circuit bytes.
+            circuit: Circuit bytes.
 
         Returns:
-            A CircuitHandle carrying the compressed bytes as backend state.
+            A CircuitHandle carrying the circuit bytes as backend state.
 
         Raises:
             ValueError: `spec` is not registered in the compiled-in spec table,
-                or names a different circuit than `compressed`.
+                or does not match `circuit`.
         """
         _require_canonical_spec(spec)
-        _require_spec_matches_circuit(compressed, spec)
-        return CircuitHandle(spec=spec, backend=self, state=compressed)
+        _require_spec_matches_circuit(circuit, spec)
+        return CircuitHandle(spec=spec, backend=self, state=circuit)
 
     def generate_circuit(self, spec: CircuitSpec) -> bytes:
         """Generate a circuit blob.
@@ -220,7 +220,7 @@ class _GoogleBackend:
             spec: CircuitSpec naming the circuit to generate.
 
         Returns:
-            Compressed circuit bytes.
+            Circuit bytes.
 
         Raises:
             ValueError: `spec` is not registered in the compiled-in spec table.

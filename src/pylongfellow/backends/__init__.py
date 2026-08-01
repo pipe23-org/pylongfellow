@@ -47,11 +47,11 @@ class Backend(Protocol):
     def ensure_available(self) -> None:
         """Raise BackendUnavailableError unless the backend's native dependency is built."""
 
-    def load_circuit(self, spec: CircuitSpec, compressed: bytes) -> CircuitHandle:
-        """Load a compressed circuit and return a CircuitHandle."""
+    def load_circuit(self, spec: CircuitSpec, circuit: bytes) -> CircuitHandle:
+        """Load a circuit and return a CircuitHandle."""
 
     def generate_circuit(self, spec: CircuitSpec) -> bytes:
-        """Generate the compressed circuit named by spec."""
+        """Generate the circuit named by spec."""
 
     def prove(
         self,

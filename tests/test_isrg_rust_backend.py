@@ -40,7 +40,7 @@ def test_generate_circuit_unsupported():
 def test_load_rejects_bad_version(vendored_vector):
     spec = dataclasses.replace(vendored_vector.spec, version=5)
     with pytest.raises(ValueError, match="unsupported circuit version"):
-        isrg_rust.BACKEND.load_circuit(spec, vendored_vector.compressed)
+        isrg_rust.BACKEND.load_circuit(spec, vendored_vector.circuit)
 
 
 def test_prove_rejects_mixed_namespaces():

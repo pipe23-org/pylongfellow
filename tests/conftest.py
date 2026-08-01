@@ -122,7 +122,7 @@ _ISSUE_DATE_CBOR = b"\xd9\x03\xec\x6a" + b"2024-03-15"
 @dataclass(frozen=True)
 class VendoredVector:
     spec: mdoc.CircuitSpec
-    compressed: bytes
+    circuit: bytes
     mdoc_bytes: bytes
     transcript: bytes
     attrs: list[mdoc.RequestedAttribute]
@@ -146,7 +146,7 @@ def vendored_vector() -> VendoredVector:
     assert spec is not None
     return VendoredVector(
         spec=spec,
-        compressed=(_VECTORS / _CIRCUIT_V6_1).read_bytes(),
+        circuit=(_VECTORS / _CIRCUIT_V6_1).read_bytes(),
         mdoc_bytes=bytes.fromhex(payload["mdoc"]),
         transcript=bytes.fromhex(payload["transcript"]),
         attrs=[mdoc.RequestedAttribute(_NAMESPACE, "issue_date", _ISSUE_DATE_CBOR)],
@@ -174,7 +174,7 @@ def isrg() -> Pylongfellow:
 
 @pytest.fixture(scope="session")
 def isrg_handle(isrg: Pylongfellow, vendored_vector: VendoredVector) -> mdoc.CircuitHandle:
-    return isrg.load_circuit(vendored_vector.spec, vendored_vector.compressed)
+    return isrg.load_circuit(vendored_vector.spec, vendored_vector.circuit)
 
 
 @pytest.fixture(scope="session")
