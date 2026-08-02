@@ -6,47 +6,33 @@ Breaking API changes and a documentation overhaul. The release carries the rewri
 and docs to the PyPI project page.
 
 - **Breaking: a loaded circuit becomes state on the `Pylongfellow` instance** —
-  `load_circuit` sets it and returns `None`, `prove` and `verify` use it and drop their
-  handle parameter, and `mdoc.CircuitHandle` leaves the public API. A second `load_circuit`
-  replaces the circuit; `prove` or `verify` before the first raises `RuntimeError`; a
-  caller with several circuits holds one instance per circuit. In the `Backend` protocol
-  the loaded circuit is opaque `state`: `Backend.load_circuit` returns it, `Backend.prove`
-  and `Backend.verify` take it back first. All callers and backend implementations change.
-- **Breaking: `Pylongfellow.load_circuit(spec, circuit)`** — the second parameter was named
-  `compressed`. The API has no uncompressed circuit, so the name said nothing. Keyword
-  callers change; positional callers do not. The `Backend` protocol renames the same
-  parameter.
-- **Breaking: `Pylongfellow.prove` and `Pylongfellow.verify` take `issuer_public_key`, a
-  `mdoc.PublicKey`** — the parameter was named `issuer_pk` and took an `(x, y)` tuple. The
-  tuple named neither coordinate. All callers change; the key is constructed as
-  `mdoc.PublicKey(x, y)`. The `Backend` protocol changes the same way.
-- **Breaking: `Pylongfellow.prove` and `Pylongfellow.verify` take `claims`** — the parameter
-  was named `attrs`. A `RequestedAttribute` is a claim to prove or verify; the parameter now
-  says so. Keyword callers change; positional callers do not. The `Backend` protocol renames
-  the same parameter.
+  `load_circuit` sets it, `prove` and `verify` use it, and `mdoc.CircuitHandle` leaves the
+  public API. The `Backend` protocol carries it as opaque `state`.
+- **Breaking: `load_circuit(spec, circuit)`** — the second parameter was `compressed`.
+  Same rename in the `Backend` protocol.
+- **Breaking: `prove` and `verify` take `issuer_public_key`, a `mdoc.PublicKey`** — was
+  `issuer_pk`, an `(x, y)` tuple. Also in the `Backend` protocol.
+- **Breaking: `prove` and `verify` take `claims`** — was `attrs`. Also in the `Backend`
+  protocol.
 - **Breaking: `pylongfellow.mdoc.testing`** — `create_credential`, `create_certificate`,
-  `sign_device_authentication`, `verify_device_authentication`, and `CreatedCredential` move
-  there from `pylongfellow.mdoc`. Imports change. `CreatedCredential` is renamed
-  `PresentationSpecimen`: its `mdoc` field holds a `DeviceResponse` bound to the transcript
-  passed at creation. The `issuer_key` field and the `issuer_pk` property are replaced by the
-  field `issuer_public_key`, the `PublicKey` `prove` and `verify` take. `create_credential`
-  is renamed `create_presentation`: it assembles and signs a `DeviceResponse`, and the name
-  follows the artifact.
-- **Breaking: `PYLONGFELLOW_GOOGLE_CPP_LOG_LEVEL`** — replaces `PYLONGFELLOW_LOG_LEVEL`. The
-  variable configures the google-cpp backend only and the old name claimed package scope.
-- The distribution `description` reads "Python interface to implementations of Longfellow
-  zero-knowledge proofs over ISO 18013-5 mdoc credentials". The package docstring, the docs
-  landing page, and the mkdocs `site_description` carry the same sentence.
-- The README is cut to Installation, Usage, Documentation, and Licensing. The Packaging,
-  Upstream, API, Backends, Status, and Configuration sections move to the docs site, the
-  code, or the tracker.
-- The API reference renders per-backend behaviour from the docstrings; the development page
-  opens with the dev-loop commands.
+  `sign_device_authentication`, `verify_device_authentication`, and `CreatedCredential`
+  move there from `pylongfellow.mdoc`. `create_credential` is renamed
+  `create_presentation`, `CreatedCredential` is renamed `PresentationSpecimen`, and the
+  specimen's `issuer_key` field and `issuer_pk` property are replaced by
+  `issuer_public_key`.
+- **Breaking: `PYLONGFELLOW_GOOGLE_CPP_LOG_LEVEL`** — replaces `PYLONGFELLOW_LOG_LEVEL`;
+  it configures the google-cpp backend only.
+- The distribution `description`, package docstring, docs landing page, and mkdocs
+  `site_description` read "Python interface to implementations of Longfellow
+  zero-knowledge proofs over ISO 18013-5 mdoc credentials".
+- The README is cut to Installation, Usage, Documentation, and Licensing; the removed
+  sections move to the docs site, the code, or the tracker.
+- The API reference renders per-backend behaviour from the docstrings; the development
+  page opens with the dev-loop commands.
 - Examples and tests name instances `longfellow`, `prover`, and `verifier`; `client` is
   gone from the documentation vocabulary.
-- The `Documentation` project URL now points at
-  `https://pylongfellow.readthedocs.io/en/stable/`, replacing the Read the Docs root, which
-  serves the `latest` build of `main`
+- The `Documentation` project URL points at
+  `https://pylongfellow.readthedocs.io/en/stable/`
   ([#34](https://github.com/pipe23-org/pylongfellow/pull/34)).
 
 ## 0.4.0
