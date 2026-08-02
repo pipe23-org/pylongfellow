@@ -9,9 +9,24 @@ docs to the PyPI project page.
   `compressed`. The API has no uncompressed circuit, so the name said nothing. Keyword
   callers change; positional callers do not. The `Backend` protocol renames the same
   parameter.
+- **Breaking: `Pylongfellow.prove` and `Pylongfellow.verify` take `issuer_public_key`, a
+  `mdoc.PublicKey`** — the parameter was named `issuer_pk` and took an `(x, y)` tuple. The
+  tuple named neither coordinate. All callers change; the key is constructed as
+  `mdoc.PublicKey(x, y)`. The `Backend` protocol changes the same way.
+- **Breaking: `Pylongfellow.prove` and `Pylongfellow.verify` take `claims`** — the parameter
+  was named `attrs`. A `RequestedAttribute` is a claim to prove or verify; the parameter now
+  says so. Keyword callers change; positional callers do not. The `Backend` protocol renames
+  the same parameter.
+- **Breaking: `pylongfellow.mdoc.testing`** — `create_credential`, `create_certificate`,
+  `sign_device_authentication`, `verify_device_authentication`, and `CreatedCredential` move
+  there from `pylongfellow.mdoc`. Imports change. `CreatedCredential` is renamed
+  `PresentationSpecimen`: its `mdoc` field holds a `DeviceResponse` bound to the transcript
+  passed at creation. The `issuer_key` field and the `issuer_pk` property are replaced by the
+  field `issuer_public_key`, the `PublicKey` `prove` and `verify` take. `create_credential`
+  is renamed `create_presentation`: it assembles and signs a `DeviceResponse`, and the name
+  follows the artifact.
 - **Breaking: `PYLONGFELLOW_GOOGLE_CPP_LOG_LEVEL`** — replaces `PYLONGFELLOW_LOG_LEVEL`. The
-  variable configures the google-cpp backend only and the old name claimed package scope. There
-  is no compatibility shim.
+  variable configures the google-cpp backend only and the old name claimed package scope.
 - The distribution `description` reads "Python interface to implementations of Longfellow
   zero-knowledge proofs over ISO 18013-5 mdoc credentials". The package docstring, the docs
   landing page, and the mkdocs `site_description` carry the same sentence.

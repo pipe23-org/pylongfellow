@@ -1,4 +1,4 @@
-"""Plain-dataclass request and circuit-spec records.
+"""Plain-dataclass request, key, and circuit-spec records.
 
 `RequestedAttribute` mirrors the upstream C struct of the same name.
 `CircuitSpec` corresponds to google/longfellow-zk's `ZkSpecStruct`.
@@ -23,10 +23,16 @@ class RequestedAttribute:
 
 
 @dataclass(frozen=True)
+class PublicKey:
+    """A public key, as coordinates `x` and `y`."""
+
+    x: int
+    y: int
+
+
+@dataclass(frozen=True)
 class CircuitSpec:
     """A circuit's identity, agreed between prover and verifier.
-
-    Constructed directly, or looked up from a spec table.
 
     Attributes:
         system: ZK system name and version (e.g. `longfellow-libzk-v*`).

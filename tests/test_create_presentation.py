@@ -1,4 +1,4 @@
-"""create_credential and its companions — assembly, signatures, and the self-check.
+"""create_presentation and its companions — assembly, signatures, and the self-check.
 
 Every assertion re-derives COSE structures and digests with cryptography/cbor2
 directly; no ZK backend is involved anywhere in this file.
@@ -16,6 +16,7 @@ from cryptography.hazmat.primitives.asymmetric.utils import encode_dss_signature
 from cryptography.x509.oid import NameOID
 
 from pylongfellow import mdoc
+from pylongfellow.mdoc import testing
 
 VALID_FROM = datetime(2026, 7, 1, tzinfo=UTC)
 VALID_UNTIL = datetime(2036, 7, 1, tzinfo=UTC)
@@ -46,14 +47,12 @@ def _device_auth_payload(transcript, doc_type, namespaces):
     return cbor2.dumps(cbor2.CBORTag(24, cbor2.dumps(authentication)))
 
 
-def _point(public_key):
-    return public_key.public_bytes(
-        serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint
-    )
+def _public_key(point):
+    return ec.EllipticCurvePublicNumbers(point.x, point.y, ec.SECP256R1()).public_key()
 
 
 def test_device_response_shape():
-    created = mdoc.create_credential(DOC_TYPE, CLAIMS, TRANSCRIPT, VALID_FROM, VALID_UNTIL)
+    created = testing.create_presentation(DOC_TYPE, CLAIMS, TRANSCRIPT, VALID_FROM, VALID_UNTIL)
     response = cbor2.loads(created.mdoc)
     assert response["version"] == "1.0"
     assert response["status"] == 0
@@ -72,10 +71,10 @@ def test_issuer_signature_digests_and_claims():
         "eu.europa.ec.av.1": {"age_over_18": True, "issuance_date": "2026-07-01"},
         "org.iso.18013.5.1": {"age_over_18": True},
     }
-    created = mdoc.create_credential(DOC_TYPE, claims, TRANSCRIPT, VALID_FROM, VALID_UNTIL)
+    created = testing.create_presentation(DOC_TYPE, claims, TRANSCRIPT, VALID_FROM, VALID_UNTIL)
     document = _document(created)
     issuer_auth = document["issuerSigned"]["issuerAuth"]
-    _verify_cose(created.issuer_key.public_key(), issuer_auth[2], issuer_auth[3])
+    _verify_cose(_public_key(created.issuer_public_key), issuer_auth[2], issuer_auth[3])
     mso = _mso(document)
     assert mso["docType"] == DOC_TYPE
     assert mso["digestAlgorithm"] == "SHA-256"
@@ -92,7 +91,7 @@ def test_issuer_signature_digests_and_claims():
 
 def test_mso_validity_window_is_zulu_whole_seconds():
     plus_two = timezone(timedelta(hours=2))
-    created = mdoc.create_credential(
+    created = testing.create_presentation(
         DOC_TYPE,
         CLAIMS,
         TRANSCRIPT,
@@ -112,7 +111,7 @@ def test_mso_validity_window_is_zulu_whole_seconds():
 
 def test_device_namespaces_are_signed():
     device = {"eu.europa.ec.av.1": {"operational_status": "test"}}
-    created = mdoc.create_credential(
+    created = testing.create_presentation(
         DOC_TYPE, CLAIMS, TRANSCRIPT, VALID_FROM, VALID_UNTIL, device_namespaces=device
     )
     document = _document(created)
@@ -131,10 +130,10 @@ def test_supplied_keys_and_certificate_are_used():
     issuer_key = ec.generate_private_key(ec.SECP256R1())
     device_key = ec.generate_private_key(ec.SECP256R1())
     ca_key = ec.generate_private_key(ec.SECP256R1())
-    leaf = mdoc.create_certificate(
+    leaf = testing.create_certificate(
         "leaf", issuer_key.public_key(), "test CA", ca_key, VALID_FROM, VALID_UNTIL
     )
-    created = mdoc.create_credential(
+    created = testing.create_presentation(
         DOC_TYPE,
         CLAIMS,
         TRANSCRIPT,
@@ -144,7 +143,8 @@ def test_supplied_keys_and_certificate_are_used():
         device_key=device_key,
         issuer_certificate=leaf,
     )
-    assert created.issuer_key is issuer_key
+    issuer_numbers = issuer_key.public_key().public_numbers()
+    assert created.issuer_public_key == mdoc.PublicKey(issuer_numbers.x, issuer_numbers.y)
     assert created.device_key is device_key
     assert created.issuer_certificate is leaf
     document = _document(created)
@@ -155,25 +155,23 @@ def test_supplied_keys_and_certificate_are_used():
     cose_key = _mso(document)["deviceKeyInfo"]["deviceKey"]
     assert cose_key[-2] == device_numbers.x.to_bytes(32, "big")
     assert cose_key[-3] == device_numbers.y.to_bytes(32, "big")
-    issuer_numbers = issuer_key.public_key().public_numbers()
-    assert created.issuer_pk == (issuer_numbers.x, issuer_numbers.y)
 
 
 def test_generated_leaf_is_self_signed_over_issuer_key():
-    created = mdoc.create_credential(DOC_TYPE, CLAIMS, TRANSCRIPT, VALID_FROM, VALID_UNTIL)
+    created = testing.create_presentation(DOC_TYPE, CLAIMS, TRANSCRIPT, VALID_FROM, VALID_UNTIL)
     certificate = created.issuer_certificate
     assert certificate.subject == certificate.issuer
     certificate.verify_directly_issued_by(certificate)
-    assert _point(certificate.public_key()) == _point(created.issuer_key.public_key())
+    assert certificate.public_key() == _public_key(created.issuer_public_key)
 
 
 def test_mismatched_certificate_fails_self_check():
     other_key = ec.generate_private_key(ec.SECP256R1())
-    certificate = mdoc.create_certificate(
+    certificate = testing.create_certificate(
         "other", other_key.public_key(), "other", other_key, VALID_FROM, VALID_UNTIL
     )
     with pytest.raises(mdoc.Error, match="does not verify against the embedded certificate"):
-        mdoc.create_credential(
+        testing.create_presentation(
             DOC_TYPE, CLAIMS, TRANSCRIPT, VALID_FROM, VALID_UNTIL, issuer_certificate=certificate
         )
 
@@ -192,21 +190,21 @@ def test_non_ec_certificate_fails_self_check():
         .sign(key, hashes.SHA256())
     )
     with pytest.raises(mdoc.Error, match="EC public key"):
-        mdoc.create_credential(
+        testing.create_presentation(
             DOC_TYPE, CLAIMS, TRANSCRIPT, VALID_FROM, VALID_UNTIL, issuer_certificate=certificate
         )
 
 
 def test_naive_validity_rejected():
     with pytest.raises(ValueError, match="valid_from must be timezone-aware"):
-        mdoc.create_credential(DOC_TYPE, CLAIMS, TRANSCRIPT, datetime(2026, 7, 1), VALID_UNTIL)
+        testing.create_presentation(DOC_TYPE, CLAIMS, TRANSCRIPT, datetime(2026, 7, 1), VALID_UNTIL)
     with pytest.raises(ValueError, match="valid_until must be timezone-aware"):
-        mdoc.create_credential(DOC_TYPE, CLAIMS, TRANSCRIPT, VALID_FROM, datetime(2036, 7, 1))
+        testing.create_presentation(DOC_TYPE, CLAIMS, TRANSCRIPT, VALID_FROM, datetime(2036, 7, 1))
 
 
 def test_certificate_ca_and_leaf_extensions():
     ca_key = ec.generate_private_key(ec.SECP256R1())
-    ca = mdoc.create_certificate(
+    ca = testing.create_certificate(
         "test CA", ca_key.public_key(), "test CA", ca_key, VALID_FROM, VALID_UNTIL, ca=True
     )
     basic = ca.extensions.get_extension_for_class(x509.BasicConstraints)
@@ -218,7 +216,7 @@ def test_certificate_ca_and_leaf_extensions():
     assert not ca_usage.digital_signature
 
     leaf_key = ec.generate_private_key(ec.SECP256R1())
-    leaf = mdoc.create_certificate(
+    leaf = testing.create_certificate(
         "leaf", leaf_key.public_key(), "test CA", ca_key, VALID_FROM, VALID_UNTIL
     )
     with pytest.raises(x509.ExtensionNotFound):
@@ -236,21 +234,23 @@ def test_certificate_ca_and_leaf_extensions():
 def test_certificate_naive_validity_rejected():
     key = ec.generate_private_key(ec.SECP256R1())
     with pytest.raises(ValueError, match="valid_from must be timezone-aware"):
-        mdoc.create_certificate("x", key.public_key(), "x", key, datetime(2026, 7, 1), VALID_UNTIL)
+        testing.create_certificate(
+            "x", key.public_key(), "x", key, datetime(2026, 7, 1), VALID_UNTIL
+        )
 
 
 def test_sign_device_authentication_round_trip():
     device_key = ec.generate_private_key(ec.SECP256R1())
     namespaces = cbor2.CBORTag(24, cbor2.dumps({"ns": {"id": 1}}))
-    signature = mdoc.sign_device_authentication(device_key, TRANSCRIPT, DOC_TYPE, namespaces)
+    signature = testing.sign_device_authentication(device_key, TRANSCRIPT, DOC_TYPE, namespaces)
     assert len(signature) == 64
     payload = _device_auth_payload(TRANSCRIPT, DOC_TYPE, namespaces)
     _verify_cose(device_key.public_key(), payload, signature)
 
 
 def test_verify_device_authentication_accepts_and_rejects():
-    created = mdoc.create_credential(DOC_TYPE, CLAIMS, TRANSCRIPT, VALID_FROM, VALID_UNTIL)
-    mdoc.verify_device_authentication(created.mdoc, TRANSCRIPT)
+    created = testing.create_presentation(DOC_TYPE, CLAIMS, TRANSCRIPT, VALID_FROM, VALID_UNTIL)
+    testing.verify_device_authentication(created.mdoc, TRANSCRIPT)
     other_transcript = cbor2.dumps([None, None, ["dcapi", hashlib.sha256(b"other").digest()]])
     with pytest.raises(mdoc.Error, match="does not verify over the transcript"):
-        mdoc.verify_device_authentication(created.mdoc, other_transcript)
+        testing.verify_device_authentication(created.mdoc, other_transcript)

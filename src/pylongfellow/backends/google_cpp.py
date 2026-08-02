@@ -13,7 +13,7 @@ from ..mdoc._errors import (
     VerifierError,
     VerifierErrorCode,
 )
-from ..mdoc._types import CircuitSpec, RequestedAttribute
+from ..mdoc._types import CircuitSpec, PublicKey, RequestedAttribute
 from . import BackendUnavailableError, CircuitHandle
 
 # C fixed-buffer sizes (from the upstream RequestedAttribute struct).
@@ -32,7 +32,7 @@ def _load() -> tuple[Any, Any]:
 
 
 def _fmt_timestamp(timestamp: datetime) -> bytes:
-    """Render timestamp to the exact 20-byte RFC 3339 UTC form the circuit compares against."""
+    """Render timestamp as `YYYY-MM-DDTHH:MM:SSZ`."""
     return timestamp.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ").encode("ascii")
 
 
@@ -78,15 +78,15 @@ def _build_spec(ffi: Any, spec: CircuitSpec) -> tuple[Any, Any]:
     return c_spec, system_buf
 
 
-def _require_attrs_match_spec(attrs: list[RequestedAttribute], spec: CircuitSpec) -> None:
+def _require_claims_match_spec(claims: list[RequestedAttribute], spec: CircuitSpec) -> None:
     # The C entry points never read spec.num_attributes; the invariant is
     # attrs_len == the circuit's attribute count, for which the spec field is the
     # proxy (tied to the circuit by the hash check below). A mismatch hard-aborts
     # in C (DenseFiller overfill on too many; the Ligero subfield check on too
     # few, prover side) — only verify-with-too-few returns a clean status.
-    if len(attrs) != spec.num_attributes:
+    if len(claims) != spec.num_attributes:
         raise ValueError(
-            f"len(attrs) ({len(attrs)}) does not match spec.num_attributes ({spec.num_attributes})"
+            f"len(claims) ({len(claims)}) does not match spec.num_attributes ({spec.num_attributes})"
         )
 
 
@@ -244,12 +244,12 @@ class _GoogleBackend:
         self,
         handle: CircuitHandle,
         mdoc: bytes,
-        issuer_pk: tuple[int, int],
+        issuer_public_key: PublicKey,
         transcript: bytes,
-        attrs: list[RequestedAttribute],
+        claims: list[RequestedAttribute],
         timestamp: datetime,
     ) -> bytes:
-        """Prove the requested attributes hold over the mdoc, bound to the transcript.
+        """Prove the claims hold over the mdoc, bound to the transcript.
 
         Binds `run_mdoc_prover`.
 
@@ -257,9 +257,9 @@ class _GoogleBackend:
             handle: A CircuitHandle from
                 [`load_circuit`][pylongfellow.Pylongfellow.load_circuit].
             mdoc: CBOR-encoded mdoc credential.
-            issuer_pk: Issuer public key, as `(x, y)`.
+            issuer_public_key: The issuer's public key.
             transcript: Session transcript the proof is bound to.
-            attrs: Attributes to prove; `len(attrs)` must equal
+            claims: Claims to prove; `len(claims)` must equal
                 `handle.spec.num_attributes`.
             timestamp: Timezone-aware verification time.
 
@@ -267,15 +267,15 @@ class _GoogleBackend:
             Proof bytes.
 
         Raises:
-            ValueError: `len(attrs)` does not match `handle.spec.num_attributes`.
+            ValueError: `len(claims)` does not match `handle.spec.num_attributes`.
             ProverError: The prover rejected the inputs.
         """
         ffi, lib = _load()
         spec = handle.spec
         circuit = cast(bytes, handle.state)
-        _require_attrs_match_spec(attrs, spec)
-        pk_x, pk_y = issuer_pk
-        c_attrs = _fill_attrs(ffi, attrs)
+        _require_claims_match_spec(claims, spec)
+        pk_x, pk_y = issuer_public_key.x, issuer_public_key.y
+        c_attrs = _fill_attrs(ffi, claims)
         c_spec, _keepalive = _build_spec(ffi, spec)
         proof_ptr = ffi.new("uint8_t**")
         proof_len = ffi.new("size_t*")
@@ -289,7 +289,7 @@ class _GoogleBackend:
             transcript,
             len(transcript),
             c_attrs,
-            len(attrs),
+            len(claims),
             _fmt_timestamp(timestamp),
             proof_ptr,
             proof_len,
@@ -306,46 +306,45 @@ class _GoogleBackend:
     def verify(
         self,
         handle: CircuitHandle,
-        issuer_pk: tuple[int, int],
+        issuer_public_key: PublicKey,
         transcript: bytes,
-        attrs: list[RequestedAttribute],
+        claims: list[RequestedAttribute],
         timestamp: datetime,
         proof: bytes,
         doctype: str,
         device_namespaces: bytes | None,
     ) -> None:
-        """Verify a proof that the requested attributes hold, against the transcript.
+        """Verify a proof that the claims hold, against the transcript.
 
-        Binds `run_mdoc_verifier`. `device_namespaces` is accepted and ignored.
+        Binds `run_mdoc_verifier`.
 
         Args:
             handle: A CircuitHandle from
                 [`load_circuit`][pylongfellow.Pylongfellow.load_circuit].
-            issuer_pk: Issuer public key, as `(x, y)`.
+            issuer_public_key: The issuer's public key.
             transcript: Session transcript the proof is bound to.
-            attrs: Attributes the proof claims; `len(attrs)` must equal
+            claims: Claims to verify; `len(claims)` must equal
                 `handle.spec.num_attributes`.
             timestamp: Timezone-aware verification time.
             proof: Proof bytes from [`prove`][pylongfellow.Pylongfellow.prove].
             doctype: mdoc doctype the proof is scoped to.
-            device_namespaces: Inner bytes of the tag-24 DeviceNameSpacesBytes;
-                unused by this backend.
+            device_namespaces: Inner bytes of the tag-24 DeviceNameSpacesBytes.
 
         Raises:
-            ValueError: `len(attrs)` does not match `handle.spec.num_attributes`,
+            ValueError: `len(claims)` does not match `handle.spec.num_attributes`,
                 or `doctype` is 256 bytes or longer.
             VerifierError: The proof does not hold.
         """
         ffi, lib = _load()
         spec = handle.spec
         circuit = cast(bytes, handle.state)
-        _require_attrs_match_spec(attrs, spec)
+        _require_claims_match_spec(claims, spec)
         # C silently substitutes a default doctype at >= 256 bytes, verifying the
         # proof against the wrong scope with no error. Refuse rather than mislead.
         if len(doctype.encode()) >= 256:
             raise ValueError(f"doctype too long ({len(doctype.encode())} >= 256 bytes)")
-        pk_x, pk_y = issuer_pk
-        c_attrs = _fill_attrs(ffi, attrs)
+        pk_x, pk_y = issuer_public_key.x, issuer_public_key.y
+        c_attrs = _fill_attrs(ffi, claims)
         c_spec, _keepalive = _build_spec(ffi, spec)
         status = lib.run_mdoc_verifier(
             circuit,
@@ -355,7 +354,7 @@ class _GoogleBackend:
             transcript,
             len(transcript),
             c_attrs,
-            len(attrs),
+            len(claims),
             _fmt_timestamp(timestamp),
             proof,
             len(proof),

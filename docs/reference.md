@@ -7,22 +7,12 @@
 
 ## `pylongfellow.mdoc`
 
-The credential helpers build test credentials under locally held keys and run without a
-backend.
-
-### Functions
-
-::: pylongfellow.mdoc.create_credential
-::: pylongfellow.mdoc.create_certificate
-::: pylongfellow.mdoc.sign_device_authentication
-::: pylongfellow.mdoc.verify_device_authentication
-
 ### Data types
 
 ::: pylongfellow.mdoc.CircuitHandle
 ::: pylongfellow.mdoc.RequestedAttribute
+::: pylongfellow.mdoc.PublicKey
 ::: pylongfellow.mdoc.CircuitSpec
-::: pylongfellow.mdoc.CreatedCredential
 
 ### Errors
 
@@ -72,3 +62,16 @@ keeps genuine errors and warnings.
 google/longfellow-zk logs to stderr, not through Python `logging`, and exposes no callback to
 bridge. There is no Python API and no runtime reconfiguration. The isrg-rust backend emits no
 log output.
+
+## `pylongfellow.mdoc.testing`
+
+### Functions
+
+::: pylongfellow.mdoc.testing.create_presentation
+::: pylongfellow.mdoc.testing.create_certificate
+::: pylongfellow.mdoc.testing.sign_device_authentication
+::: pylongfellow.mdoc.testing.verify_device_authentication
+
+### Data types
+
+::: pylongfellow.mdoc.testing.PresentationSpecimen

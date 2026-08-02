@@ -96,8 +96,8 @@ class Presentation:
         return bytes.fromhex(self.doc["transcript_hex"])
 
     @property
-    def issuer_pk(self) -> tuple[int, int]:
-        return (int(self.doc["issuer_pk_x"], 16), int(self.doc["issuer_pk_y"], 16))
+    def issuer_pk(self) -> mdoc.PublicKey:
+        return mdoc.PublicKey(int(self.doc["issuer_pk_x"], 16), int(self.doc["issuer_pk_y"], 16))
 
     @property
     def timestamp(self) -> datetime:

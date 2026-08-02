@@ -13,7 +13,7 @@ from . import BackendUnavailableError, CircuitHandle, GenerationUnsupportedError
 if TYPE_CHECKING:
     from datetime import datetime
 
-    from ..mdoc._types import CircuitSpec, RequestedAttribute
+    from ..mdoc._types import CircuitSpec, PublicKey, RequestedAttribute
 
 _VERSIONS = frozenset({6, 7})
 
@@ -41,34 +41,26 @@ def _circuit_version(zk: Any, version: int) -> Any:
 
 
 def _fmt_timestamp(timestamp: datetime) -> str:
-    """Render timestamp to the exact 20-byte RFC 3339 UTC form the circuit compares against.
-
-    Args:
-        timestamp: Timezone-aware verification time.
-
-    Returns:
-        The `YYYY-MM-DDTHH:MM:SSZ` string.
-    """
+    """Render timestamp as `YYYY-MM-DDTHH:MM:SSZ`."""
     return timestamp.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def _sec1(issuer_pk: tuple[int, int]) -> bytes:
-    """Encode a public key `(x, y)` as a 65-byte SEC1 uncompressed point.
+def _encode_public_key(public_key: PublicKey) -> bytes:
+    """Encode a public key as a 65-byte uncompressed point.
 
     Args:
-        issuer_pk: Public key coordinates.
+        public_key: The key to encode.
 
     Returns:
         The 65-byte uncompressed point: the 0x04 prefix followed by x and y.
     """
-    x, y = issuer_pk
-    return b"\x04" + x.to_bytes(32, "big") + y.to_bytes(32, "big")
+    return b"\x04" + public_key.x.to_bytes(32, "big") + public_key.y.to_bytes(32, "big")
 
 
-def _single_namespace(attrs: list[RequestedAttribute]) -> str:
-    namespaces = {attr.namespace for attr in attrs}
+def _single_namespace(claims: list[RequestedAttribute]) -> str:
+    namespaces = {claim.namespace for claim in claims}
     if len(namespaces) != 1:
-        raise ValueError("all attributes must share one namespace")
+        raise ValueError("all claims must share one namespace")
     return namespaces.pop()
 
 
@@ -150,57 +142,57 @@ class _IsrgRustBackend:
         self,
         handle: CircuitHandle,
         mdoc: bytes,
-        issuer_pk: tuple[int, int],
+        issuer_public_key: PublicKey,
         transcript: bytes,
-        attrs: list[RequestedAttribute],
+        claims: list[RequestedAttribute],
         timestamp: datetime,
     ) -> bytes:
-        """Prove the requested attributes hold over the mdoc, bound to the transcript.
+        """Prove the claims hold over the mdoc, bound to the transcript.
 
         Args:
             handle: A CircuitHandle from `load_circuit`.
             mdoc: CBOR-encoded mdoc credential, passed through as the device response.
-            issuer_pk: Issuer public key, as `(x, y)`; unused on the prover side.
+            issuer_public_key: The issuer's public key.
             transcript: Session transcript the proof is bound to.
-            attrs: Attributes to prove; all must share one namespace.
+            claims: Claims to prove; all must share one namespace.
             timestamp: Timezone-aware verification time.
 
         Returns:
             Proof bytes.
 
         Raises:
-            ValueError: `attrs` do not share one namespace.
+            ValueError: `claims` do not share one namespace.
             BackendUnavailableError: the isrg-rust backend is not built.
             ProverError: the prover rejected the inputs.
         """
         holder = cast("_Circuit", handle.state)
-        namespace = _single_namespace(attrs)
-        claims = [attr.id for attr in attrs]
+        namespace = _single_namespace(claims)
+        claim_ids = [claim.id for claim in claims]
         time = _fmt_timestamp(timestamp)
         zk, prover = _ensure_prover(holder)
         try:
-            return cast(bytes, zk.prove(prover, mdoc, namespace, claims, transcript, time))
+            return cast(bytes, zk.prove(prover, mdoc, namespace, claim_ids, transcript, time))
         except zk.MdocZkError as e:
             raise ProverError(message=str(e)) from e
 
     def verify(
         self,
         handle: CircuitHandle,
-        issuer_pk: tuple[int, int],
+        issuer_public_key: PublicKey,
         transcript: bytes,
-        attrs: list[RequestedAttribute],
+        claims: list[RequestedAttribute],
         timestamp: datetime,
         proof: bytes,
         doctype: str,
         device_namespaces: bytes | None,
     ) -> None:
-        """Verify a proof that the requested attributes hold, against the transcript.
+        """Verify a proof that the claims hold, against the transcript.
 
         Args:
             handle: A CircuitHandle from `load_circuit`.
-            issuer_pk: Issuer public key, as `(x, y)`.
+            issuer_public_key: The issuer's public key.
             transcript: Session transcript the proof is bound to.
-            attrs: Attributes the proof claims.
+            claims: Claims to verify.
             timestamp: Timezone-aware verification time.
             proof: Proof bytes from `prove`.
             doctype: mdoc doctype the proof is scoped to.
@@ -216,15 +208,15 @@ class _IsrgRustBackend:
                 "device_namespaces is required (inner bytes of the tag-24 DeviceNameSpacesBytes)"
             )
         time = _fmt_timestamp(timestamp)
-        issuer_public_key = _sec1(issuer_pk)
+        encoded_public_key = _encode_public_key(issuer_public_key)
         zk, verifier = _ensure_verifier(cast("_Circuit", handle.state))
         attributes = [
-            zk.Attribute(identifier=attr.id, value_cbor=attr.cbor_value) for attr in attrs
+            zk.Attribute(identifier=claim.id, value_cbor=claim.cbor_value) for claim in claims
         ]
         try:
             zk.verify(
                 verifier,
-                issuer_public_key,
+                encoded_public_key,
                 attributes,
                 doctype,
                 device_namespaces,

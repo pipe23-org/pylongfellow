@@ -51,7 +51,7 @@ if __name__ == "__main__":
     handle = longfellow.load_circuit(spec, (data / "circuits" / fx["circuit_hash"]).read_bytes())
     longfellow.verify(
         handle,
-        (int(fx["issuer_pk_x"], 16), int(fx["issuer_pk_y"], 16)),
+        mdoc.PublicKey(int(fx["issuer_pk_x"], 16), int(fx["issuer_pk_y"], 16)),
         base64.b64decode(fx["transcript_b64"]),
         attrs,
         datetime.fromisoformat(fx["timestamp"]),

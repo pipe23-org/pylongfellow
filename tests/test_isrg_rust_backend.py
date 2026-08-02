@@ -49,18 +49,18 @@ def test_prove_rejects_mixed_namespaces():
         mdoc.RequestedAttribute("ns.b", "y", b"\x02"),
     ]
     with pytest.raises(ValueError, match="one namespace"):
-        isrg_rust.BACKEND.prove(_dummy_handle(), b"", (1, 2), b"", attrs, _AWARE)
+        isrg_rust.BACKEND.prove(_dummy_handle(), b"", mdoc.PublicKey(1, 2), b"", attrs, _AWARE)
 
 
 def test_verify_rejects_missing_device_namespaces():
     with pytest.raises(ValueError, match="device_namespaces is required"):
         isrg_rust.BACKEND.verify(
-            _dummy_handle(), (1, 2), b"", _one_attr(), _AWARE, b"", "doc", None
+            _dummy_handle(), mdoc.PublicKey(1, 2), b"", _one_attr(), _AWARE, b"", "doc", None
         )
 
 
-def test_sec1_encoding(vendored_vector):
-    encoded = isrg_rust._sec1(vendored_vector.issuer_pk)
+def test_encode_public_key(vendored_vector):
+    encoded = isrg_rust._encode_public_key(vendored_vector.issuer_pk)
     assert encoded == vendored_vector.issuer_pk_sec1
     assert len(encoded) == 65
     assert encoded[0] == 0x04
@@ -81,14 +81,16 @@ def test_circuit_version_maps_both():
 def test_prove_reports_unavailable_backend(monkeypatch):
     monkeypatch.setitem(sys.modules, "pylongfellow.backends._zk_cred", None)
     with pytest.raises(BackendUnavailableError, match="build_isrg_rust_backend"):
-        isrg_rust.BACKEND.prove(_dummy_handle(), b"", (1, 2), b"", _one_attr(), _AWARE)
+        isrg_rust.BACKEND.prove(
+            _dummy_handle(), b"", mdoc.PublicKey(1, 2), b"", _one_attr(), _AWARE
+        )
 
 
 def test_verify_reports_unavailable_backend(monkeypatch):
     monkeypatch.setitem(sys.modules, "pylongfellow.backends._zk_cred", None)
     with pytest.raises(BackendUnavailableError, match="build_isrg_rust_backend"):
         isrg_rust.BACKEND.verify(
-            _dummy_handle(), (1, 2), b"", _one_attr(), _AWARE, b"", "doc", b"\xa0"
+            _dummy_handle(), mdoc.PublicKey(1, 2), b"", _one_attr(), _AWARE, b"", "doc", b"\xa0"
         )
 
 

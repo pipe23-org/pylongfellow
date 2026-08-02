@@ -43,7 +43,7 @@ def _attr(inputs, **changes):
     [
         lambda inputs: dataclasses.replace(inputs, proof=_flip(inputs.proof)),
         lambda inputs: dataclasses.replace(
-            inputs, issuer_pk=(inputs.issuer_pk[1], inputs.issuer_pk[0])
+            inputs, issuer_pk=mdoc.PublicKey(inputs.issuer_pk.y, inputs.issuer_pk.x)
         ),
         lambda inputs: dataclasses.replace(inputs, transcript=_flip(inputs.transcript)),
         lambda inputs: dataclasses.replace(inputs, timestamp=inputs.timestamp.replace(year=2024)),

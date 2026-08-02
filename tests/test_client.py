@@ -37,9 +37,9 @@ class _RecordingBackend:
         self,
         handle: CircuitHandle,
         mdoc: bytes,
-        issuer_pk: tuple[int, int],
+        issuer_public_key: mdoc.PublicKey,
         transcript: bytes,
-        attrs: list[mdoc.RequestedAttribute],
+        claims: list[mdoc.RequestedAttribute],
         timestamp: datetime,
     ) -> bytes:
         self.calls.append("prove")
@@ -48,9 +48,9 @@ class _RecordingBackend:
     def verify(
         self,
         handle: CircuitHandle,
-        issuer_pk: tuple[int, int],
+        issuer_public_key: mdoc.PublicKey,
         transcript: bytes,
-        attrs: list[mdoc.RequestedAttribute],
+        claims: list[mdoc.RequestedAttribute],
         timestamp: datetime,
         proof: bytes,
         doctype: str,
@@ -97,8 +97,8 @@ def test_prove_and_verify_dispatch_through_handle_backend():
     loader, other = _RecordingBackend(), _RecordingBackend()
     handle = loader.load_circuit(_SPEC, b"")
     longfellow = Pylongfellow(backend=other)
-    longfellow.prove(handle, b"", (1, 2), b"", [], _AWARE)
-    longfellow.verify(handle, (1, 2), b"", [], _AWARE, b"", "doc")
+    longfellow.prove(handle, b"", mdoc.PublicKey(1, 2), b"", [], _AWARE)
+    longfellow.verify(handle, mdoc.PublicKey(1, 2), b"", [], _AWARE, b"", "doc")
     assert loader.calls == ["load_circuit", "prove", "verify"]
     assert other.calls == ["ensure_available"]
 
@@ -109,7 +109,7 @@ def test_prove_rejects_naive_timestamp():
     handle = backend.load_circuit(_SPEC, b"")
     longfellow = Pylongfellow(backend=backend)
     with pytest.raises(ValueError, match="timezone-aware"):
-        longfellow.prove(handle, b"", (1, 2), b"", [], _NAIVE)
+        longfellow.prove(handle, b"", mdoc.PublicKey(1, 2), b"", [], _NAIVE)
     assert "prove" not in backend.calls
 
 
@@ -118,7 +118,7 @@ def test_verify_rejects_naive_timestamp():
     handle = backend.load_circuit(_SPEC, b"")
     longfellow = Pylongfellow(backend=backend)
     with pytest.raises(ValueError, match="timezone-aware"):
-        longfellow.verify(handle, (1, 2), b"", [], _NAIVE, b"", "doc")
+        longfellow.verify(handle, mdoc.PublicKey(1, 2), b"", [], _NAIVE, b"", "doc")
     assert "verify" not in backend.calls
 
 

@@ -10,7 +10,7 @@ from .._errors import LongfellowError
 if TYPE_CHECKING:
     from datetime import datetime
 
-    from ..mdoc._types import CircuitSpec, RequestedAttribute
+    from ..mdoc._types import CircuitSpec, PublicKey, RequestedAttribute
 
 
 class GenerationUnsupportedError(LongfellowError):
@@ -39,7 +39,7 @@ class CircuitHandle:
 
 
 class Backend(Protocol):
-    """A proving and verifying implementation for longfellow mdoc circuits."""
+    """The operations a backend provides."""
 
     name: str
     can_generate: bool
@@ -57,12 +57,12 @@ class Backend(Protocol):
         self,
         handle: CircuitHandle,
         mdoc: bytes,
-        issuer_pk: tuple[int, int],
+        issuer_public_key: PublicKey,
         transcript: bytes,
-        attrs: list[RequestedAttribute],
+        claims: list[RequestedAttribute],
         timestamp: datetime,
     ) -> bytes:
-        """Prove the requested attributes over the mdoc, bound to the transcript.
+        """Prove the claims over the mdoc, bound to the transcript.
 
         `timestamp` is timezone-aware. `Pylongfellow` rejects naive datetimes before the
         backend is called.
@@ -71,15 +71,15 @@ class Backend(Protocol):
     def verify(
         self,
         handle: CircuitHandle,
-        issuer_pk: tuple[int, int],
+        issuer_public_key: PublicKey,
         transcript: bytes,
-        attrs: list[RequestedAttribute],
+        claims: list[RequestedAttribute],
         timestamp: datetime,
         proof: bytes,
         doctype: str,
         device_namespaces: bytes | None,
     ) -> None:
-        """Verify a proof of the requested attributes against the transcript.
+        """Verify a proof of the claims against the transcript.
 
         `timestamp` is timezone-aware. `Pylongfellow` rejects naive datetimes before the
         backend is called.
@@ -113,8 +113,7 @@ def get_backend(name: str) -> Backend:
         name: Registry name, one of `google-cpp` or `isrg-rust`.
 
     Returns:
-        The backend singleton. [`Pylongfellow`][pylongfellow.Pylongfellow]
-            checks availability at construction.
+        The named backend.
 
     Raises:
         ValueError: `name` is not a registered backend name.

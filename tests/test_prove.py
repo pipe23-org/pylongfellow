@@ -52,7 +52,7 @@ def test_prove_then_verify(google, mdoc_eu_av):
             inputs, mdoc_bytes=inputs.mdoc_bytes[: len(inputs.mdoc_bytes) // 2]
         ),  # truncated
         lambda inputs: dataclasses.replace(
-            inputs, issuer_pk=(inputs.issuer_pk[1], inputs.issuer_pk[0])
+            inputs, issuer_pk=mdoc.PublicKey(inputs.issuer_pk.y, inputs.issuer_pk.x)
         ),
         lambda inputs: dataclasses.replace(inputs, timestamp=inputs.timestamp.replace(year=2020)),
         lambda inputs: _attr(inputs, id="definitely_not_present"),

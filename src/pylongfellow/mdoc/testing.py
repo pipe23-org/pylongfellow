@@ -1,8 +1,6 @@
-"""Test-credential construction: an mdoc DeviceResponse issued under locally held keys.
+"""Helpers that build test presentations under locally held keys.
 
-Everything in this module runs on `cryptography` and `cbor2` alone; no ZK backend is
-loaded or called. Whether a backend can prove or verify over a created credential is a
-property of that backend.
+An mdoc ``DeviceResponse`` is assembled and signed without loading a backend.
 """
 
 import hashlib
@@ -23,6 +21,7 @@ from cryptography.hazmat.primitives.asymmetric.utils import (
 from cryptography.x509.oid import NameOID
 
 from ._errors import Error
+from ._types import PublicKey
 
 # COSE protected header {1: -7}: ES256, the only algorithm on this path.
 _COSE_ES256_PROTECTED = b"\xa1\x01\x26"
@@ -36,7 +35,7 @@ def _require_utc(value: datetime, name: str) -> datetime:
 
 
 def _tdate(value: datetime) -> cbor2.CBORTag:
-    """Encode a UTC datetime the way deployed MSOs do: tag 0, whole seconds, Zulu."""
+    """Encode a UTC datetime as CBOR tag 0, `YYYY-MM-DDTHH:MM:SSZ`."""
     return cbor2.CBORTag(0, value.strftime("%Y-%m-%dT%H:%M:%SZ"))
 
 
@@ -186,14 +185,14 @@ def verify_device_authentication(mdoc: bytes, transcript: bytes) -> None:
         raise Error("device signature does not verify over the transcript") from e
 
 
-def _check_issuer_auth(credential: bytes) -> None:
+def _check_issuer_auth(presentation: bytes) -> None:
     """Verify the issuer signature against the embedded certificate.
 
-    Decodes the credential back the way a consumer would, so a certificate that
-    does not certify the signing key, or drift between encode and decode,
+    Decodes the presentation back the way a consumer would, so a certificate
+    that does not certify the signing key, or drift between encode and decode,
     fails here.
     """
-    issuer_auth = cbor2.loads(credential)["documents"][0]["issuerSigned"]["issuerAuth"]
+    issuer_auth = cbor2.loads(presentation)["documents"][0]["issuerSigned"]["issuerAuth"]
     certificate = x509.load_der_x509_certificate(issuer_auth[1][33])
     public = certificate.public_key()
     if not isinstance(public, ec.EllipticCurvePublicKey):
@@ -205,30 +204,24 @@ def _check_issuer_auth(credential: bytes) -> None:
 
 
 @dataclass(frozen=True)
-class CreatedCredential:
-    """A credential from [`create_credential`][pylongfellow.mdoc.create_credential].
+class PresentationSpecimen:
+    """A presentation with the issuer public key, certificate, and device key.
 
     Attributes:
         mdoc: CBOR-encoded ``DeviceResponse`` bytes.
-        issuer_key: Private key whose signature the MSO carries.
+        issuer_public_key: The issuer's public key.
         issuer_certificate: Leaf certificate embedded in ``issuerAuth``'s
             x5chain header.
         device_key: Private key matching the MSO's ``deviceKeyInfo``.
     """
 
     mdoc: bytes
-    issuer_key: ec.EllipticCurvePrivateKey
+    issuer_public_key: PublicKey
     issuer_certificate: x509.Certificate
     device_key: ec.EllipticCurvePrivateKey
 
-    @property
-    def issuer_pk(self) -> tuple[int, int]:
-        """The issuer public key as ``(x, y)``, the form the prover and verifier take."""
-        numbers = self.issuer_key.public_key().public_numbers()
-        return (numbers.x, numbers.y)
 
-
-def create_credential(
+def create_presentation(
     doc_type: str,
     claims: Mapping[str, Mapping[str, object]],
     transcript: bytes,
@@ -239,10 +232,10 @@ def create_credential(
     issuer_key: ec.EllipticCurvePrivateKey | None = None,
     device_key: ec.EllipticCurvePrivateKey | None = None,
     issuer_certificate: x509.Certificate | None = None,
-) -> CreatedCredential:
-    """Create a test mdoc credential under locally held keys.
+) -> PresentationSpecimen:
+    """Create a presentation under locally held keys.
 
-    Assembles an ISO 18013-5 ``DeviceResponse`` holding one document. The
+    Assembles a ``DeviceResponse`` holding one document. The
     claims are issuer-signed into an MSO. The device signature covers the
     transcript, the doctype, and the device namespaces. Both signatures are
     verified before returning.
@@ -255,7 +248,7 @@ def create_credential(
         transcript: CBOR-encoded session transcript the device signature is
             bound to. Presenting under another transcript requires re-signing,
             see
-            [`sign_device_authentication`][pylongfellow.mdoc.sign_device_authentication].
+            [`sign_device_authentication`][pylongfellow.mdoc.testing.sign_device_authentication].
         valid_from: MSO ``signed``/``validFrom`` timestamp, and the generated
             certificate's window start; timezone-aware.
         valid_until: MSO ``validUntil`` timestamp, and the generated
@@ -271,7 +264,7 @@ def create_credential(
             generated when None.
 
     Returns:
-        The credential bytes together with the keys and certificate that signed them.
+        The presentation, with the issuer public key, certificate, and device key.
 
     Raises:
         ValueError: `valid_from` or `valid_until` is naive.
@@ -341,7 +334,7 @@ def create_credential(
         device_key, transcript, doc_type, device_namespaces_item
     )
 
-    credential = cbor2.dumps(
+    presentation = cbor2.dumps(
         {
             "version": "1.0",
             "documents": [
@@ -372,6 +365,12 @@ def create_credential(
             "status": 0,
         }
     )
-    _check_issuer_auth(credential)
-    verify_device_authentication(credential, transcript)
-    return CreatedCredential(credential, issuer_key, issuer_certificate, device_key)
+    _check_issuer_auth(presentation)
+    verify_device_authentication(presentation, transcript)
+    issuer_numbers = issuer_key.public_key().public_numbers()
+    return PresentationSpecimen(
+        presentation,
+        PublicKey(issuer_numbers.x, issuer_numbers.y),
+        issuer_certificate,
+        device_key,
+    )
