@@ -150,8 +150,9 @@ def sign_device_authentication(
             ``deviceSigned.nameSpaces``: tag 24 over the encoded namespace map.
 
     Returns:
-        The 64-byte ``r || s`` signature; a document carries it as the final
-            element of its ``deviceAuth.deviceSignature`` array.
+        The ECDSA signature, ``r`` then ``s``, each 32 bytes big-endian; a
+            document carries it as the final element of its
+            ``deviceAuth.deviceSignature`` array.
     """
     payload = _device_authentication_bytes(transcript, doc_type, device_namespaces)
     return _cose_sign(device_key, payload)

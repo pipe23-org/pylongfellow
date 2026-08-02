@@ -31,16 +31,18 @@ which builds both backends locally — see the
 ## Usage
 
 ```python
+import cbor2
+
 from pylongfellow import Pylongfellow, mdoc
 from pylongfellow.backends.google_cpp import find_zk_spec
 
 longfellow = Pylongfellow(backend="google-cpp")
 
-spec = find_zk_spec("longfellow-libzk-v1", circuit_hash)
+spec = find_zk_spec("longfellow-libzk-v1", circuit_hash)  # circuit_hash: the agreed 64-hex circuit id
 circuit = longfellow.generate_circuit(spec)  # or Path(...).read_bytes()
 longfellow.load_circuit(spec, circuit)
 
-claims = [mdoc.RequestedAttribute("org.iso.18013.5.1", "age_over_18", b"\xf5")]  # CBOR true
+claims = [mdoc.RequestedAttribute("org.iso.18013.5.1", "age_over_18", cbor2.dumps(True))]
 issuer_public_key = mdoc.PublicKey(x, y)
 
 proof = longfellow.prove(credential, issuer_public_key, transcript, claims, now)
