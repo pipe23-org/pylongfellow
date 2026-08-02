@@ -112,7 +112,7 @@ class _IsrgRustBackend:
         version/count mismatches surface as errors at prove/verify.
 
         Args:
-            spec: CircuitSpec naming the circuit; its version must be 6 or 7.
+            spec: CircuitSpec identifying the circuit; its version must be 6 or 7.
             circuit: zstd-compressed circuit bytes.
 
         Returns:
@@ -130,7 +130,7 @@ class _IsrgRustBackend:
         """Reject circuit generation; this backend cannot generate circuits.
 
         Args:
-            spec: CircuitSpec naming the circuit to generate.
+            spec: CircuitSpec identifying the circuit to generate.
 
         Raises:
             GenerationUnsupportedError: always.

@@ -37,7 +37,7 @@ class Backend(Protocol):
         """
 
     def generate_circuit(self, spec: CircuitSpec) -> bytes:
-        """Generate the circuit named by spec."""
+        """Generate the circuit `spec` identifies."""
 
     def prove(
         self,

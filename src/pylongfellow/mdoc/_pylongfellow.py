@@ -59,7 +59,7 @@ class Pylongfellow:
         A second call replaces the loaded circuit.
 
         Args:
-            spec: CircuitSpec naming the circuit.
+            spec: CircuitSpec identifying the circuit.
             circuit: Circuit bytes, as from
                 [`generate_circuit`][pylongfellow.Pylongfellow.generate_circuit].
 
@@ -71,10 +71,10 @@ class Pylongfellow:
         self._circuit = self.backend.load_circuit(spec, circuit)
 
     def generate_circuit(self, spec: CircuitSpec) -> bytes:
-        """Generate the circuit named by spec.
+        """Generate the circuit `spec` identifies.
 
         Args:
-            spec: CircuitSpec naming the circuit to generate.
+            spec: CircuitSpec identifying the circuit to generate.
 
         Returns:
             Circuit bytes.

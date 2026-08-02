@@ -206,7 +206,7 @@ class _GoogleBackend:
         """Validate the circuit against the spec and return both as circuit state.
 
         Args:
-            spec: CircuitSpec naming the circuit.
+            spec: CircuitSpec identifying the circuit.
             circuit: Circuit bytes.
 
         Returns:
@@ -226,7 +226,7 @@ class _GoogleBackend:
         Binds `generate_circuit`. Only the latest circuit version is generated.
 
         Args:
-            spec: CircuitSpec naming the circuit to generate.
+            spec: CircuitSpec identifying the circuit to generate.
 
         Returns:
             Circuit bytes.
