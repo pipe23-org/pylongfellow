@@ -10,9 +10,8 @@ from pylongfellow.backends.google_cpp import find_zk_spec
 
 
 def _verify(longfellow, inputs):
-    handle = longfellow.load_circuit(inputs.spec, inputs.circuit)
+    longfellow.load_circuit(inputs.spec, inputs.circuit)
     longfellow.verify(
-        handle,
         inputs.issuer_pk,
         inputs.transcript,
         inputs.attrs,

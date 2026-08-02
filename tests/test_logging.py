@@ -48,9 +48,8 @@ if __name__ == "__main__":
         for a in fx["attrs"]
     ]
     longfellow = Pylongfellow(backend="google-cpp")
-    handle = longfellow.load_circuit(spec, (data / "circuits" / fx["circuit_hash"]).read_bytes())
+    longfellow.load_circuit(spec, (data / "circuits" / fx["circuit_hash"]).read_bytes())
     longfellow.verify(
-        handle,
         mdoc.PublicKey(int(fx["issuer_pk_x"], 16), int(fx["issuer_pk_y"], 16)),
         base64.b64decode(fx["transcript_b64"]),
         attrs,

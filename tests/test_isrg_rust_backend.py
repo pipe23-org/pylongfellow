@@ -9,7 +9,6 @@ import pytest
 from pylongfellow import mdoc
 from pylongfellow.backends import (
     BackendUnavailableError,
-    CircuitHandle,
     GenerationUnsupportedError,
     isrg_rust,
 )
@@ -24,8 +23,8 @@ skip_without_isrg_rust = pytest.mark.skipif(
 )
 
 
-def _dummy_handle() -> CircuitHandle:
-    return CircuitHandle(spec=_SPEC, backend=isrg_rust.BACKEND, state=isrg_rust._Circuit(b"", 6, 1))
+def _dummy_state() -> object:
+    return isrg_rust._LoadedCircuit(b"", 6, 1)
 
 
 def _one_attr() -> list[mdoc.RequestedAttribute]:
@@ -49,13 +48,13 @@ def test_prove_rejects_mixed_namespaces():
         mdoc.RequestedAttribute("ns.b", "y", b"\x02"),
     ]
     with pytest.raises(ValueError, match="one namespace"):
-        isrg_rust.BACKEND.prove(_dummy_handle(), b"", mdoc.PublicKey(1, 2), b"", attrs, _AWARE)
+        isrg_rust.BACKEND.prove(_dummy_state(), b"", mdoc.PublicKey(1, 2), b"", attrs, _AWARE)
 
 
 def test_verify_rejects_missing_device_namespaces():
     with pytest.raises(ValueError, match="device_namespaces is required"):
         isrg_rust.BACKEND.verify(
-            _dummy_handle(), mdoc.PublicKey(1, 2), b"", _one_attr(), _AWARE, b"", "doc", None
+            _dummy_state(), mdoc.PublicKey(1, 2), b"", _one_attr(), _AWARE, b"", "doc", None
         )
 
 
@@ -81,26 +80,23 @@ def test_circuit_version_maps_both():
 def test_prove_reports_unavailable_backend(monkeypatch):
     monkeypatch.setitem(sys.modules, "pylongfellow.backends._zk_cred", None)
     with pytest.raises(BackendUnavailableError, match="build_isrg_rust_backend"):
-        isrg_rust.BACKEND.prove(
-            _dummy_handle(), b"", mdoc.PublicKey(1, 2), b"", _one_attr(), _AWARE
-        )
+        isrg_rust.BACKEND.prove(_dummy_state(), b"", mdoc.PublicKey(1, 2), b"", _one_attr(), _AWARE)
 
 
 def test_verify_reports_unavailable_backend(monkeypatch):
     monkeypatch.setitem(sys.modules, "pylongfellow.backends._zk_cred", None)
     with pytest.raises(BackendUnavailableError, match="build_isrg_rust_backend"):
         isrg_rust.BACKEND.verify(
-            _dummy_handle(), mdoc.PublicKey(1, 2), b"", _one_attr(), _AWARE, b"", "doc", b"\xa0"
+            _dummy_state(), mdoc.PublicKey(1, 2), b"", _one_attr(), _AWARE, b"", "doc", b"\xa0"
         )
 
 
 @pytest.mark.slow
 @skip_without_isrg_rust
-def test_round_trip_verifies(isrg, isrg_handle, isrg_proof, vendored_vector):
+def test_round_trip_verifies(isrg, isrg_proof, vendored_vector):
     v = vendored_vector
     assert isrg_proof
     isrg.verify(
-        isrg_handle,
         v.issuer_pk,
         v.transcript,
         v.attrs,
@@ -113,13 +109,12 @@ def test_round_trip_verifies(isrg, isrg_handle, isrg_proof, vendored_vector):
 
 @pytest.mark.slow
 @skip_without_isrg_rust
-def test_verify_rejects_tampered_proof(isrg, isrg_handle, isrg_proof, vendored_vector):
+def test_verify_rejects_tampered_proof(isrg, isrg_proof, vendored_vector):
     v = vendored_vector
     tampered = bytearray(isrg_proof)
     tampered[100] ^= 0xFF
     with pytest.raises(mdoc.VerifierError) as excinfo:
         isrg.verify(
-            isrg_handle,
             v.issuer_pk,
             v.transcript,
             v.attrs,
@@ -134,10 +129,10 @@ def test_verify_rejects_tampered_proof(isrg, isrg_handle, isrg_proof, vendored_v
 
 @pytest.mark.slow
 @skip_without_isrg_rust
-def test_prove_rejects_unknown_claim(isrg, isrg_handle, vendored_vector):
+def test_prove_rejects_unknown_claim(isrg, vendored_vector):
     v = vendored_vector
     attrs = [dataclasses.replace(v.attrs[0], id="definitely_not_present")]
     with pytest.raises(mdoc.ProverError) as excinfo:
-        isrg.prove(isrg_handle, v.mdoc_bytes, v.issuer_pk, v.transcript, attrs, v.timestamp)
+        isrg.prove(v.mdoc_bytes, v.issuer_pk, v.transcript, attrs, v.timestamp)
     assert excinfo.value.code is None
     assert str(excinfo.value) == str(excinfo.value.__cause__)

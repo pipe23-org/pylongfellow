@@ -10,9 +10,8 @@ from pylongfellow.backends.google_cpp import find_zk_spec
 
 
 def _prove(longfellow, inputs):
-    handle = longfellow.load_circuit(inputs.spec, inputs.circuit)
+    longfellow.load_circuit(inputs.spec, inputs.circuit)
     return longfellow.prove(
-        handle,
         inputs.mdoc_bytes,
         inputs.issuer_pk,
         inputs.transcript,
@@ -29,10 +28,9 @@ def test_prove_then_verify(google, mdoc_eu_av):
     inputs = mdoc_eu_av
     proof = _prove(google, inputs)
     assert proof
-    # The proof we just made must verify against the same inputs.
-    handle = google.load_circuit(inputs.spec, inputs.circuit)
+    # The proof we just made must verify against the same inputs, on the
+    # instance that proved it.
     google.verify(
-        handle,
         inputs.issuer_pk,
         inputs.transcript,
         inputs.attrs,

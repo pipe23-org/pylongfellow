@@ -8,7 +8,7 @@ generation.
 from importlib.metadata import version
 
 from ._errors import LongfellowError
-from .mdoc._client import Pylongfellow
+from .mdoc._pylongfellow import Pylongfellow
 
 __version__ = version("pylongfellow")
 

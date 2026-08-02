@@ -8,7 +8,7 @@ from datetime import UTC
 from typing import TYPE_CHECKING, Any, cast
 
 from ..mdoc._errors import ProverError, VerifierError
-from . import BackendUnavailableError, CircuitHandle, GenerationUnsupportedError
+from . import BackendUnavailableError, GenerationUnsupportedError
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -65,8 +65,8 @@ def _single_namespace(claims: list[RequestedAttribute]) -> str:
 
 
 @dataclass
-class _Circuit:
-    """Per-handle circuit state: the decompressed bytes and cached prover/verifier."""
+class _LoadedCircuit:
+    """The decompressed circuit, and the prover and verifier initialised from it on first use."""
 
     decompressed: bytes
     version: int
@@ -75,22 +75,22 @@ class _Circuit:
     verifier: Any = field(default=None)
 
 
-def _ensure_prover(holder: _Circuit) -> tuple[Any, Any]:
+def _ensure_prover(loaded: _LoadedCircuit) -> tuple[Any, Any]:
     zk = _zk()
-    if holder.prover is None:
-        holder.prover = zk.initialize_prover(
-            holder.decompressed, _circuit_version(zk, holder.version), holder.num_attributes
+    if loaded.prover is None:
+        loaded.prover = zk.initialize_prover(
+            loaded.decompressed, _circuit_version(zk, loaded.version), loaded.num_attributes
         )
-    return zk, holder.prover
+    return zk, loaded.prover
 
 
-def _ensure_verifier(holder: _Circuit) -> tuple[Any, Any]:
+def _ensure_verifier(loaded: _LoadedCircuit) -> tuple[Any, Any]:
     zk = _zk()
-    if holder.verifier is None:
-        holder.verifier = zk.initialize_verifier(
-            holder.decompressed, _circuit_version(zk, holder.version), holder.num_attributes
+    if loaded.verifier is None:
+        loaded.verifier = zk.initialize_verifier(
+            loaded.decompressed, _circuit_version(zk, loaded.version), loaded.num_attributes
         )
-    return zk, holder.verifier
+    return zk, loaded.verifier
 
 
 class _IsrgRustBackend:
@@ -103,8 +103,8 @@ class _IsrgRustBackend:
         """Raise BackendUnavailableError unless the UniFFI extension is built."""
         _zk()
 
-    def load_circuit(self, spec: CircuitSpec, circuit: bytes) -> CircuitHandle:
-        """Decompress and bind a circuit to this backend as a CircuitHandle.
+    def load_circuit(self, spec: CircuitSpec, circuit: bytes) -> object:
+        """Decompress a circuit and return it as circuit state.
 
         Circuit identity is backend-native behaviour: this backend does not
         check that `spec.circuit_hash` matches `circuit`. A wrong circuit of
@@ -112,11 +112,11 @@ class _IsrgRustBackend:
         version/count mismatches surface as errors at prove/verify.
 
         Args:
-            spec: CircuitSpec naming the circuit; its version must be 6 or 7.
+            spec: CircuitSpec identifying the circuit; its version must be 6 or 7.
             circuit: zstd-compressed circuit bytes.
 
         Returns:
-            A CircuitHandle carrying the decompressed circuit as backend state.
+            The circuit state prove and verify take.
 
         Raises:
             ValueError: `spec.version` is not 6 or 7.
@@ -124,14 +124,13 @@ class _IsrgRustBackend:
         if spec.version not in _VERSIONS:
             raise ValueError(f"unsupported circuit version {spec.version} (expected 6 or 7)")
         decompressed = _decompress(circuit)
-        holder = _Circuit(decompressed, spec.version, spec.num_attributes)
-        return CircuitHandle(spec=spec, backend=self, state=holder)
+        return _LoadedCircuit(decompressed, spec.version, spec.num_attributes)
 
     def generate_circuit(self, spec: CircuitSpec) -> bytes:
         """Reject circuit generation; this backend cannot generate circuits.
 
         Args:
-            spec: CircuitSpec naming the circuit to generate.
+            spec: CircuitSpec identifying the circuit to generate.
 
         Raises:
             GenerationUnsupportedError: always.
@@ -140,7 +139,7 @@ class _IsrgRustBackend:
 
     def prove(
         self,
-        handle: CircuitHandle,
+        state: object,
         mdoc: bytes,
         issuer_public_key: PublicKey,
         transcript: bytes,
@@ -150,10 +149,10 @@ class _IsrgRustBackend:
         """Prove the claims hold over the mdoc, bound to the transcript.
 
         Args:
-            handle: A CircuitHandle from `load_circuit`.
+            state: Circuit state from `load_circuit`.
             mdoc: CBOR-encoded mdoc credential, passed through as the device response.
             issuer_public_key: The issuer's public key.
-            transcript: Session transcript the proof is bound to.
+            transcript: Session transcript to bind the proof to.
             claims: Claims to prove; all must share one namespace.
             timestamp: Timezone-aware verification time.
 
@@ -165,11 +164,11 @@ class _IsrgRustBackend:
             BackendUnavailableError: the isrg-rust backend is not built.
             ProverError: the prover rejected the inputs.
         """
-        holder = cast("_Circuit", handle.state)
+        loaded = cast("_LoadedCircuit", state)
         namespace = _single_namespace(claims)
         claim_ids = [claim.id for claim in claims]
         time = _fmt_timestamp(timestamp)
-        zk, prover = _ensure_prover(holder)
+        zk, prover = _ensure_prover(loaded)
         try:
             return cast(bytes, zk.prove(prover, mdoc, namespace, claim_ids, transcript, time))
         except zk.MdocZkError as e:
@@ -177,7 +176,7 @@ class _IsrgRustBackend:
 
     def verify(
         self,
-        handle: CircuitHandle,
+        state: object,
         issuer_public_key: PublicKey,
         transcript: bytes,
         claims: list[RequestedAttribute],
@@ -189,7 +188,7 @@ class _IsrgRustBackend:
         """Verify a proof that the claims hold, against the transcript.
 
         Args:
-            handle: A CircuitHandle from `load_circuit`.
+            state: Circuit state from `load_circuit`.
             issuer_public_key: The issuer's public key.
             transcript: Session transcript the proof is bound to.
             claims: Claims to verify.
@@ -209,7 +208,7 @@ class _IsrgRustBackend:
             )
         time = _fmt_timestamp(timestamp)
         encoded_public_key = _encode_public_key(issuer_public_key)
-        zk, verifier = _ensure_verifier(cast("_Circuit", handle.state))
+        zk, verifier = _ensure_verifier(cast("_LoadedCircuit", state))
         attributes = [
             zk.Attribute(identifier=claim.id, value_cbor=claim.cbor_value) for claim in claims
         ]

@@ -26,20 +26,22 @@ circuit = longfellow.generate_circuit(spec)
 if circuit_id(circuit) != spec.circuit_hash:
     raise SystemExit("generated circuit id does not match the spec")
 
-handle = longfellow.load_circuit(spec, circuit)
+longfellow.load_circuit(spec, circuit)
 
-attrs = [
+claims = [
     mdoc.RequestedAttribute(a["namespace"], a["id"], bytes.fromhex(a["cbor_value_hex"]))
     for a in credential["attrs"]
 ]
-issuer_pk = mdoc.PublicKey(int(credential["issuer_pk_x"], 16), int(credential["issuer_pk_y"], 16))
+issuer_public_key = mdoc.PublicKey(
+    int(credential["issuer_pk_x"], 16), int(credential["issuer_pk_y"], 16)
+)
 transcript = bytes.fromhex(credential["transcript_hex"])
 credential_mdoc = bytes.fromhex(credential["mdoc_hex"])
 timestamp = datetime.fromisoformat(credential["timestamp"])
 
-proof = longfellow.prove(handle, credential_mdoc, issuer_pk, transcript, attrs, timestamp)
+proof = longfellow.prove(credential_mdoc, issuer_public_key, transcript, claims, timestamp)
 print(f"proved: {len(proof)} bytes")
 
 # verify() returns None on success and raises VerifierError otherwise.
-longfellow.verify(handle, issuer_pk, transcript, attrs, timestamp, proof, credential["doctype"])
+longfellow.verify(issuer_public_key, transcript, claims, timestamp, proof, credential["doctype"])
 print("verified")

@@ -264,49 +264,42 @@ UNTESTABLE_CELLS = tuple(
 )
 
 
-@pytest.fixture(scope="session")
-def longfellow_for() -> Callable[[str], Pylongfellow]:
-    """Return a session-cached Pylongfellow for a registry name, skipping if unbuilt."""
-    cache: dict[str, Pylongfellow | None] = {}
-
-    def get(name: str) -> Pylongfellow:
-        if name not in cache:
-            try:
-                cache[name] = Pylongfellow(backend=name)
-            except BackendUnavailableError:
-                cache[name] = None
-        longfellow = cache[name]
-        if longfellow is None:
-            pytest.skip(f"{name} backend not built")
-        return longfellow
-
-    return get
+def spec_of(circuit: Circuit) -> mdoc.CircuitSpec:
+    """Build the CircuitSpec a corpus circuit's sidecar describes."""
+    return mdoc.CircuitSpec(
+        system=str(circuit.sidecar["system"]),
+        circuit_hash=circuit.circuit_id,
+        num_attributes=circuit.num_attributes,
+        version=circuit.version,
+        block_enc_hash=int(circuit.sidecar["block_enc_hash"]),
+        block_enc_sig=int(circuit.sidecar["block_enc_sig"]),
+    )
 
 
 @pytest.fixture(scope="session")
-def handle_for(
-    longfellow_for: Callable[[str], Pylongfellow],
-) -> Callable[[str, Circuit], mdoc.CircuitHandle]:
-    """Return a session-cached CircuitHandle for (registry name, corpus circuit).
+def longfellow_for() -> Callable[[str, Circuit], Pylongfellow]:
+    """Return a session-cached Pylongfellow per (registry name, corpus circuit), skipping if unbuilt.
 
-    The isrg-rust backend holds lazily initialised prover/verifier engines on
-    the handle, so reusing the handle across cases avoids re-initialising them.
+    A Pylongfellow proves and verifies over one circuit, so the cases key on the
+    pair. The isrg-rust backend initialises its prover and verifier engines
+    lazily per instance, and sharing the instance across cases initialises them
+    once.
     """
-    cache: dict[tuple[str, str], mdoc.CircuitHandle] = {}
+    cache: dict[tuple[str, str], Pylongfellow | None] = {}
 
-    def get(name: str, circuit: Circuit) -> mdoc.CircuitHandle:
+    def get(name: str, circuit: Circuit) -> Pylongfellow:
         key = (name, circuit.stem)
         if key not in cache:
-            longfellow = longfellow_for(name)
-            spec = mdoc.CircuitSpec(
-                system=str(circuit.sidecar["system"]),
-                circuit_hash=circuit.circuit_id,
-                num_attributes=circuit.num_attributes,
-                version=circuit.version,
-                block_enc_hash=int(circuit.sidecar["block_enc_hash"]),
-                block_enc_sig=int(circuit.sidecar["block_enc_sig"]),
-            )
-            cache[key] = longfellow.load_circuit(spec, circuit.path.read_bytes())
-        return cache[key]
+            try:
+                longfellow = Pylongfellow(backend=name)
+            except BackendUnavailableError:
+                cache[key] = None
+            else:
+                longfellow.load_circuit(spec_of(circuit), circuit.path.read_bytes())
+                cache[key] = longfellow
+        loaded = cache[key]
+        if loaded is None:
+            pytest.skip(f"{name} backend not built")
+        return loaded
 
     return get
