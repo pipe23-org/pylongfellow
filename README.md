@@ -47,8 +47,6 @@ proof = longfellow.prove(credential, issuer_public_key, transcript, claims, now)
 longfellow.verify(issuer_public_key, transcript, claims, now, proof, doctype)  # raises on failure
 ```
 
-A `Pylongfellow` proves and verifies with the circuit it last loaded.
-
 Examples are in [`examples/`](examples/).
 
 ## Documentation

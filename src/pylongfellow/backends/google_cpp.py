@@ -266,7 +266,7 @@ class _GoogleBackend:
             state: Circuit state from `load_circuit`.
             mdoc: CBOR-encoded mdoc credential.
             issuer_public_key: The issuer's public key.
-            transcript: Session transcript the proof is bound to.
+            transcript: Session transcript to bind the proof to.
             claims: Claims to prove; `len(claims)` must equal the loaded spec's
                 `num_attributes`.
             timestamp: Timezone-aware verification time.

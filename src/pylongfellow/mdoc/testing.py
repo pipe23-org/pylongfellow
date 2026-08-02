@@ -150,7 +150,8 @@ def sign_device_authentication(
             ``deviceSigned.nameSpaces``: tag 24 over the encoded namespace map.
 
     Returns:
-        The raw 64-byte ``r || s`` signature, the fourth element of ``deviceAuth.deviceSignature``.
+        The 64-byte ``r || s`` signature; a document carries it as the final
+            element of its ``deviceAuth.deviceSignature`` array.
     """
     payload = _device_authentication_bytes(transcript, doc_type, device_namespaces)
     return _cose_sign(device_key, payload)

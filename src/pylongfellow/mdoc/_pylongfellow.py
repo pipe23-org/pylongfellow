@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class Pylongfellow:
-    """A Longfellow prover and verifier for one circuit on one backend.
+    """A Longfellow prover and verifier.
 
     Example:
         ```python
@@ -71,7 +71,7 @@ class Pylongfellow:
         self._circuit = self.backend.load_circuit(spec, circuit)
 
     def generate_circuit(self, spec: CircuitSpec) -> bytes:
-        """Generate the circuit `spec` identifies.
+        """Generate the circuit identified by `spec`.
 
         Args:
             spec: CircuitSpec identifying the circuit to generate.
@@ -99,7 +99,7 @@ class Pylongfellow:
         Args:
             mdoc: CBOR-encoded mdoc credential.
             issuer_public_key: The issuer's public key.
-            transcript: Session transcript the proof is bound to.
+            transcript: Session transcript to bind the proof to.
             claims: Claims to prove; `len(claims)` must equal the loaded spec's
                 `num_attributes`.
             timestamp: Timezone-aware verification time.

@@ -152,7 +152,7 @@ class _IsrgRustBackend:
             state: Circuit state from `load_circuit`.
             mdoc: CBOR-encoded mdoc credential, passed through as the device response.
             issuer_public_key: The issuer's public key.
-            transcript: Session transcript the proof is bound to.
+            transcript: Session transcript to bind the proof to.
             claims: Claims to prove; all must share one namespace.
             timestamp: Timezone-aware verification time.
 
