@@ -5,10 +5,9 @@
 Breaking API changes and a documentation overhaul. The release carries the rewritten README
 and docs to the PyPI project page.
 
-- **Breaking: a loaded circuit becomes state on the `Pylongfellow` instance** —
-  `load_circuit` returns `None`; `prove` and `verify` drop the handle parameter;
-  `mdoc.CircuitHandle` is removed. The `Backend` protocol carries the loaded circuit as
-  opaque `state`.
+- **Breaking: `load_circuit` stores the circuit on the instance** — it no longer returns
+  a `CircuitHandle`, and `prove` and `verify` no longer take one. `mdoc.CircuitHandle` is
+  removed. `Backend` implementations pass the loaded circuit as an opaque `state` object.
 - **Breaking: `load_circuit(spec, circuit)`** — the second parameter was `compressed`.
   Same rename in the `Backend` protocol.
 - **Breaking: `prove` and `verify` take `issuer_public_key`, a `mdoc.PublicKey`** — was
