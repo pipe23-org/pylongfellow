@@ -104,7 +104,7 @@ class _IsrgRustBackend:
         _zk()
 
     def load_circuit(self, spec: CircuitSpec, circuit: bytes) -> object:
-        """Decompress a circuit and hold it with the version and attribute count.
+        """Decompress a circuit and return it as circuit state.
 
         Circuit identity is backend-native behaviour: this backend does not
         check that `spec.circuit_hash` matches `circuit`. A wrong circuit of

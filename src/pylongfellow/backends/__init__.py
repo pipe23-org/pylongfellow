@@ -32,8 +32,8 @@ class Backend(Protocol):
     def load_circuit(self, spec: CircuitSpec, circuit: bytes) -> object:
         """Load a circuit and return the state prove and verify take.
 
-        The state's type is the backend's own. `Pylongfellow` holds it between calls, so
-        a backend may put expensive parsed state in it.
+        The state's type is the backend's own; `prove` and `verify` take it back as
+        `state`, so a backend may put expensive parsed state in it.
         """
 
     def generate_circuit(self, spec: CircuitSpec) -> bytes:

@@ -54,7 +54,7 @@ class Pylongfellow:
         return self._circuit
 
     def load_circuit(self, spec: CircuitSpec, circuit: bytes) -> None:
-        """Load the circuit this instance proves and verifies over.
+        """Load the circuit this instance proves and verifies with.
 
         A second call replaces the loaded circuit.
 

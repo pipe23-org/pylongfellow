@@ -5,12 +5,12 @@
 Breaking API changes and a documentation overhaul. The release carries the rewritten README
 and docs to the PyPI project page.
 
-- **Breaking: a `Pylongfellow` proves and verifies over the circuit it last loaded** —
+- **Breaking: a `Pylongfellow` proves and verifies with the circuit it last loaded** —
   `load_circuit` returned a `CircuitHandle` that `prove` and `verify` took as their first
   argument. `load_circuit` now returns `None` and sets the circuit on the instance; `prove`
   and `verify` drop the parameter. A second `load_circuit` replaces the loaded circuit, and
   `prove` or `verify` before the first raises `RuntimeError`. All callers change; a caller
-  working over several circuits holds one `Pylongfellow` per circuit.
+  with several circuits holds one `Pylongfellow` per circuit.
 - **Breaking: `mdoc.CircuitHandle` removed** — a loaded circuit is state of the backend that
   loaded it and has no public type. `Backend.load_circuit` returns it as `object`, and
   `Backend.prove` and `Backend.verify` take it back as their first parameter, `state`. Code

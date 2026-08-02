@@ -203,7 +203,7 @@ class _GoogleBackend:
         _load()
 
     def load_circuit(self, spec: CircuitSpec, circuit: bytes) -> object:
-        """Validate the circuit against the spec and hold both.
+        """Validate the circuit against the spec and return both as circuit state.
 
         Args:
             spec: CircuitSpec naming the circuit.
