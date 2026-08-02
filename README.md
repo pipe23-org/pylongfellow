@@ -38,7 +38,7 @@ from pylongfellow.backends.google_cpp import find_zk_spec
 
 longfellow = Pylongfellow(backend="google-cpp")
 
-spec = find_zk_spec("longfellow-libzk-v1", circuit_hash)  # circuit_hash: pre-shared between prover and verifier
+spec = find_zk_spec("longfellow-libzk-v1", circuit_hash)  # pre-shared between prover and verifier
 circuit = longfellow.generate_circuit(spec)  # or Path(...).read_bytes()
 longfellow.load_circuit(spec, circuit)
 
