@@ -1,6 +1,5 @@
 """Data types and errors for proving and verifying mdoc credentials."""
 
-from ..backends import CircuitHandle
 from ._errors import (
     CircuitError,
     CircuitGenerationErrorCode,
@@ -15,7 +14,6 @@ from ._types import CircuitSpec, PublicKey, RequestedAttribute
 __all__ = [
     "CircuitError",
     "CircuitGenerationErrorCode",
-    "CircuitHandle",
     "CircuitSpec",
     "Error",
     "ProverError",

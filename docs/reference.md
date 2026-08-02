@@ -9,7 +9,6 @@
 
 ### Data types
 
-::: pylongfellow.mdoc.CircuitHandle
 ::: pylongfellow.mdoc.RequestedAttribute
 ::: pylongfellow.mdoc.PublicKey
 ::: pylongfellow.mdoc.CircuitSpec

@@ -162,26 +162,24 @@ def vendored_vector() -> VendoredVector:
     )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def google() -> Pylongfellow:
     return Pylongfellow(backend="google-cpp")
 
 
 @pytest.fixture(scope="session")
-def isrg() -> Pylongfellow:
-    return Pylongfellow(backend="isrg-rust")
+def isrg(vendored_vector: VendoredVector) -> Pylongfellow:
+    """Return an isrg-rust instance with the vendored vector's circuit loaded.
+
+    Session-scoped: the backend initialises its prover and verifier engines once
+    per instance, and every test here runs over the same circuit.
+    """
+    longfellow = Pylongfellow(backend="isrg-rust")
+    longfellow.load_circuit(vendored_vector.spec, vendored_vector.circuit)
+    return longfellow
 
 
 @pytest.fixture(scope="session")
-def isrg_handle(isrg: Pylongfellow, vendored_vector: VendoredVector) -> mdoc.CircuitHandle:
-    return isrg.load_circuit(vendored_vector.spec, vendored_vector.circuit)
-
-
-@pytest.fixture(scope="session")
-def isrg_proof(
-    isrg: Pylongfellow,
-    isrg_handle: mdoc.CircuitHandle,
-    vendored_vector: VendoredVector,
-) -> bytes:
+def isrg_proof(isrg: Pylongfellow, vendored_vector: VendoredVector) -> bytes:
     v = vendored_vector
-    return isrg.prove(isrg_handle, v.mdoc_bytes, v.issuer_pk, v.transcript, v.attrs, v.timestamp)
+    return isrg.prove(v.mdoc_bytes, v.issuer_pk, v.transcript, v.attrs, v.timestamp)

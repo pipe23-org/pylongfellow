@@ -1,4 +1,4 @@
-"""The Pylongfellow longfellow: backend binding, registry resolution, and dispatch."""
+"""Pylongfellow: backend selection, circuit loading, and what the loaded circuit gates."""
 
 import sys
 from datetime import UTC, datetime
@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 import pytest
 
 from pylongfellow import Pylongfellow, mdoc
-from pylongfellow.backends import BackendUnavailableError, CircuitHandle, google_cpp
+from pylongfellow.backends import BackendUnavailableError, google_cpp
 
 _AWARE = datetime(2024, 10, 1, 9, 0, 0, tzinfo=UTC)
 _NAIVE = datetime(2024, 10, 1, 9, 0, 0)
@@ -14,20 +14,21 @@ _SPEC = mdoc.CircuitSpec("", "0" * 64, 1, 6, 0, 0)
 
 
 class _RecordingBackend:
-    """A Backend stub that records which operations were dispatched to it."""
+    """A Backend stub that records the operations called on it and the state it was given."""
 
     name: str = "stub"
     can_generate: bool = True
 
     def __init__(self) -> None:
         self.calls: list[str] = []
+        self.states: list[object] = []
 
     def ensure_available(self) -> None:
         self.calls.append("ensure_available")
 
-    def load_circuit(self, spec: mdoc.CircuitSpec, circuit: bytes) -> CircuitHandle:
+    def load_circuit(self, spec: mdoc.CircuitSpec, circuit: bytes) -> object:
         self.calls.append("load_circuit")
-        return CircuitHandle(spec=spec, backend=self, state=circuit)
+        return circuit
 
     def generate_circuit(self, spec: mdoc.CircuitSpec) -> bytes:
         self.calls.append("generate_circuit")
@@ -35,7 +36,7 @@ class _RecordingBackend:
 
     def prove(
         self,
-        handle: CircuitHandle,
+        state: object,
         mdoc: bytes,
         issuer_public_key: mdoc.PublicKey,
         transcript: bytes,
@@ -43,11 +44,12 @@ class _RecordingBackend:
         timestamp: datetime,
     ) -> bytes:
         self.calls.append("prove")
+        self.states.append(state)
         return b"proof"
 
     def verify(
         self,
-        handle: CircuitHandle,
+        state: object,
         issuer_public_key: mdoc.PublicKey,
         transcript: bytes,
         claims: list[mdoc.RequestedAttribute],
@@ -57,6 +59,7 @@ class _RecordingBackend:
         device_namespaces: bytes | None,
     ) -> None:
         self.calls.append("verify")
+        self.states.append(state)
 
 
 def test_registry_name_resolves_to_singleton():
@@ -64,7 +67,7 @@ def test_registry_name_resolves_to_singleton():
     assert longfellow.backend is google_cpp.BACKEND
 
 
-def test_backend_instance_is_bound_and_probed():
+def test_backend_instance_is_bound_and_checked():
     stub = _RecordingBackend()
     longfellow = Pylongfellow(backend=stub)
     assert longfellow.backend is stub
@@ -91,41 +94,54 @@ def test_generate_circuit_routes_to_bound_backend():
     assert stub.calls == ["ensure_available", "generate_circuit"]
 
 
-def test_prove_and_verify_dispatch_through_handle_backend():
-    # A handle loaded on one backend keeps its dispatch even on another
-    # longfellow: prove/verify route through handle.backend, not longfellow.backend.
-    loader, other = _RecordingBackend(), _RecordingBackend()
-    handle = loader.load_circuit(_SPEC, b"")
-    longfellow = Pylongfellow(backend=other)
-    longfellow.prove(handle, b"", mdoc.PublicKey(1, 2), b"", [], _AWARE)
-    longfellow.verify(handle, mdoc.PublicKey(1, 2), b"", [], _AWARE, b"", "doc")
-    assert loader.calls == ["load_circuit", "prove", "verify"]
-    assert other.calls == ["ensure_available"]
+def test_prove_and_verify_run_on_the_loaded_circuit():
+    stub = _RecordingBackend()
+    longfellow = Pylongfellow(backend=stub)
+    longfellow.load_circuit(_SPEC, b"circuit")
+    longfellow.prove(b"", mdoc.PublicKey(1, 2), b"", [], _AWARE)
+    longfellow.verify(mdoc.PublicKey(1, 2), b"", [], _AWARE, b"", "doc")
+    assert stub.calls == ["ensure_available", "load_circuit", "prove", "verify"]
+    assert stub.states == [b"circuit", b"circuit"]
+
+
+def test_second_load_circuit_replaces_the_first():
+    stub = _RecordingBackend()
+    longfellow = Pylongfellow(backend=stub)
+    longfellow.load_circuit(_SPEC, b"first")
+    longfellow.load_circuit(_SPEC, b"second")
+    longfellow.prove(b"", mdoc.PublicKey(1, 2), b"", [], _AWARE)
+    assert stub.states == [b"second"]
+
+
+def test_prove_without_a_loaded_circuit():
+    longfellow = Pylongfellow(backend=_RecordingBackend())
+    with pytest.raises(RuntimeError, match="no circuit is loaded"):
+        longfellow.prove(b"", mdoc.PublicKey(1, 2), b"", [], _AWARE)
+
+
+def test_verify_without_a_loaded_circuit():
+    longfellow = Pylongfellow(backend=_RecordingBackend())
+    with pytest.raises(RuntimeError, match="no circuit is loaded"):
+        longfellow.verify(mdoc.PublicKey(1, 2), b"", [], _AWARE, b"", "doc")
 
 
 def test_prove_rejects_naive_timestamp():
-    # The tz-aware check sits above backend dispatch: prove is never reached.
-    backend = _RecordingBackend()
-    handle = backend.load_circuit(_SPEC, b"")
-    longfellow = Pylongfellow(backend=backend)
+    # The tz-aware check sits above the backend call: prove is never reached.
+    stub = _RecordingBackend()
+    longfellow = Pylongfellow(backend=stub)
+    longfellow.load_circuit(_SPEC, b"")
     with pytest.raises(ValueError, match="timezone-aware"):
-        longfellow.prove(handle, b"", mdoc.PublicKey(1, 2), b"", [], _NAIVE)
-    assert "prove" not in backend.calls
+        longfellow.prove(b"", mdoc.PublicKey(1, 2), b"", [], _NAIVE)
+    assert "prove" not in stub.calls
 
 
 def test_verify_rejects_naive_timestamp():
-    backend = _RecordingBackend()
-    handle = backend.load_circuit(_SPEC, b"")
-    longfellow = Pylongfellow(backend=backend)
+    stub = _RecordingBackend()
+    longfellow = Pylongfellow(backend=stub)
+    longfellow.load_circuit(_SPEC, b"")
     with pytest.raises(ValueError, match="timezone-aware"):
-        longfellow.verify(handle, mdoc.PublicKey(1, 2), b"", [], _NAIVE, b"", "doc")
-    assert "verify" not in backend.calls
-
-
-def test_handle_carries_spec(google, mdoc_eu_av):
-    handle = google.load_circuit(mdoc_eu_av.spec, mdoc_eu_av.circuit)
-    assert handle.spec is mdoc_eu_av.spec
-    assert handle.state == mdoc_eu_av.circuit
+        longfellow.verify(mdoc.PublicKey(1, 2), b"", [], _NAIVE, b"", "doc")
+    assert "verify" not in stub.calls
 
 
 def test_load_circuit_rejects_hash_spec_mismatch(google, mdoc_eu_av):
@@ -142,12 +158,11 @@ def test_load_circuit_rejects_hash_spec_mismatch(google, mdoc_eu_av):
 
 def test_google_error_populates_code(google, proof_age_over_18):
     inputs = proof_age_over_18
-    handle = google.load_circuit(inputs.spec, inputs.circuit)
+    google.load_circuit(inputs.spec, inputs.circuit)
     bad_proof = bytearray(inputs.proof)
     bad_proof[len(bad_proof) // 2] ^= 0x01
     with pytest.raises(mdoc.VerifierError) as excinfo:
         google.verify(
-            handle,
             inputs.issuer_pk,
             inputs.transcript,
             inputs.attrs,
@@ -160,9 +175,8 @@ def test_google_error_populates_code(google, proof_age_over_18):
 
 def test_device_namespaces_ignored_on_google_verify(google, proof_age_over_18):
     inputs = proof_age_over_18
-    handle = google.load_circuit(inputs.spec, inputs.circuit)
+    google.load_circuit(inputs.spec, inputs.circuit)
     google.verify(
-        handle,
         inputs.issuer_pk,
         inputs.transcript,
         inputs.attrs,

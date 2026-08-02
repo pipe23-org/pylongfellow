@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..backends import Backend, CircuitHandle, get_backend
+from ..backends import Backend, get_backend
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -16,14 +16,14 @@ if TYPE_CHECKING:
 
 
 class Pylongfellow:
-    """A Longfellow prover and verifier.
+    """A Longfellow prover and verifier for one circuit on one backend.
 
     Example:
         ```python
         longfellow = Pylongfellow(backend="google-cpp")
-        handle = longfellow.load_circuit(spec, circuit)
-        proof = longfellow.prove(handle, mdoc, issuer_public_key, transcript, claims, timestamp)
-        longfellow.verify(handle, issuer_public_key, transcript, claims, timestamp, proof, doctype)
+        longfellow.load_circuit(spec, circuit)
+        proof = longfellow.prove(mdoc, issuer_public_key, transcript, claims, timestamp)
+        longfellow.verify(issuer_public_key, transcript, claims, timestamp, proof, doctype)
         ```
 
     Attributes:
@@ -46,25 +46,29 @@ class Pylongfellow:
         """
         self.backend = get_backend(backend) if isinstance(backend, str) else backend
         self.backend.ensure_available()
+        self._circuit: object | None = None
 
-    def load_circuit(self, spec: CircuitSpec, circuit: bytes) -> CircuitHandle:
-        """Load a circuit and return a CircuitHandle.
+    def _loaded_circuit(self) -> object:
+        if self._circuit is None:
+            raise RuntimeError("no circuit is loaded; call load_circuit first")
+        return self._circuit
+
+    def load_circuit(self, spec: CircuitSpec, circuit: bytes) -> None:
+        """Load the circuit this instance proves and verifies over.
+
+        A second call replaces the loaded circuit.
 
         Args:
             spec: CircuitSpec naming the circuit.
             circuit: Circuit bytes, as from
                 [`generate_circuit`][pylongfellow.Pylongfellow.generate_circuit].
 
-        Returns:
-            A handle to pass to [`prove`][pylongfellow.Pylongfellow.prove]
-                and [`verify`][pylongfellow.Pylongfellow.verify].
-
         Raises:
             ValueError: `spec` is rejected by the backend, e.g. it is not
                 registered or does not match `circuit` (google-cpp), or its
                 version is unsupported (isrg-rust).
         """
-        return self.backend.load_circuit(spec, circuit)
+        self._circuit = self.backend.load_circuit(spec, circuit)
 
     def generate_circuit(self, spec: CircuitSpec) -> bytes:
         """Generate the circuit named by spec.
@@ -84,7 +88,6 @@ class Pylongfellow:
 
     def prove(
         self,
-        handle: CircuitHandle,
         mdoc: bytes,
         issuer_public_key: PublicKey,
         transcript: bytes,
@@ -93,35 +96,31 @@ class Pylongfellow:
     ) -> bytes:
         """Prove the claims hold over the mdoc, bound to the transcript.
 
-        Runs on the handle's backend, which may differ from this instance's
-        when the handle was loaded elsewhere.
-
         Args:
-            handle: A CircuitHandle from
-                [`load_circuit`][pylongfellow.Pylongfellow.load_circuit].
             mdoc: CBOR-encoded mdoc credential.
             issuer_public_key: The issuer's public key.
             transcript: Session transcript the proof is bound to.
-            claims: Claims to prove; `len(claims)` must equal
-                `handle.spec.num_attributes`.
+            claims: Claims to prove; `len(claims)` must equal the loaded spec's
+                `num_attributes`.
             timestamp: Timezone-aware verification time.
 
         Returns:
             Proof bytes.
 
         Raises:
-            ValueError: `timestamp` is naive; `len(claims)` does not match
-                `handle.spec.num_attributes` (google-cpp); or `claims` do not
+            RuntimeError: No circuit is loaded.
+            ValueError: `timestamp` is naive; `len(claims)` does not match the
+                loaded spec's `num_attributes` (google-cpp); or `claims` do not
                 share one namespace (isrg-rust).
             ProverError: The prover rejected the inputs.
         """
+        state = self._loaded_circuit()
         if timestamp.tzinfo is None:
             raise ValueError("timestamp must be timezone-aware")
-        return handle.backend.prove(handle, mdoc, issuer_public_key, transcript, claims, timestamp)
+        return self.backend.prove(state, mdoc, issuer_public_key, transcript, claims, timestamp)
 
     def verify(
         self,
-        handle: CircuitHandle,
         issuer_public_key: PublicKey,
         transcript: bytes,
         claims: list[RequestedAttribute],
@@ -133,16 +132,11 @@ class Pylongfellow:
     ) -> None:
         """Verify a proof that the claims hold, against the transcript.
 
-        Runs on the handle's backend, which may differ from this instance's
-        when the handle was loaded elsewhere.
-
         Args:
-            handle: A CircuitHandle from
-                [`load_circuit`][pylongfellow.Pylongfellow.load_circuit].
             issuer_public_key: The issuer's public key.
             transcript: Session transcript the proof is bound to.
-            claims: Claims to verify; `len(claims)` must equal
-                `handle.spec.num_attributes`.
+            claims: Claims to verify; `len(claims)` must equal the loaded spec's
+                `num_attributes`.
             timestamp: Timezone-aware verification time.
             proof: Proof bytes from [`prove`][pylongfellow.Pylongfellow.prove].
             doctype: mdoc doctype the proof is scoped to.
@@ -150,15 +144,17 @@ class Pylongfellow:
                 required by the isrg-rust backend.
 
         Raises:
-            ValueError: `timestamp` is naive; `len(claims)` does not match
-                `handle.spec.num_attributes` or `doctype` is 256 bytes or longer
+            RuntimeError: No circuit is loaded.
+            ValueError: `timestamp` is naive; `len(claims)` does not match the
+                loaded spec's `num_attributes` or `doctype` is 256 bytes or longer
                 (google-cpp); or `device_namespaces` is None (isrg-rust).
             VerifierError: The proof does not hold.
         """
+        state = self._loaded_circuit()
         if timestamp.tzinfo is None:
             raise ValueError("timestamp must be timezone-aware")
-        handle.backend.verify(
-            handle,
+        self.backend.verify(
+            state,
             issuer_public_key,
             transcript,
             claims,

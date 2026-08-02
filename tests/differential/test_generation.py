@@ -13,10 +13,9 @@ import warnings
 
 import pytest
 
-from pylongfellow import mdoc
 from pylongfellow.backends import google_cpp
 
-from .conftest import CIRCUITS, Circuit, ObservationWarning
+from .conftest import CIRCUITS, Circuit, ObservationWarning, spec_of
 
 
 def _latest_per_attr_count() -> list[Circuit]:
@@ -37,16 +36,8 @@ GENERATION_PARAMS = [pytest.param(circuit, id=circuit.stem) for circuit in _late
 @pytest.mark.slow
 @pytest.mark.parametrize("circuit", GENERATION_PARAMS)
 def test_generation(circuit: Circuit, longfellow_for):
-    longfellow = longfellow_for("google-cpp")
-    spec = mdoc.CircuitSpec(
-        system=str(circuit.sidecar["system"]),
-        circuit_hash=circuit.circuit_id,
-        num_attributes=circuit.num_attributes,
-        version=circuit.version,
-        block_enc_hash=int(circuit.sidecar["block_enc_hash"]),
-        block_enc_sig=int(circuit.sidecar["block_enc_sig"]),
-    )
-    generated = longfellow.generate_circuit(spec)
+    longfellow = longfellow_for("google-cpp", circuit)
+    generated = longfellow.generate_circuit(spec_of(circuit))
     assert google_cpp.circuit_id(generated) == circuit.circuit_id
     # The comparison is over decompressed bytes: the zstd envelope differs
     # between upstream's export pipeline and the runtime generate path (and

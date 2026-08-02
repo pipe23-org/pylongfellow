@@ -1,6 +1,7 @@
 """The google/longfellow-zk backend: the vendored C++ library's C ABI behind the Backend protocol."""
 
 import functools
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, cast
 
@@ -14,7 +15,7 @@ from ..mdoc._errors import (
     VerifierErrorCode,
 )
 from ..mdoc._types import CircuitSpec, PublicKey, RequestedAttribute
-from . import BackendUnavailableError, CircuitHandle
+from . import BackendUnavailableError
 
 # C fixed-buffer sizes (from the upstream RequestedAttribute struct).
 _NAMESPACE_MAX, _ID_MAX, _VALUE_MAX = 64, 32, 64
@@ -183,8 +184,16 @@ def zk_specs() -> tuple[CircuitSpec, ...]:
     return tuple(_spec_from_struct(ffi, c_spec) for c_spec in lib.kZkSpecs)
 
 
+@dataclass(frozen=True)
+class _LoadedCircuit:
+    """A circuit and the spec it was checked against; every C call takes both."""
+
+    spec: CircuitSpec
+    circuit: bytes
+
+
 class _GoogleBackend:
-    """google/longfellow-zk's C++ library via its C ABI; the C calls are stateless per handle."""
+    """google/longfellow-zk's C++ library via its C ABI."""
 
     name: str = "google-cpp"
     can_generate: bool = True
@@ -193,15 +202,15 @@ class _GoogleBackend:
         """Raise BackendUnavailableError unless the native extension is built."""
         _load()
 
-    def load_circuit(self, spec: CircuitSpec, circuit: bytes) -> CircuitHandle:
-        """Validate the circuit against the spec and return a handle over its bytes.
+    def load_circuit(self, spec: CircuitSpec, circuit: bytes) -> object:
+        """Validate the circuit against the spec and hold both.
 
         Args:
             spec: CircuitSpec naming the circuit.
             circuit: Circuit bytes.
 
         Returns:
-            A CircuitHandle carrying the circuit bytes as backend state.
+            The circuit state prove and verify take.
 
         Raises:
             ValueError: `spec` is not registered in the compiled-in spec table,
@@ -209,7 +218,7 @@ class _GoogleBackend:
         """
         _require_canonical_spec(spec)
         _require_spec_matches_circuit(circuit, spec)
-        return CircuitHandle(spec=spec, backend=self, state=circuit)
+        return _LoadedCircuit(spec=spec, circuit=circuit)
 
     def generate_circuit(self, spec: CircuitSpec) -> bytes:
         """Generate a circuit blob.
@@ -242,7 +251,7 @@ class _GoogleBackend:
 
     def prove(
         self,
-        handle: CircuitHandle,
+        state: object,
         mdoc: bytes,
         issuer_public_key: PublicKey,
         transcript: bytes,
@@ -254,25 +263,24 @@ class _GoogleBackend:
         Binds `run_mdoc_prover`.
 
         Args:
-            handle: A CircuitHandle from
-                [`load_circuit`][pylongfellow.Pylongfellow.load_circuit].
+            state: Circuit state from `load_circuit`.
             mdoc: CBOR-encoded mdoc credential.
             issuer_public_key: The issuer's public key.
             transcript: Session transcript the proof is bound to.
-            claims: Claims to prove; `len(claims)` must equal
-                `handle.spec.num_attributes`.
+            claims: Claims to prove; `len(claims)` must equal the loaded spec's
+                `num_attributes`.
             timestamp: Timezone-aware verification time.
 
         Returns:
             Proof bytes.
 
         Raises:
-            ValueError: `len(claims)` does not match `handle.spec.num_attributes`.
+            ValueError: `len(claims)` does not match the loaded spec's `num_attributes`.
             ProverError: The prover rejected the inputs.
         """
         ffi, lib = _load()
-        spec = handle.spec
-        circuit = cast(bytes, handle.state)
+        loaded = cast(_LoadedCircuit, state)
+        spec, circuit = loaded.spec, loaded.circuit
         _require_claims_match_spec(claims, spec)
         pk_x, pk_y = issuer_public_key.x, issuer_public_key.y
         c_attrs = _fill_attrs(ffi, claims)
@@ -305,7 +313,7 @@ class _GoogleBackend:
 
     def verify(
         self,
-        handle: CircuitHandle,
+        state: object,
         issuer_public_key: PublicKey,
         transcript: bytes,
         claims: list[RequestedAttribute],
@@ -319,25 +327,24 @@ class _GoogleBackend:
         Binds `run_mdoc_verifier`.
 
         Args:
-            handle: A CircuitHandle from
-                [`load_circuit`][pylongfellow.Pylongfellow.load_circuit].
+            state: Circuit state from `load_circuit`.
             issuer_public_key: The issuer's public key.
             transcript: Session transcript the proof is bound to.
-            claims: Claims to verify; `len(claims)` must equal
-                `handle.spec.num_attributes`.
+            claims: Claims to verify; `len(claims)` must equal the loaded spec's
+                `num_attributes`.
             timestamp: Timezone-aware verification time.
             proof: Proof bytes from [`prove`][pylongfellow.Pylongfellow.prove].
             doctype: mdoc doctype the proof is scoped to.
             device_namespaces: Inner bytes of the tag-24 DeviceNameSpacesBytes.
 
         Raises:
-            ValueError: `len(claims)` does not match `handle.spec.num_attributes`,
+            ValueError: `len(claims)` does not match the loaded spec's `num_attributes`,
                 or `doctype` is 256 bytes or longer.
             VerifierError: The proof does not hold.
         """
         ffi, lib = _load()
-        spec = handle.spec
-        circuit = cast(bytes, handle.state)
+        loaded = cast(_LoadedCircuit, state)
+        spec, circuit = loaded.spec, loaded.circuit
         _require_claims_match_spec(claims, spec)
         # C silently substitutes a default doctype at >= 256 bytes, verifying the
         # proof against the wrong scope with no error. Refuse rather than mislead.

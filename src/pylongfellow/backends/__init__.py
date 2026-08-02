@@ -1,8 +1,7 @@
-"""Backend-agnostic core: the Backend protocol and the CircuitHandle it returns."""
+"""Backend-agnostic core: the Backend protocol, its errors, and the registry of backend names."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
 
 from .._errors import LongfellowError
@@ -21,23 +20,6 @@ class BackendUnavailableError(LongfellowError):
     """A backend's native dependency is not installed or built."""
 
 
-@dataclass(frozen=True)
-class CircuitHandle:
-    """A circuit loaded by a backend.
-
-    Attributes:
-        spec: The CircuitSpec the circuit was loaded against.
-        backend: The backend that loaded the circuit and runs its operations.
-        state: Backend-private circuit state, opaque to callers; a backend may
-            hold expensive parsed state here, so cache the handle rather than
-            reloading the circuit per call.
-    """
-
-    spec: CircuitSpec
-    backend: Backend
-    state: object
-
-
 class Backend(Protocol):
     """The operations a backend provides."""
 
@@ -47,15 +29,19 @@ class Backend(Protocol):
     def ensure_available(self) -> None:
         """Raise BackendUnavailableError unless the backend's native dependency is built."""
 
-    def load_circuit(self, spec: CircuitSpec, circuit: bytes) -> CircuitHandle:
-        """Load a circuit and return a CircuitHandle."""
+    def load_circuit(self, spec: CircuitSpec, circuit: bytes) -> object:
+        """Load a circuit and return the state prove and verify take.
+
+        The state's type is the backend's own. `Pylongfellow` holds it between calls, so
+        a backend may put expensive parsed state in it.
+        """
 
     def generate_circuit(self, spec: CircuitSpec) -> bytes:
         """Generate the circuit named by spec."""
 
     def prove(
         self,
-        handle: CircuitHandle,
+        state: object,
         mdoc: bytes,
         issuer_public_key: PublicKey,
         transcript: bytes,
@@ -64,13 +50,13 @@ class Backend(Protocol):
     ) -> bytes:
         """Prove the claims over the mdoc, bound to the transcript.
 
-        `timestamp` is timezone-aware. `Pylongfellow` rejects naive datetimes before the
-        backend is called.
+        `state` comes from this backend's `load_circuit`. `timestamp` is timezone-aware:
+        `Pylongfellow` rejects naive datetimes before the backend is called.
         """
 
     def verify(
         self,
-        handle: CircuitHandle,
+        state: object,
         issuer_public_key: PublicKey,
         transcript: bytes,
         claims: list[RequestedAttribute],
@@ -81,8 +67,8 @@ class Backend(Protocol):
     ) -> None:
         """Verify a proof of the claims against the transcript.
 
-        `timestamp` is timezone-aware. `Pylongfellow` rejects naive datetimes before the
-        backend is called.
+        `state` comes from this backend's `load_circuit`. `timestamp` is timezone-aware:
+        `Pylongfellow` rejects naive datetimes before the backend is called.
         """
 
 
@@ -130,7 +116,6 @@ def get_backend(name: str) -> Backend:
 __all__ = [
     "Backend",
     "BackendUnavailableError",
-    "CircuitHandle",
     "GenerationUnsupportedError",
     "get_backend",
 ]
