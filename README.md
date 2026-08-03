@@ -57,6 +57,19 @@ Examples are in [`examples/`](examples/).
 <https://pylongfellow.readthedocs.io/en/stable/>. The API reference is generated from the
 docstrings and carries the exact types of every function.
 
+## Upstream
+
+Both backends are vendored as git submodules and built from source into each wheel:
+
+- [`google/longfellow-zk`](https://github.com/google/longfellow-zk) — pinned to **v0.9**
+  (`fe83ec6`).
+- [`abetterinternet/zk-cred-longfellow`](https://github.com/abetterinternet/zk-cred-longfellow)
+  — pinned to `4f3d1b3`. Upstream publishes no tags, so the pin is a commit on its `main`.
+
+The pins do not float: upstream ABIs and circuits can change between releases. A
+[nightly canary](https://github.com/pipe23-org/pylongfellow/actions/workflows/canary.yml)
+runs the differential suite against both upstream HEADs.
+
 ## Licensing
 
 `pylongfellow` is licensed Apache-2.0.

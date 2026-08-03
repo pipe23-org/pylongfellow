@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0
 
 Breaking API changes and a documentation overhaul. The release carries the rewritten README
 and docs to the PyPI project page.
