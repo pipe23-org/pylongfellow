@@ -23,14 +23,12 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Record pinned bound surface
+      - name: Record release pins
         id: pin
         shell: bash
         run: |
-          goog_fp=$(git -C vendor/longfellow-zk rev-parse HEAD:lib | sha256sum | cut -c1-12)
-          isrg_fp=$(git -C vendor/zk-cred-longfellow rev-parse HEAD:src HEAD:Cargo.toml HEAD:Cargo.lock | sha256sum | cut -c1-12)
-          echo "goog_fp=$goog_fp" >> "$GITHUB_OUTPUT"
-          echo "isrg_fp=$isrg_fp" >> "$GITHUB_OUTPUT"
+          echo "goog=$(git -C vendor/longfellow-zk rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "isrg=$(git -C vendor/zk-cred-longfellow rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Check out both upstreams at HEAD
         id: heads
@@ -41,73 +39,128 @@ jobs:
             git -C "$dir" remote set-head origin --auto
             git -C "$dir" checkout origin/HEAD
           done
-          goog=$(git -C vendor/longfellow-zk rev-parse HEAD)
-          isrg=$(git -C vendor/zk-cred-longfellow rev-parse HEAD)
-          goog_fp=$(git -C vendor/longfellow-zk rev-parse HEAD:lib | sha256sum | cut -c1-12)
-          isrg_fp=$(git -C vendor/zk-cred-longfellow rev-parse HEAD:src HEAD:Cargo.toml HEAD:Cargo.lock | sha256sum | cut -c1-12)
-          if [ "$goog_fp" = "${{ steps.pin.outputs.goog_fp }}" ]; then goog_delta=unchanged; else goog_delta=changed; fi
-          if [ "$isrg_fp" = "${{ steps.pin.outputs.isrg_fp }}" ]; then isrg_delta=unchanged; else isrg_delta=changed; fi
           {
-            echo "goog=$goog"
-            echo "isrg=$isrg"
-            echo "goog_fp=$goog_fp"
-            echo "isrg_fp=$isrg_fp"
+            echo "goog=$(git -C vendor/longfellow-zk rev-parse HEAD)"
+            echo "isrg=$(git -C vendor/zk-cred-longfellow rev-parse HEAD)"
+            echo "goog_fp=$(git -C vendor/longfellow-zk rev-parse HEAD:lib | sha256sum | cut -c1-12)"
+            echo "isrg_fp=$(git -C vendor/zk-cred-longfellow rev-parse HEAD:src HEAD:Cargo.toml HEAD:Cargo.lock | sha256sum | cut -c1-12)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Baseline from the issue record
+        id: base
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # The newest machine-readable marker on the record issue is the
+          # baseline: the upstream revisions of the last posted run. The suite
+          # runs iff either bound surface differs from the baseline. No marker,
+          # an unreadable marker, or an unresolvable revision defaults to run,
+          # never skip.
+          marker=$(gh api "repos/${GITHUB_REPOSITORY}/issues/21/comments" --paginate \
+            --jq '.[].body' \
+            | grep -o '<!-- canary goog=[0-9a-f]* isrg=[0-9a-f]* -->' \
+            | tail -n 1 || true)
+          base_goog=$(echo "$marker" | sed -n 's/.*goog=\([0-9a-f]*\).*/\1/p')
+          base_isrg=$(echo "$marker" | sed -n 's/.*isrg=\([0-9a-f]*\).*/\1/p')
+          goog_delta="no baseline"
+          isrg_delta="no baseline"
+          if [ -n "$base_goog" ]; then
+            base_fp=$(git -C vendor/longfellow-zk rev-parse "${base_goog}:lib" 2>/dev/null | sha256sum | cut -c1-12 || true)
+            if [ "$base_fp" = "${{ steps.heads.outputs.goog_fp }}" ]; then
+              goog_delta="unchanged since last run"
+            else
+              goog_delta="changed since last run"
+            fi
+          fi
+          if [ -n "$base_isrg" ]; then
+            base_fp=$(git -C vendor/zk-cred-longfellow rev-parse "${base_isrg}:src" "${base_isrg}:Cargo.toml" "${base_isrg}:Cargo.lock" 2>/dev/null | sha256sum | cut -c1-12 || true)
+            if [ "$base_fp" = "${{ steps.heads.outputs.isrg_fp }}" ]; then
+              isrg_delta="unchanged since last run"
+            else
+              isrg_delta="changed since last run"
+            fi
+          fi
+          run=true
+          if [ "$goog_delta" = "unchanged since last run" ] && [ "$isrg_delta" = "unchanged since last run" ]; then
+            run=false
+          fi
+          {
+            echo "run=$run"
+            echo "goog=$base_goog"
+            echo "isrg=$base_isrg"
             echo "goog_delta=$goog_delta"
             echo "isrg_delta=$isrg_delta"
           } >> "$GITHUB_OUTPUT"
-          echo "google/longfellow-zk HEAD: $goog (bound surface $goog_fp, $goog_delta since pin)"
-          echo "abetterinternet/zk-cred-longfellow HEAD: $isrg (bound surface $isrg_fp, $isrg_delta since pin)"
+          echo "google/longfellow-zk: $goog_delta; abetterinternet/zk-cred-longfellow: $isrg_delta; run=$run"
 
-      - name: Skip-guard lookup
-        id: guard
-        uses: actions/cache/restore@v6
-        with:
-          path: .canary-marker
-          key: canary-tree-${{ steps.heads.outputs.goog_fp }}-${{ steps.heads.outputs.isrg_fp }}
-          lookup-only: true
+      - name: Bound surfaces unchanged
+        if: steps.base.outputs.run != 'true'
+        run: echo "Both bound surfaces match the baseline in the issue record; skipping build and test."
 
-      - name: Upstream pair already run
-        if: steps.guard.outputs.cache-hit == 'true'
-        run: echo "Bound surface ${{ steps.heads.outputs.goog_fp }} / ${{ steps.heads.outputs.isrg_fp }} already run; skipping build and test."
-
-      - name: Prepare skip-guard marker
-        if: steps.guard.outputs.cache-hit != 'true'
-        run: date -u > .canary-marker
+      - name: List upstream changes
+        if: steps.base.outputs.run == 'true'
+        shell: bash
+        run: |
+          # One block per moved upstream, consumed by the comment steps. An
+          # upstream without a baseline or without movement gets an empty file.
+          : > goog-changes.md
+          : > isrg-changes.md
+          if [ "${{ steps.base.outputs.goog_delta }}" = "changed since last run" ]; then
+            {
+              echo "Changed since last run — google/longfellow-zk ([compare](https://github.com/google/longfellow-zk/compare/${{ steps.base.outputs.goog }}...${{ steps.heads.outputs.goog }})):"
+              echo
+              echo '```'
+              git -C vendor/longfellow-zk log --oneline "${{ steps.base.outputs.goog }}..${{ steps.heads.outputs.goog }}" -- lib
+              echo '```'
+              echo
+            } > goog-changes.md
+          fi
+          if [ "${{ steps.base.outputs.isrg_delta }}" = "changed since last run" ]; then
+            {
+              echo "Changed since last run — abetterinternet/zk-cred-longfellow ([compare](https://github.com/abetterinternet/zk-cred-longfellow/compare/${{ steps.base.outputs.isrg }}...${{ steps.heads.outputs.isrg }})):"
+              echo
+              echo '```'
+              git -C vendor/zk-cred-longfellow log --oneline "${{ steps.base.outputs.isrg }}..${{ steps.heads.outputs.isrg }}" -- src Cargo.toml Cargo.lock
+              echo '```'
+              echo
+            } > isrg-changes.md
+          fi
 
       - name: Install build dependencies
-        if: steps.guard.outputs.cache-hit != 'true'
+        if: steps.base.outputs.run == 'true'
         run: sudo apt-get update && sudo apt-get install -y libssl-dev libzstd-dev libgtest-dev libbenchmark-dev
 
       - uses: hendrikmuhs/ccache-action@v1
-        if: steps.guard.outputs.cache-hit != 'true'
+        if: steps.base.outputs.run == 'true'
         with:
           key: canary
 
       - uses: astral-sh/setup-uv@v9.0.0
-        if: steps.guard.outputs.cache-hit != 'true'
+        if: steps.base.outputs.run == 'true'
         with:
           python-version: "3.14"
 
       - name: Build google backend
-        if: steps.guard.outputs.cache-hit != 'true'
+        if: steps.base.outputs.run == 'true'
         run: uv sync --locked
 
       - uses: dtolnay/rust-toolchain@stable
-        if: steps.guard.outputs.cache-hit != 'true'
+        if: steps.base.outputs.run == 'true'
 
       - uses: Swatinem/rust-cache@v2
-        if: steps.guard.outputs.cache-hit != 'true'
+        if: steps.base.outputs.run == 'true'
         with:
           workspaces: vendor/zk-cred-longfellow
           shared-key: zk-cred
 
       - name: Build ISRG backend
-        if: steps.guard.outputs.cache-hit != 'true'
+        if: steps.base.outputs.run == 'true'
         run: uv run --no-sync python scripts/build_isrg_rust_backend.py
 
       - name: Differential suite
         id: suite
-        if: steps.guard.outputs.cache-hit != 'true'
+        if: steps.base.outputs.run == 'true'
         # Explicit bash so the step shell carries pipefail: the tee must not mask
         # pytest's exit status. Collection is scoped to tests/ because the unpinned
         # vendor trees may carry their own Python test files.
@@ -128,18 +181,26 @@ jobs:
           {
             echo "## Canary drift — $(date -u +%Y-%m-%dT%H:%MZ)"
             echo
-            echo "- google/longfellow-zk: \`${{ steps.heads.outputs.goog || 'unavailable' }}\` (bound surface \`${{ steps.heads.outputs.goog_fp || 'unavailable' }}\`, ${{ steps.heads.outputs.goog_delta || 'unknown' }} since pin)"
-            echo "- abetterinternet/zk-cred-longfellow: \`${{ steps.heads.outputs.isrg || 'unavailable' }}\` (bound surface \`${{ steps.heads.outputs.isrg_fp || 'unavailable' }}\`, ${{ steps.heads.outputs.isrg_delta || 'unknown' }} since pin)"
-            echo "- Failed phase: \`$phase\`"
+            echo "Upstream HEADs under test:"
+            echo
+            echo "- google/longfellow-zk \`${{ steps.heads.outputs.goog || 'unavailable' }}\` — bound surface (\`lib/\`) \`${{ steps.heads.outputs.goog_fp || 'unavailable' }}\`, ${{ steps.base.outputs.goog_delta || 'unknown' }}"
+            echo "- abetterinternet/zk-cred-longfellow \`${{ steps.heads.outputs.isrg || 'unavailable' }}\` — bound surface (\`src\`, \`Cargo.toml\`, \`Cargo.lock\`) \`${{ steps.heads.outputs.isrg_fp || 'unavailable' }}\`, ${{ steps.base.outputs.isrg_delta || 'unknown' }}"
+            echo
+            echo "Failed phase: \`$phase\`"
+            echo
+            cat goog-changes.md isrg-changes.md 2>/dev/null || true
+            echo "Release pins: google/longfellow-zk \`${{ steps.pin.outputs.goog }}\`, zk-cred-longfellow \`${{ steps.pin.outputs.isrg }}\`. The HEADs under test are not what released wheels build from."
             echo
             echo '```'
             tail -n 40 pytest-output.txt 2>/dev/null || echo "(no pytest output; failed during build)"
             echo '```'
+            echo
+            echo "<!-- canary goog=${{ steps.heads.outputs.goog }} isrg=${{ steps.heads.outputs.isrg }} -->"
           } > comment.md
-          gh issue comment 21 --repo pipe23-org/pylongfellow --body-file comment.md
+          gh issue comment 21 --repo "$GITHUB_REPOSITORY" --body-file comment.md
 
       - name: Report run
-        if: success() && steps.guard.outputs.cache-hit != 'true'
+        if: success() && steps.base.outputs.run == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -149,10 +210,15 @@ jobs:
           {
             echo "## Canary run — $(date -u +%Y-%m-%dT%H:%MZ)"
             echo
-            echo "- google/longfellow-zk: \`${{ steps.heads.outputs.goog || 'unavailable' }}\` (bound surface \`${{ steps.heads.outputs.goog_fp || 'unavailable' }}\`, ${{ steps.heads.outputs.goog_delta || 'unknown' }} since pin)"
-            echo "- abetterinternet/zk-cred-longfellow: \`${{ steps.heads.outputs.isrg || 'unavailable' }}\` (bound surface \`${{ steps.heads.outputs.isrg_fp || 'unavailable' }}\`, ${{ steps.heads.outputs.isrg_delta || 'unknown' }} since pin)"
+            echo "Upstream HEADs under test:"
             echo
-            echo "Green run. Suite summary:"
+            echo "- google/longfellow-zk \`${{ steps.heads.outputs.goog }}\` — bound surface (\`lib/\`) \`${{ steps.heads.outputs.goog_fp }}\`, ${{ steps.base.outputs.goog_delta }}"
+            echo "- abetterinternet/zk-cred-longfellow \`${{ steps.heads.outputs.isrg }}\` — bound surface (\`src\`, \`Cargo.toml\`, \`Cargo.lock\`) \`${{ steps.heads.outputs.isrg_fp }}\`, ${{ steps.base.outputs.isrg_delta }}"
+            echo
+            cat goog-changes.md isrg-changes.md 2>/dev/null || true
+            echo "Release pins: google/longfellow-zk \`${{ steps.pin.outputs.goog }}\`, zk-cred-longfellow \`${{ steps.pin.outputs.isrg }}\`. The HEADs under test are not what released wheels build from."
+            echo
+            echo "Both implementations of draft-google-cfrg-libzk at the revisions above agree on prove/verify across the committed corpus, and circuit regeneration reproduces the committed \`circuit_id\`s."
             echo
             echo '```'
             echo "$summary"
@@ -165,12 +231,7 @@ jobs:
               echo "$observations"
               echo '```'
             fi
+            echo
+            echo "<!-- canary goog=${{ steps.heads.outputs.goog }} isrg=${{ steps.heads.outputs.isrg }} -->"
           } > run-comment.md
-          gh issue comment 21 --repo pipe23-org/pylongfellow --body-file run-comment.md
-
-      - name: Save skip-guard marker
-        if: always() && steps.guard.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v6
-        with:
-          path: .canary-marker
-          key: canary-tree-${{ steps.heads.outputs.goog_fp }}-${{ steps.heads.outputs.isrg_fp }}
+          gh issue comment 21 --repo "$GITHUB_REPOSITORY" --body-file run-comment.md
