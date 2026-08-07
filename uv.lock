@@ -948,7 +948,7 @@ wheels = [
 
 [[package]]
 name = "pylongfellow"
-version = "0.5.0"
+version = "0.5.1"
 source = { editable = "." }
 dependencies = [
     { name = "cbor2" },
