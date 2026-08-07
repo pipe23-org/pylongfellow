@@ -15,7 +15,7 @@ The package is experimental and unstable.
 [![Docs](https://app.readthedocs.org/projects/pylongfellow/badge/?version=stable)](https://pylongfellow.readthedocs.io/en/stable/)
 [![PyPI](https://img.shields.io/pypi/v/pylongfellow)](https://pypi.org/project/pylongfellow/)
 [![Python](https://img.shields.io/pypi/pyversions/pylongfellow)](https://pypi.org/project/pylongfellow/)
-[![License](https://img.shields.io/badge/License-Apache--2.0%20AND%20MPL--2.0-blue.svg)](#licensing)
+[![License](https://img.shields.io/badge/License-Apache--2.0%20AND%20MPL--2.0-blue.svg)](#license)
 
 ## Installation
 
@@ -70,7 +70,29 @@ The pins do not float: upstream ABIs and circuits can change between releases. A
 [nightly canary](https://github.com/pipe23-org/pylongfellow/actions/workflows/canary.yml)
 runs the differential suite against both upstream HEADs.
 
-## Licensing
+## Development
+
+```
+git submodule update --init --recursive
+uv sync
+uv run pytest
+uv run ruff check . && uv run ruff format --check .
+uv run mypy
+```
+
+Build prerequisites and single-backend builds are on the
+[development page](https://pylongfellow.readthedocs.io/en/stable/development/).
+
+## Status
+
+You should not rely on this code.
+
+- Wheels cover CPython 3.11–3.14 on Linux x86_64 only; other platforms build from source.
+- The API changes between minor versions.
+- The backends disagree over whether `DeviceNameSpacesBytes` is a verifier input
+  ([#29](https://github.com/pipe23-org/pylongfellow/issues/29)).
+
+## License
 
 `pylongfellow` is licensed Apache-2.0.
 
