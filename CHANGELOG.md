@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Added a uniffi patch to (temporarily) resolve #43 (#44).
+- Bumped the zk-cred-longfellow pin to 3485a3c (#45).
 
 ## 0.5.0
 
