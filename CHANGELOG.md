@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Added a uniffi patch to (temporarily) resolve #43 (#44).
+
 ## 0.5.0
 
 Breaking API changes and a documentation overhaul. The release carries the rewritten README
