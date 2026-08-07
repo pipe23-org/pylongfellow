@@ -89,8 +89,6 @@ You should not rely on this code.
 
 - Wheels cover CPython 3.11–3.14 on Linux x86_64 only; other platforms build from source.
 - The API changes between minor versions.
-- The backends disagree over whether `DeviceNameSpacesBytes` is a verifier input
-  ([#29](https://github.com/pipe23-org/pylongfellow/issues/29)).
 
 ## License
 
