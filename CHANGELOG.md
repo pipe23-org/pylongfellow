@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Bumped the zk-cred-longfellow pin to b22d84e and removed the uniffi patch (#47).
+
 ## 0.5.1 - 2026-08-07
 
 - Added a uniffi patch to (temporarily) resolve #43 (#44).
