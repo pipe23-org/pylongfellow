@@ -14,12 +14,12 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 SUBMODULE = REPO / "vendor" / "zk-cred-longfellow"
+PATCH = Path(__file__).resolve().parent / "zk-cred-longfellow-circuit-id.patch"
 CARGO = shutil.which("cargo") or str(Path.home() / ".cargo" / "bin" / "cargo")
+GIT = shutil.which("git") or "git"
 LIB = "libzk_cred_longfellow.so"
 BINDINGS = "zk_cred_longfellow.py"
 TARGET_SO = SUBMODULE / "target" / "release" / LIB
-# Bindgen output goes under the submodule's target/, which upstream's .gitignore
-# already covers, so a build leaves the vendored checkout clean.
 OUT = SUBMODULE / "target" / "uniffi"
 DEST = REPO / "src" / "pylongfellow" / "backends" / "_zk_cred"
 
@@ -36,6 +36,22 @@ def _run(args: list[str]) -> None:
     subprocess.run(args, cwd=SUBMODULE, check=True)
 
 
+def _check(args: list[str]) -> bool:
+    return subprocess.run(args, cwd=SUBMODULE, capture_output=True).returncode == 0
+
+
+def _apply_circuit_id_patch() -> None:
+    # Upstream's uniffi surface has no circuit-id entry point; the patch adds the
+    # export to the checkout at build time.
+    if _check([GIT, "apply", "--check", "--reverse", str(PATCH)]):
+        return
+    _require(
+        _check([GIT, "apply", "--check", str(PATCH)]),
+        f"{PATCH.name} does not apply to {SUBMODULE}; the vendored pin may have moved",
+    )
+    _run([GIT, "apply", str(PATCH)])
+
+
 def main() -> None:
     _require(
         (SUBMODULE / "Cargo.toml").is_file(),
@@ -46,7 +62,9 @@ def main() -> None:
         Path(CARGO).is_file(),
         f"cargo not found at {CARGO}; install the Rust toolchain (https://rustup.rs)",
     )
+    _require(shutil.which(GIT) is not None, f"{GIT} not found; install git")
 
+    _apply_circuit_id_patch()
     _run([CARGO, "build", "--release", "--features", "uniffi"])
     # A target with a static CRT (musl default) drops the cdylib crate type,
     # so cargo can succeed without producing the library.

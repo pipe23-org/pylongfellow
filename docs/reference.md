@@ -62,6 +62,13 @@ google/longfellow-zk logs to stderr, not through Python `logging`, and exposes n
 bridge. There is no Python API and no runtime reconfiguration. The isrg-rust backend emits no
 log output.
 
+## `pylongfellow.backends.isrg_rust`
+
+Binds the vendored abetterinternet/zk-cred-longfellow Rust library through generated UniFFI
+bindings.
+
+::: pylongfellow.backends.isrg_rust.circuit_id
+
 ## `pylongfellow.mdoc.testing`
 
 ### Functions

@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from datetime import UTC
 from typing import TYPE_CHECKING, Any, cast
 
-from ..mdoc._errors import ProverError, VerifierError
+from ..mdoc._errors import Error, ProverError, VerifierError
 from . import BackendUnavailableError, GenerationUnsupportedError
 
 if TYPE_CHECKING:
@@ -62,6 +62,31 @@ def _single_namespace(claims: list[RequestedAttribute]) -> str:
     if len(namespaces) != 1:
         raise ValueError("all claims must share one namespace")
     return namespaces.pop()
+
+
+def circuit_id(circuit: bytes) -> str:
+    """Recompute a circuit's canonical id from its bytes.
+
+    Binds `mdoc_circuit_id`. The id is 64 hex chars and equals
+    [`CircuitSpec.circuit_hash`][pylongfellow.mdoc.CircuitSpec].
+
+    Args:
+        circuit: zstd-compressed circuit bytes.
+
+    Returns:
+        The canonical id, as 64-char hex.
+
+    Raises:
+        BackendUnavailableError: The isrg-rust backend is not built.
+        Error: The bytes could not be parsed.
+    """
+    import zstandard
+
+    zk = _zk()
+    try:
+        return cast(str, zk.mdoc_circuit_id(_decompress(circuit)))
+    except (zstandard.ZstdError, zk.MdocZkError) as e:
+        raise Error("circuit_id failed (unparseable circuit bytes)") from e
 
 
 @dataclass
