@@ -14,7 +14,9 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 SUBMODULE = REPO / "vendor" / "zk-cred-longfellow"
+PATCH = Path(__file__).resolve().parent / "zk-cred-longfellow-circuit-id.patch"
 CARGO = shutil.which("cargo") or str(Path.home() / ".cargo" / "bin" / "cargo")
+GIT = shutil.which("git") or "git"
 LIB = "libzk_cred_longfellow.so"
 BINDINGS = "zk_cred_longfellow.py"
 TARGET_SO = SUBMODULE / "target" / "release" / LIB
@@ -36,6 +38,23 @@ def _run(args: list[str]) -> None:
     subprocess.run(args, cwd=SUBMODULE, check=True)
 
 
+def _apply_circuit_id_patch() -> None:
+    # Upstream's uniffi surface has no circuit-id entry point; this patch adds one
+    # in the checkout's working tree, applied fresh on every build. The vendored
+    # pin is never modified and nothing in the submodule is ever committed.
+    already_applied = (
+        subprocess.run(
+            [GIT, "apply", "--check", "--reverse", str(PATCH)],
+            cwd=SUBMODULE,
+            capture_output=True,
+        ).returncode
+        == 0
+    )
+    if already_applied:
+        return
+    _run([GIT, "apply", str(PATCH)])
+
+
 def main() -> None:
     _require(
         (SUBMODULE / "Cargo.toml").is_file(),
@@ -47,6 +66,7 @@ def main() -> None:
         f"cargo not found at {CARGO}; install the Rust toolchain (https://rustup.rs)",
     )
 
+    _apply_circuit_id_patch()
     _run([CARGO, "build", "--release", "--features", "uniffi"])
     # A target with a static CRT (musl default) drops the cdylib crate type,
     # so cargo can succeed without producing the library.
