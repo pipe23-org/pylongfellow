@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol
+import importlib
+from typing import TYPE_CHECKING, Protocol, cast
 
 from .._errors import LongfellowError
 
@@ -72,23 +73,11 @@ class Backend(Protocol):
         """
 
 
-def _google_backend() -> Backend:
-    from . import google_cpp
-
-    return google_cpp.BACKEND
-
-
-def _isrg_rust_backend() -> Backend:
-    from . import isrg_rust
-
-    return isrg_rust.BACKEND
-
-
 # Registry names distinguish implementation, not just institution: google ships
 # a second (Rust) implementation upstream, so "google-rust" is reserved.
 _REGISTRY = {
-    "google-cpp": _google_backend,
-    "isrg-rust": _isrg_rust_backend,
+    "google-cpp": "pylongfellow.backends.google_cpp",
+    "isrg-rust": "pylongfellow.backends.isrg_rust",
 }
 
 
@@ -105,12 +94,12 @@ def get_backend(name: str) -> Backend:
         ValueError: `name` is not a registered backend name.
     """
     try:
-        loader = _REGISTRY[name]
+        module = _REGISTRY[name]
     except KeyError:
         raise ValueError(
             f"unknown backend {name!r} (registered: {', '.join(sorted(_REGISTRY))})"
         ) from None
-    return loader()
+    return cast("Backend", importlib.import_module(module).BACKEND)
 
 
 __all__ = [
