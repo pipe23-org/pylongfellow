@@ -104,8 +104,7 @@ jobs:
         with:
           key: test
       # Toolchain and cache before uv sync: the editable build runs the cargo
-      # build via CMake (native/isrg-rust/build.py, zk_cred_backend
-      # target), so there is no separate build step.
+      # build via CMake (native/isrg-rust/build.py, zk_cred_backend target).
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
