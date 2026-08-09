@@ -33,27 +33,27 @@ add_subdirectory(vendor/longfellow-zk/lib EXCLUDE_FROM_ALL)
 
 # --- Python extension: CMake-driven cffi ----------------------------------
 # CMake owns the whole build. cffi only *emits* the extension C source
-# (_ffibuild.py -> emit_c_code); CMake compiles it and links it against the
+# (ffibuild.py -> emit_c_code); CMake compiles it and links it against the
 # static upstream library. One build system, one compiler.
 #
 # The cffi build script and the C-linkage log shim are build-input, so they live
-# in src/_cffi_src/ — a sibling of the package, not inside it — to keep them out
-# of the wheel (scikit-build-core copies every file in a package dir verbatim).
+# in native/google-cpp/ — outside src/ entirely — to keep them out of the wheel
+# (scikit-build-core copies every file in a package dir verbatim).
 find_package(Python REQUIRED COMPONENTS Development.Module)
 
-set(_cffi_src "${CMAKE_CURRENT_SOURCE_DIR}/src/_cffi_src")
+set(_google_cpp "${CMAKE_CURRENT_SOURCE_DIR}/native/google-cpp")
 set(_ffi_c "${CMAKE_CURRENT_BINARY_DIR}/_longfellow.c")
 add_custom_command(
   OUTPUT "${_ffi_c}"
-  COMMAND "${Python_EXECUTABLE}" "${_cffi_src}/_ffibuild.py" "${_ffi_c}"
-  DEPENDS "${_cffi_src}/_ffibuild.py"
+  COMMAND "${Python_EXECUTABLE}" "${_google_cpp}/ffibuild.py" "${_ffi_c}"
+  DEPENDS "${_google_cpp}/ffibuild.py"
   VERBATIM
 )
 
 # log_init.cc sets upstream's log level at load; it #includes upstream's
 # util/log.h, hence the lib/ include dir.
 python_add_library(_longfellow MODULE WITH_SOABI
-  "${_ffi_c}" "${_cffi_src}/log_init.cc")
+  "${_ffi_c}" "${_google_cpp}/log_init.cc")
 target_include_directories(_longfellow PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/longfellow-zk/lib/circuits/mdoc"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/longfellow-zk/lib")
@@ -64,7 +64,7 @@ install(TARGETS _longfellow LIBRARY DESTINATION pylongfellow)
 endif()
 
 # --- isrg-rust backend: uniffi cdylib -------------------------------------
-# scripts/build_isrg_rust_backend.py runs cargo build and uniffi-bindgen
+# native/isrg-rust/build.py runs cargo build and uniffi-bindgen
 # against the vendored submodule and stages libzk_cred_longfellow.so plus the
 # generated bindings into src/pylongfellow/backends/_zk_cred/. That directory
 # is gitignored and scikit-build-core's package copy skips gitignored files, so
@@ -76,7 +76,7 @@ endif()
 if(PYLONGFELLOW_BUILD_ISRG)
   add_custom_target(zk_cred_backend ALL
     COMMAND "${Python_EXECUTABLE}"
-            "${CMAKE_CURRENT_SOURCE_DIR}/scripts/build_isrg_rust_backend.py"
+            "${CMAKE_CURRENT_SOURCE_DIR}/native/isrg-rust/build.py"
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     VERBATIM
   )

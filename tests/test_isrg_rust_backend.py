@@ -79,13 +79,13 @@ def test_circuit_version_maps_both():
 
 def test_prove_reports_unavailable_backend(monkeypatch):
     monkeypatch.setitem(sys.modules, "pylongfellow.backends._zk_cred", None)
-    with pytest.raises(BackendUnavailableError, match="build_isrg_rust_backend"):
+    with pytest.raises(BackendUnavailableError, match="isrg-rust/build"):
         isrg_rust.BACKEND.prove(_dummy_state(), b"", mdoc.PublicKey(1, 2), b"", _one_attr(), _AWARE)
 
 
 def test_verify_reports_unavailable_backend(monkeypatch):
     monkeypatch.setitem(sys.modules, "pylongfellow.backends._zk_cred", None)
-    with pytest.raises(BackendUnavailableError, match="build_isrg_rust_backend"):
+    with pytest.raises(BackendUnavailableError, match="isrg-rust/build"):
         isrg_rust.BACKEND.verify(
             _dummy_state(), mdoc.PublicKey(1, 2), b"", _one_attr(), _AWARE, b"", "doc", b"\xa0"
         )

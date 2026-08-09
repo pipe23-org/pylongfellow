@@ -79,10 +79,10 @@ addopts = "-m 'not slow' -rsxX"
 [tool.coverage.run]
 branch = true
 source = ["pylongfellow"]
-# _ffibuild.py runs inside the CMake build (emits the extension C source), not
+# ffibuild.py runs inside the CMake build (emits the extension C source), not
 # under pytest — exclude it so coverage reflects the runtime package. The
 # _zk_cred bindings are generated (never committed) and load a native library.
-omit = ["*/_ffibuild.py", "*/backends/_zk_cred/*"]
+omit = ["*/ffibuild.py", "*/backends/_zk_cred/*"]
 
 [tool.coverage.report]
 fail_under = 100
@@ -109,14 +109,14 @@ convention = "google"
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101", "D"]
 "scripts/*" = ["D", "S603"]
-"src/_cffi_src/*" = ["D"]
+"native/*" = ["D", "S603"]
 
 # Strict over the package and tests (scripts/ excluded; see override below).
 # python_version is the support floor, so mypy flags any newer-only feature.
 [tool.mypy]
 python_version = "3.11"
 strict = true
-files = ["src/pylongfellow", "src/_cffi_src", "tests"]
+files = ["src/pylongfellow", "native", "tests"]
 exclude = ["src/pylongfellow/backends/_zk_cred"]
 
 # The generated bindings are untyped and not always built; isrg_rust.py imports them lazily.
@@ -139,7 +139,7 @@ ignore-private = true
 ignore-semiprivate = true
 ignore-magic = true
 ignore-nested-functions = true
-exclude = ["tests", "scripts", "scratch", "src/_cffi_src", "build", "vendor", "src/pylongfellow/backends/_zk_cred"]
+exclude = ["tests", "scripts", "scratch", "native", "build", "vendor", "src/pylongfellow/backends/_zk_cred"]
 
 # before-all installs gtest + benchmark because upstream's CMake REQUIREs them
 # at configure time, even though we build only the library, and rustup because

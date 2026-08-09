@@ -156,7 +156,7 @@ jobs:
 
       - name: Build ISRG backend
         if: steps.base.outputs.run == 'true'
-        run: uv run --no-sync python scripts/build_isrg_rust_backend.py
+        run: uv run --no-sync python native/isrg-rust/build.py
 
       - name: Differential suite
         id: suite
