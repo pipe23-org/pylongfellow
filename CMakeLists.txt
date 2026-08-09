@@ -64,15 +64,12 @@ install(TARGETS _longfellow LIBRARY DESTINATION pylongfellow)
 endif()
 
 # --- isrg-rust backend: uniffi cdylib -------------------------------------
-# native/isrg-rust/build.py runs cargo build and uniffi-bindgen
-# against the vendored submodule and stages libzk_cred_longfellow.so plus the
-# generated bindings into src/pylongfellow/backends/_zk_cred/. That directory
-# is gitignored and scikit-build-core's package copy skips gitignored files, so
-# the install() rule below is what carries the staged files into the wheel —
-# the same route the cffi extension takes. The target runs on every build;
-# cargo's own freshness check makes the repeat cheap. The script locates cargo
-# itself (PATH, then ~/.cargo/bin) and fails with an install pointer when the
-# Rust toolchain is missing.
+# native/isrg-rust/build.py runs cargo build and uniffi-bindgen against the
+# vendored submodule and stages the cdylib and generated bindings into
+# src/pylongfellow/backends/_zk_cred/. That directory is gitignored and
+# scikit-build-core's package copy skips gitignored files, so the install()
+# rule below is what carries the staged files into the wheel. The target runs
+# on every build; cargo's freshness check makes the repeat cheap.
 if(PYLONGFELLOW_BUILD_ISRG)
   add_custom_target(zk_cred_backend ALL
     COMMAND "${Python_EXECUTABLE}"
