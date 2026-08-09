@@ -11,6 +11,9 @@ backends and circuit versions change.
 
 - **interop tests** — the circuit is a committed corpus artifact loaded byte-identically into
   both backends; only the proof crosses implementations. A failure is in prove or verify.
+- **circuit_id tests** — every backend's module-level `circuit_id` recomputes each corpus
+  circuit's committed sidecar id from its bytes. A registered backend without the function
+  fails collection.
 - **generation tests** — the latest circuit per attribute count is regenerated at test time by
   `generate_circuit` on a backend whose `can_generate` is `True`. The recomputed `circuit_id`
   must equal the committed sidecar's; a mismatch fails the case as generation drift. A changed
