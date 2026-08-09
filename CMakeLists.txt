@@ -32,13 +32,6 @@ if(PYLONGFELLOW_BUILD_GOOGLE)
 add_subdirectory(vendor/longfellow-zk/lib EXCLUDE_FROM_ALL)
 
 # --- Python extension: CMake-driven cffi ----------------------------------
-# CMake owns the whole build. cffi only *emits* the extension C source
-# (ffibuild.py -> emit_c_code); CMake compiles it and links it against the
-# static upstream library. One build system, one compiler.
-#
-# The cffi build script and the C-linkage log shim are build-input, so they live
-# in native/google-cpp/ — outside src/ entirely — to keep them out of the wheel
-# (scikit-build-core copies every file in a package dir verbatim).
 find_package(Python REQUIRED COMPONENTS Development.Module)
 
 set(_google_cpp "${CMAKE_CURRENT_SOURCE_DIR}/native/google-cpp")
@@ -64,12 +57,6 @@ install(TARGETS _longfellow LIBRARY DESTINATION pylongfellow)
 endif()
 
 # --- isrg-rust backend: uniffi cdylib -------------------------------------
-# native/isrg-rust/build.py runs cargo build and uniffi-bindgen against the
-# vendored submodule and stages the cdylib and generated bindings into
-# src/pylongfellow/backends/_zk_cred/. That directory is gitignored and
-# scikit-build-core's package copy skips gitignored files, so the install()
-# rule below is what carries the staged files into the wheel. The target runs
-# on every build; cargo's freshness check makes the repeat cheap.
 if(PYLONGFELLOW_BUILD_ISRG)
   add_custom_target(zk_cred_backend ALL
     COMMAND "${Python_EXECUTABLE}"
