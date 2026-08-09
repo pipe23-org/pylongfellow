@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Moved the native build inputs to `native/`, one directory per backend;
+  `scripts/build_isrg_rust_backend.py` is now `native/isrg-rust/build.py` (#49).
+- Added a pinned-hash test over the vendored `mdoc_zk.h` header that the cffi cdef
+  transcribes (#49).
+
 ## 0.5.2 - 2026-08-07
 
 - Bumped the zk-cred-longfellow pin to b22d84e and removed the uniffi patch (#47).

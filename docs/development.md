@@ -24,7 +24,7 @@ $ git submodule update --init vendor/longfellow-zk
 $ uv sync --reinstall-package pylongfellow -C cmake.define.PYLONGFELLOW_BUILD_ISRG=OFF
 ```
 
-`uv sync` builds the `_longfellow` extension. `src/_cffi_src/_ffibuild.py` emits its C source,
+`uv sync` builds the `_longfellow` extension. `native/google-cpp/ffibuild.py` emits its C source,
 and CMake compiles it and links it against upstream's `mdoc_static`.
 
 ## isrg-rust backend
@@ -35,5 +35,5 @@ $ git submodule update --init vendor/zk-cred-longfellow
 $ uv sync --reinstall-package pylongfellow -C cmake.define.PYLONGFELLOW_BUILD_GOOGLE=OFF
 ```
 
-`uv sync` builds the `_zk_cred` module. `scripts/build_isrg_rust_backend.py` drives cargo
+`uv sync` builds the `_zk_cred` module. `native/isrg-rust/build.py` drives cargo
 and `uniffi-bindgen`.

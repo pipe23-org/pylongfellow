@@ -25,7 +25,7 @@ def _zk() -> Any:
         raise BackendUnavailableError(
             "the isrg-rust backend is not built; source builds omit it when configured "
             "with PYLONGFELLOW_BUILD_ISRG=OFF, and a dev checkout builds it with "
-            "scripts/build_isrg_rust_backend.py"
+            "native/isrg-rust/build.py"
         ) from e
     return zk_cred_longfellow
 
