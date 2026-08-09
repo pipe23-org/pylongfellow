@@ -41,8 +41,8 @@ def _check(args: list[str]) -> bool:
 
 
 def _apply_circuit_id_patch() -> None:
-    # Upstream's uniffi surface has no circuit-id entry point; the patch adds the
-    # export to the checkout at build time.
+    # To be removed when upstream exports a circuit id.
+    # https://github.com/pipe23-org/pylongfellow/issues/51
     if _check([GIT, "apply", "--check", "--reverse", str(PATCH)]):
         return
     _require(
