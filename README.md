@@ -66,7 +66,7 @@ Both backends are vendored as git submodules and built from source into each whe
 - [`abetterinternet/zk-cred-longfellow`](https://github.com/abetterinternet/zk-cred-longfellow)
   — pinned to `b22d84e`. Upstream publishes no tags. The build applies
   `native/isrg-rust/zk-cred-longfellow-circuit-id.patch` to the checkout, adding a `circuit_id`
-  export that upstream's UniFFI surface does not have; the pinned commit itself is unmodified.
+  export that upstream does not provide.
 
 The pins do not float: upstream ABIs and circuits can change between releases. A
 [nightly canary](https://github.com/pipe23-org/pylongfellow/actions/workflows/canary.yml)

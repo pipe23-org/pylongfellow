@@ -10,7 +10,6 @@ directory.
 
 from __future__ import annotations
 
-import importlib
 import json
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -147,20 +146,6 @@ def load_presentations() -> tuple[Presentation, ...]:
 CIRCUITS = load_circuits()
 PRESENTATIONS = load_presentations()
 BACKENDS = tuple(sorted(_REGISTRY))
-
-CIRCUIT_ID_FUNCTIONS: dict[str, Callable[[bytes], str]] = {
-    name: importlib.import_module(_REGISTRY[name]).circuit_id for name in BACKENDS
-}
-CIRCUIT_ID_PARAMS = [
-    pytest.param(
-        name,
-        circuit,
-        id=f"{circuit.stem}-{name}",
-        marks=[pytest.mark.slow] if name == "isrg-rust" else [],
-    )
-    for circuit in CIRCUITS
-    for name in BACKENDS
-]
 
 _CIRCUITS_BY_ID = {c.circuit_id: c for c in CIRCUITS}
 

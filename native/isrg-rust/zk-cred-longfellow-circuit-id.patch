@@ -1,15 +1,12 @@
 diff --git a/src/ffi_api.rs b/src/ffi_api.rs
-index 1f40597..ce03325 100644
+index 1f40597..f7da286 100644
 --- a/src/ffi_api.rs
 +++ b/src/ffi_api.rs
-@@ -9,6 +9,17 @@ use crate::mdoc_zk::{
+@@ -9,6 +9,14 @@ use crate::mdoc_zk::{
  };
  use std::fmt::{self, Debug, Display};
  
 +/// Compute the ID of a decompressed circuit file, as lowercase hex.
-+///
-+/// The circuit is decompressed, as everywhere else in this API; google/longfellow-zk's C
-+/// `circuit_id` takes the compressed bytes instead.
 +#[uniffi::export]
 +pub fn mdoc_circuit_id(circuit: &[u8]) -> Result<String, MdocZkError> {
 +    crate::mdoc_zk::mdoc_circuit_id(circuit)

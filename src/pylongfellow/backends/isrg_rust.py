@@ -83,8 +83,6 @@ def circuit_id(circuit: bytes) -> str:
     import zstandard
 
     zk = _zk()
-    # The uniffi entry point takes the decompressed circuit; the google-cpp
-    # binding of the same name takes the compressed bytes straight through.
     try:
         return cast(str, zk.mdoc_circuit_id(_decompress(circuit)))
     except (zstandard.ZstdError, zk.MdocZkError) as e:
