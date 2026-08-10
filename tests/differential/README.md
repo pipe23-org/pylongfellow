@@ -79,8 +79,7 @@ proofs in `presentations/`, and the untestable-cell set in `untestable-cells.jso
 proofs are opaque blobs, each with a JSON sidecar. The sidecar is the metadata of record for its
 blob. The join reads the directory at collection time. `reject-vectors/` holds circuits
 deliberately corrupted from a corpus circuit to exercise reject paths in individual tests, each
-sidecar naming the corpus circuit it derives from and the transformation applied; it is outside
-the join.
+sidecar naming the corpus circuit it derives from and the transformation applied.
 
 - The corpus is data. Behaviour lives in `pylongfellow`; the corpus never grows methods.
 - Circuits: one reference serialization per (version, attribute count), named
