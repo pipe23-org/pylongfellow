@@ -198,6 +198,44 @@ the corpus entry that exhibits it, and the source locations of the differing cod
   rejecting surfaces as an unexpected pass and fails the run, including the canary run at
   upstream HEAD.
 
+### circuit spec
+
+- Observed: over the committed `circuits/v6-1attr.circuit`, exhibited by
+  `test_divergence_circuit_spec.py`: a child process constructs google-cpp's loaded circuit
+  state directly, bypassing pylongfellow's own guards, and proves with a spec whose
+  `circuit_hash` is `"f" * 64` and whose `system` is a garbage string, all other fields
+  canonical; the child exits 0, prove completes. A second child proves with `block_enc_hash`
+  set to its canonical value plus `2**30` and `block_enc_sig` canonical; that child dies by
+  SIGABRT. A third child proves with `block_enc_sig` set to its canonical value plus `2**30`
+  and `block_enc_hash` canonical; that child also dies by SIGABRT. A fourth child proves with
+  both `block_enc_hash` and `block_enc_sig` set to their canonical values plus `1`, staying
+  inside the layout bound; the child exits 0, prove completes.
+- Mechanism: google's C entry points take the full six-field `ZkSpecStruct`, but
+  `run_mdoc_prover`/`run_mdoc_verifier` read only `version`, `block_enc_hash`, and
+  `block_enc_sig` — pin `fe83ec6`: `lib/circuits/mdoc/mdoc_zk.cc`, the
+  `enforce_circuit_id_in_prover`/`enforce_circuit_id_in_verifier` constants false at :111-112,
+  the only `zk_spec->` reads at :463, :471, :478-481, :503 and :608-611, :655-660, :677.
+  `generate_circuit` additionally reads `num_attributes` and validates that the version is the
+  latest, returning a clean error code (`lib/circuits/mdoc/mdoc_generate_circuit.cc:52-71`).
+  `circuit_hash` is read only by the lookup helper `find_zk_spec`
+  (`lib/circuits/mdoc/zk_spec.cc:89-93`); `circuit_hash` and `system` are never read on a prove
+  or verify path. `block_enc_hash` and `block_enc_sig` each build their own `LigeroParam` —
+  `mdoc_zk.cc:480` (`block_enc_hash`) and `:481` (`block_enc_sig`), verify side `:610-611` and
+  `:655-657` — and a value past the Ligero layout's bound aborts the process independently per
+  field: `check(layout(block_enc) < SIZE_MAX, ...)` at `lib/ligero/ligero_param.h:176`; the
+  bound is `2**28`, and the probes' `+2**30` perturbation lands past it. isrg-rust's API takes
+  no spec at all — pin `b22d84e`: `initialize_prover` (`src/ffi_api.rs:20-28`) and
+  `initialize_verifier` (`:52-59`) take circuit bytes, version, and num_attributes; prove and
+  verify take handles plus presentation inputs. Four of the six spec concepts (`system`,
+  `circuit_hash`, `block_enc_hash`, `block_enc_sig`) are inexpressible in that API.
+- Scope: recorded as observed behaviour, not a normative claim — no published standard
+  requires a backend to validate a spec against the circuit it names. The cells are plain
+  pins; an upstream change in either direction fails the run. pylongfellow's own guards in
+  `src/pylongfellow/backends/google_cpp.py` (`_require_claims_match_spec`,
+  `_require_canonical_spec`, `_require_spec_matches_circuit`) refuse these specs at the
+  public API before C is reached; that check is pylongfellow policy, not upstream behaviour,
+  and this entry does not exercise it.
+
 ## Pinned and floating runs
 
 Pinned and floating describe the environment (the submodule checkout), not the test. The same
