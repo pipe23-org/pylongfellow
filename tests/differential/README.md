@@ -177,7 +177,7 @@ the corpus entry that exhibits it, and the source locations of the differing cod
 - Observed: over the committed reject vector `reject-vectors/v6-1attr-embedded-id-zeroed.circuit`
   (the last 32 bytes of `circuits/v6-1attr.circuit`'s decompressed serialization — the second of
   the file's two circuits — zeroed and the stream recompressed), exhibited by
-  `test_circuit_id_divergence.py`: `google_cpp.circuit_id` raises, loading the vector through
+  `test_divergence_circuit_id.py`: `google_cpp.circuit_id` raises, loading the vector through
   `Pylongfellow` raises, and a full prove/verify round trip fails at load; `isrg_rust.circuit_id`
   returns the source circuit's id, loading the vector through `Pylongfellow` succeeds, and a full
   prove/verify round trip succeeds over the tampered circuit.
