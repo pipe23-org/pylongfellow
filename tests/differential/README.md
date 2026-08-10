@@ -171,6 +171,8 @@ the corpus entry that exhibits it, and the source locations of the differing cod
   consistent with a restriction to that deployed profile. The google-cpp cells are strict
   xfails in the pairing join, with the source citation in the reason string; an upstream
   change that stops the failure surfaces as an unexpected pass and fails the run.
+  `test_divergence_device_namespaces.py` is the record's dedicated probe, run independent of
+  the pairing join.
 
 ### embedded circuit id
 
