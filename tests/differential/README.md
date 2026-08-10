@@ -170,6 +170,23 @@ the corpus entry that exhibits it, and the source locations of the differing cod
   xfails in the pairing join, with the source citation in the reason string; an upstream
   change that stops the failure surfaces as an unexpected pass and fails the run.
 
+### embedded circuit id
+
+- Observed: a corpus circuit whose trailing embedded id is overwritten (the last 32 bytes of
+  the decompressed serialization, the hash circuit's id field) is rejected by
+  `google_cpp.circuit_id` and accepted by `isrg_rust.circuit_id`, which returns the committed
+  id recomputed from the circuit structure. Exhibited by `test_embedded_id.py` over the
+  smallest corpus circuit; the tampered blob is built at test time, never committed.
+- Mechanism: google parses each of the two circuits with `enforce_circuit_id=true`, checking
+  the embedded id against the recomputed one — pin `fe83ec6`:
+  `lib/circuits/mdoc/mdoc_circuit_id.cc:55` and `:65`. abetterinternet/zk-cred-longfellow's
+  codec reads the embedded id without checking it — pin `b22d84e`: `src/circuit.rs:71`; the
+  check exists only in the test-only `check_invariants` (`src/circuit.rs:459-465`, kept out of
+  `decode` as too expensive per its comment). Both implementations compute the returned id
+  from the structure, not the embedded field, so the isrg-rust result is the true id.
+- Scope: only `circuit_id` is asserted; whether load, prove, or verify enforce the embedded id
+  on either backend is not part of this record.
+
 ## Pinned and floating runs
 
 Pinned and floating describe the environment (the submodule checkout), not the test. The same
