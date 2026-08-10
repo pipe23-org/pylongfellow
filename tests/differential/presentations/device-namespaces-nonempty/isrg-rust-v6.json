@@ -1,0 +1,8 @@
+{
+  "prover": "isrg-rust",
+  "prover_source": "generated: pylongfellow 0.5.2 isrg-rust backend @ vendor/zk-cred-longfellow b22d84e",
+  "circuit_id": "137e5a75ce72735a37c8a72da1a8a0a5df8d13365c2ae3d2c2bd6a0e7197c7c6",
+  "circuit_byte_sha256": "12050d8baaa37eb8225a3dcf5cb6139a0ccd4fa63a0e0ac2555ecb4810ada8a3",
+  "byte_sha256": "8cadd41f7f19883f3e86308ba412783beda866eb5936c0d63fac44a7687d3013",
+  "origin": "scripts/add_test_data.py import-proof (isrg-rust prove of presentations/device-namespaces-nonempty/presentation.json, captured 2026-08-10)"
+}
