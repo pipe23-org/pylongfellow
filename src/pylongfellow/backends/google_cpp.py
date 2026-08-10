@@ -92,20 +92,21 @@ def _require_claims_match_spec(claims: list[RequestedAttribute], spec: CircuitSp
 
 
 def _require_canonical_spec(spec: CircuitSpec) -> None:
-    # The C entry points read version and block_enc_* straight from the struct
-    # and SIGABRT on non-canonical values even when the hash matches (Ligero
-    # subfield / block_enc checks). num_attributes/system/circuit_hash are the
-    # only fields C does *not* read, so the spec's self-report is otherwise
-    # unchecked. Pin the whole tuple to the library's own table: a registered
-    # (system, circuit_hash) has one canonical spec, and any deviation is a lie.
+    # The C entry points read version and block_enc_* straight from the struct.
+    # A block_enc_hash/block_enc_sig value past the Ligero layout bound SIGABRTs
+    # even when the hash matches; in-range non-canonical values are
+    # uncharacterized. num_attributes/system/circuit_hash are the only fields C
+    # does *not* read, so the spec's self-report is otherwise unchecked. Pin the
+    # whole tuple to the library's own table: a registered (system,
+    # circuit_hash) has one canonical spec, and any deviation is a lie.
     if spec != find_zk_spec(spec.system, spec.circuit_hash):
         raise ValueError("spec is not registered in the compiled-in spec table")
 
 
 def _require_spec_matches_circuit(circuit: bytes, spec: CircuitSpec) -> None:
-    # The C prover hard-aborts (SIGABRT — a paranoid subfield check in the Ligero
-    # prover) on a spec/circuit mismatch, with no error return; refuse it here as
-    # a clean error. circuit_id is cached, so a reused circuit pays the parse once.
+    # The C entry points never read circuit_hash, so nothing downstream checks
+    # that a spec names the circuit it is used with; this guard is that check.
+    # circuit_id is cached, so a reused circuit pays the parse once.
     if circuit_id(circuit) != spec.circuit_hash:
         raise ValueError("spec.circuit_hash does not match the circuit")
 
