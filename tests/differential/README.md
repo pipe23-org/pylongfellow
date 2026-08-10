@@ -67,7 +67,7 @@ rows.
 
 ## Pass criteria
 
-A passing run means every valid proof was accepted and every corrupted control was rejected.
+A passing run means every valid proof was accepted and every corrupted proof was rejected.
 Every verify input (transcript, mdoc bytes, issuer key, `device_namespaces`) is extracted from
 the presentation it belongs to and travels with it. No test borrows an input from another
 presentation.
@@ -77,7 +77,9 @@ presentation.
 The corpus lives in this directory: circuits in `circuits/`, presentations and their committed
 proofs in `presentations/`, and the untestable-cell set in `untestable-cells.json`. Circuits and
 proofs are opaque blobs, each with a JSON sidecar. The sidecar is the metadata of record for its
-blob. The join reads the directory at collection time.
+blob. The join reads the directory at collection time. `reject-vectors/` holds circuits
+deliberately corrupted from a corpus circuit to exercise reject paths in individual tests, each
+sidecar naming the corpus circuit it derives from and the transformation applied.
 
 - The corpus is data. Behaviour lives in `pylongfellow`; the corpus never grows methods.
 - Circuits: one reference serialization per (version, attribute count), named
@@ -169,6 +171,30 @@ the corpus entry that exhibits it, and the source locations of the differing cod
   consistent with a restriction to that deployed profile. The google-cpp cells are strict
   xfails in the pairing join, with the source citation in the reason string; an upstream
   change that stops the failure surfaces as an unexpected pass and fails the run.
+
+### embedded circuit id
+
+- Observed: over the committed reject vector `reject-vectors/v6-1attr-embedded-id-zeroed.circuit`
+  (the last 32 bytes of `circuits/v6-1attr.circuit`'s decompressed serialization — the second of
+  the file's two circuits — zeroed and the stream recompressed), exhibited by
+  `test_circuit_id_divergence.py`: `google_cpp.circuit_id` raises, loading the vector through
+  `Pylongfellow` raises, and a full prove/verify round trip fails at load; `isrg_rust.circuit_id`
+  returns the source circuit's id, loading the vector through `Pylongfellow` succeeds, and a full
+  prove/verify round trip succeeds over the tampered circuit.
+- Mechanism: the file holds two serialized circuits, upstream's signature circuit and hash
+  circuit. google parses each with `enforce_circuit_id=true`, checking the embedded id against
+  the recomputed one — pin `fe83ec6`: `lib/circuits/mdoc/mdoc_circuit_id.cc:55` and `:65`; its
+  `load_circuit` recomputes `circuit_id` against the spec before use, so the same check gates
+  load. abetterinternet/zk-cred-longfellow's codec reads the embedded id without checking it —
+  pin `b22d84e`: `src/circuit.rs:71`; the check exists only in the test-only `check_invariants`
+  (`src/circuit.rs:459-465`, kept out of `decode` as too expensive per its comment). Both
+  implementations derive the id from the structure and would compute the same value; google-cpp
+  additionally refuses to parse when the embedded field disagrees, and isrg-rust never consults
+  it, returning the untampered circuit's id.
+- Scope: the isrg-rust cells are strict xfails against the normative claim (the operation rejects
+  a circuit whose embedded id does not match its structure); an upstream change that starts
+  rejecting surfaces as an unexpected pass and fails the run, including the canary run at
+  upstream HEAD.
 
 ## Pinned and floating runs
 

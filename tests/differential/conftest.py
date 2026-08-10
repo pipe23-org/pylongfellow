@@ -26,6 +26,7 @@ from pylongfellow.backends import _REGISTRY, BackendUnavailableError
 CORPUS = Path(__file__).parent
 CIRCUITS_DIR = CORPUS / "circuits"
 PRESENTATIONS_DIR = CORPUS / "presentations"
+REJECT_VECTORS_DIR = CORPUS / "reject-vectors"
 
 # Verifier backends whose FFI takes device_namespaces as a required parameter.
 _NEEDS_DEVICE_NAMESPACES = frozenset({"isrg-rust"})

@@ -13,6 +13,7 @@ from .conftest import (
     CORPUS,
     PRESENTATIONS,
     PRESENTATIONS_DIR,
+    REJECT_VECTORS_DIR,
     UNTESTABLE_CELLS,
 )
 
@@ -72,3 +73,21 @@ def test_presentations_with_mdoc_carry_device_namespaces():
 def test_untestable_cells_match_the_census():
     committed = json.loads((CORPUS / "untestable-cells.json").read_text())
     assert list(UNTESTABLE_CELLS) == committed
+
+
+def test_every_reject_vector_has_a_sidecar():
+    for path in REJECT_VECTORS_DIR.glob("*.circuit"):
+        assert path.with_suffix(".json").is_file(), f"{path.name} has no sidecar"
+
+
+def test_reject_vector_byte_hashes_match():
+    for path in REJECT_VECTORS_DIR.glob("*.circuit"):
+        sidecar = json.loads(path.with_suffix(".json").read_text())
+        assert _sha256(path) == sidecar["byte_sha256"], path.name
+
+
+def test_reject_vector_derived_from_names_a_corpus_circuit():
+    stems = {c.stem for c in CIRCUITS}
+    for path in REJECT_VECTORS_DIR.glob("*.json"):
+        sidecar = json.loads(path.read_text())
+        assert sidecar["derived_from"] in stems, path.name
