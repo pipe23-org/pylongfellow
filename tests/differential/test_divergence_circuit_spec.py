@@ -1,7 +1,7 @@
 """Circuit spec handling: what google's C layer does with spec fields when
 pylongfellow's own front-door guards are bypassed. The child constructs the
 backend's loaded state directly — with the guards up, garbage specs never
-reach C through the public API, and the point here is characterizing C. Two
+reach C through the public API, and the point here is characterizing C. Four
 probes over the committed v6-1attr circuit; the README.md Recorded
 divergences entry carries the source citations."""
 
@@ -15,10 +15,16 @@ import pytest
 
 _REPO_ROOT = Path(__file__).parents[2]
 
-# lib/ligero/ligero_param.h:176 aborts the process once layout(block_enc)
-# reaches SIZE_MAX; the bound is 2**28, so a +2**30 perturbation lands well
-# past it.
+# lib/ligero/ligero_param.h:176 aborts the process once layout(block_enc) reaches
+# SIZE_MAX; the bound is 2**28, so a +2**30 perturbation lands well past it.
+# block_enc_hash and block_enc_sig each build their own LigeroParam
+# (lib/circuits/mdoc/mdoc_zk.cc:480 and :481), so the check applies per field.
 _BLOCK_ENC_DELTA = 1 << 30
+
+# isrg-rust's API has no block_enc parameter anywhere: initialize_prover
+# (vendor/zk-cred-longfellow/src/ffi_api.rs:20-28) and initialize_verifier (:52-59,
+# pin b22d84e) take only (circuit, circuit_version, num_attributes). These probes
+# characterize google_cpp only.
 
 # The child bypasses pylongfellow's own guards by constructing google_cpp's loaded
 # state directly, then calls the backend's prove with real presentation inputs.
@@ -41,9 +47,10 @@ google_cpp.BACKEND.prove(state, p.mdoc_bytes, p.issuer_pk, p.transcript, p.attrs
 """
 
 _DEAD_FIELDS_KWARGS = 'circuit_hash="f" * 64, system="garbage-system"'
-_OUT_OF_RANGE_BLOCK_ENC_KWARGS = (
-    f"block_enc_hash=spec.block_enc_hash + {_BLOCK_ENC_DELTA}, "
-    f"block_enc_sig=spec.block_enc_sig + {_BLOCK_ENC_DELTA}"
+_OUT_OF_RANGE_BLOCK_ENC_HASH_KWARGS = f"block_enc_hash=spec.block_enc_hash + {_BLOCK_ENC_DELTA}"
+_OUT_OF_RANGE_BLOCK_ENC_SIG_KWARGS = f"block_enc_sig=spec.block_enc_sig + {_BLOCK_ENC_DELTA}"
+_IN_BOUNDS_BLOCK_ENC_KWARGS = (
+    "block_enc_hash=spec.block_enc_hash + 1, block_enc_sig=spec.block_enc_sig + 1"
 )
 
 
@@ -73,10 +80,29 @@ def test_google_cpp_prove_ignores_dead_fields():
 
 
 @pytest.mark.slow
-def test_google_cpp_prove_aborts_on_out_of_range_block_enc():
-    result = _run_child_prove(_OUT_OF_RANGE_BLOCK_ENC_KWARGS)
+def test_google_cpp_prove_aborts_on_out_of_range_block_enc_hash():
+    result = _run_child_prove(_OUT_OF_RANGE_BLOCK_ENC_HASH_KWARGS)
     tail = (result.stdout + result.stderr)[-2000:]
     assert result.returncode == -signal.SIGABRT, (
         f"expected SIGABRT (returncode -{signal.SIGABRT}), got {result.returncode}; "
         f"output tail: {tail!r}"
+    )
+
+
+@pytest.mark.slow
+def test_google_cpp_prove_aborts_on_out_of_range_block_enc_sig():
+    result = _run_child_prove(_OUT_OF_RANGE_BLOCK_ENC_SIG_KWARGS)
+    tail = (result.stdout + result.stderr)[-2000:]
+    assert result.returncode == -signal.SIGABRT, (
+        f"expected SIGABRT (returncode -{signal.SIGABRT}), got {result.returncode}; "
+        f"output tail: {tail!r}"
+    )
+
+
+@pytest.mark.slow
+def test_google_cpp_prove_accepts_in_bounds_noncanonical_block_enc():
+    result = _run_child_prove(_IN_BOUNDS_BLOCK_ENC_KWARGS)
+    tail = (result.stdout + result.stderr)[-2000:]
+    assert result.returncode == 0, (
+        f"expected a clean exit, got {result.returncode}; output tail: {tail!r}"
     )
