@@ -177,7 +177,7 @@ the corpus entry that exhibits it, and the source locations of the differing cod
 - Observed: over the committed reject vector `reject-vectors/v6-1attr-embedded-id-zeroed.circuit`
   (the last 32 bytes of `circuits/v6-1attr.circuit`'s decompressed serialization — the second of
   the file's two circuits — zeroed and the stream recompressed), exhibited by
-  `test_circuit_id_divergence.py`: `google_cpp.circuit_id` raises, loading the vector through
+  `test_divergence_circuit_id.py`: `google_cpp.circuit_id` raises, loading the vector through
   `Pylongfellow` raises, and a full prove/verify round trip fails at load; `isrg_rust.circuit_id`
   returns the source circuit's id, loading the vector through `Pylongfellow` succeeds, and a full
   prove/verify round trip succeeds over the tampered circuit.
@@ -195,6 +195,46 @@ the corpus entry that exhibits it, and the source locations of the differing cod
   a circuit whose embedded id does not match its structure); an upstream change that starts
   rejecting surfaces as an unexpected pass and fails the run, including the canary run at
   upstream HEAD.
+
+### circuit spec
+
+- Observed: over the committed circuit `circuits/v6-1attr.circuit` loaded with two lying specs
+  built from its own sidecar (`test_divergence_circuit_spec.py`) — a fabricated `circuit_hash`
+  and a non-canonical `block_enc_hash`/`block_enc_sig` pair (the canonical values plus 2^30, past
+  the Ligero layout's 2^28 bound) — google-cpp's `load_circuit` raises `ValueError` for both
+  probes; isrg-rust's `load_circuit` and a full prove/verify round trip succeed for both. With
+  pylongfellow's own guards bypassed (the loaded state constructed directly, not through
+  `load_circuit`), a real `run_mdoc_prover` call in a subprocess dies by `SIGABRT` for the
+  non-canonical `block_enc` probe and exits cleanly for the wrong-`circuit_hash` probe.
+- Mechanism: upstream google's `run_mdoc_prover`/`run_mdoc_verifier` read `zk_spec->version` and
+  `zk_spec->block_enc_hash`/`block_enc_sig` and never dereference `system`, `circuit_hash`, or
+  `num_attributes` — pin `fe83ec6`: `lib/circuits/mdoc/mdoc_zk.cc:111-112`
+  (`enforce_circuit_id_in_prover`/`_in_verifier` both `false`) and the `zk_spec->` reads at
+  `:478-481` and `:608-611,655-660`. A `block_enc` value outside `LigeroParam`'s bound aborts the
+  process — `lib/ligero/ligero_param.h:176` (`check(layout(block_enc) < SIZE_MAX, ...)`) via
+  `lib/util/panic.h`'s `abort()`; a wrong `circuit_hash` has no corresponding check anywhere in
+  either entry point, so nothing in the C library stops it. Upstream ISRG's API takes no spec
+  parameter at all — `initialize_prover`/`initialize_verifier` take `(bytes, version,
+  num_attributes)` (pin `b22d84e`: `src/ffi_api.rs:20-28,52-59`). pylongfellow's google adapter
+  front-runs both failure modes with Python guards that raise `ValueError` at load —
+  `_require_canonical_spec` and `_require_spec_matches_circuit`
+  (`src/pylongfellow/backends/google_cpp.py:94-110`); for `block_enc` this guard duplicates a
+  real C-level check, but for `circuit_hash` it is the only check anywhere in the stack.
+  pylongfellow's isrg adapter consumes `spec.version` (gated to `{6, 7}`) and
+  `spec.num_attributes`, discarding `system`, `circuit_hash`, `block_enc_hash`, and
+  `block_enc_sig` (`src/pylongfellow/backends/isrg_rust.py` `load_circuit`). `system` is inert on
+  every path: google's C never reads it and isrg's API never receives it.
+- Scope: the isrg-rust cells are strict xfails against the normative claim (the operation rejects
+  a spec whose fields do not match the circuit or the registered canonical values); an upstream
+  change that starts rejecting surfaces as an unexpected pass and fails the run. The subprocess
+  cells pin the observed process-level outcome directly: the non-canonical `block_enc` cell
+  asserts the `SIGABRT`, so an upstream change from abort to a clean error fails the run and is a
+  finding. The wrong-`circuit_hash` cell is also a strict xfail, against the same subprocess
+  assertion — the child is observed to exit cleanly rather than abort, because `circuit_hash` has
+  no C-level backstop at all; unlike `block_enc`, where the guard in `google_cpp.py` duplicates a
+  check the C library enforces independently, the `circuit_hash` guard is pylongfellow's sole
+  protection, and bypassing it is bypassing the only check that exists. An upstream change that
+  starts aborting on a wrong `circuit_hash` surfaces as an unexpected pass and fails the run.
 
 ## Pinned and floating runs
 
