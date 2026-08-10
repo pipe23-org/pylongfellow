@@ -13,6 +13,7 @@ import io
 import warnings
 
 import pytest
+import zstandard
 
 from pylongfellow.backends import BackendUnavailableError, google_cpp
 
@@ -57,11 +58,10 @@ def _generated(longfellow_for, circuit: Circuit) -> bytes:
 def test_generation(circuit: Circuit, longfellow_for):
     generated = _generated(longfellow_for, circuit)
     assert google_cpp.circuit_id(generated) == circuit.circuit_id
+
     # The comparison is over decompressed bytes: the zstd envelope differs
     # between upstream's export pipeline and the runtime generate path (and
     # varies with zstd versions) while wrapping an identical serialization.
-    import zstandard
-
     def _decompressed_sha256(blob: bytes) -> str:
         reader = zstandard.ZstdDecompressor().stream_reader(io.BytesIO(blob))
         return hashlib.sha256(reader.read()).hexdigest()
