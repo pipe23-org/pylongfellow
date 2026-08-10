@@ -1,17 +1,11 @@
 """circuit_id agreement: every backend recomputes each corpus circuit's committed id."""
 
-import importlib
-from collections.abc import Callable
-
 import pytest
 
-from pylongfellow.backends import _REGISTRY, BackendUnavailableError
+from pylongfellow.backends import BackendUnavailableError
 
-from .conftest import BACKENDS, CIRCUITS, Circuit
+from .conftest import BACKENDS, CIRCUIT_ID_FUNCTIONS, CIRCUITS, Circuit
 
-CIRCUIT_ID_FUNCTIONS: dict[str, Callable[[bytes], str]] = {
-    name: importlib.import_module(_REGISTRY[name]).circuit_id for name in BACKENDS
-}
 CIRCUIT_ID_PARAMS = [
     pytest.param(
         name,

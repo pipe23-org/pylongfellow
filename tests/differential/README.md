@@ -15,13 +15,16 @@ backends and circuit versions change.
   circuit's committed sidecar id from its bytes. A registered backend without the function
   fails collection.
 - **generation tests** — the latest circuit per attribute count is regenerated at test time by
-  `generate_circuit` on a backend whose `can_generate` is `True`. The recomputed `circuit_id`
-  must equal the committed sidecar's; a mismatch fails the case as generation drift. A changed
-  decompressed byte hash at a stable `circuit_id` is a serialization change, emitted as an
-  `ObservationWarning` that appears in the warnings summary without failing the case. The
-  comparison is over decompressed bytes: the zstd envelope differs between upstream's export
-  pipeline and the runtime generate path while wrapping an identical serialization, and it
-  varies with zstd versions.
+  `generate_circuit` on a backend whose `can_generate` is `True`.
+  - The recomputed `circuit_id` must equal the committed sidecar's; a mismatch fails the case
+    as generation drift.
+  - A changed decompressed byte hash at a stable `circuit_id` is a serialization change,
+    emitted as an `ObservationWarning` that appears in the warnings summary without failing
+    the case. The comparison is over decompressed bytes: the zstd envelope differs between
+    upstream's export pipeline and the runtime generate path while wrapping an identical
+    serialization, and it varies with zstd versions.
+  - Every registered backend's `circuit_id` recomputes the committed id from the generated
+    bytes, one case per (backend, circuit).
 
 ## Observations
 
