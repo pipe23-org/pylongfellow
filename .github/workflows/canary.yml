@@ -127,6 +127,8 @@ jobs:
         id: suite
         if: steps.gate.outputs.run == 'true'
         shell: bash
+        env:
+          PYLONGFELLOW_REQUIRE_BACKENDS: google-cpp,isrg-rust
         run: uv run --no-sync pytest tests -m "slow or not slow" | tee pytest-output.txt
 
       - name: Record tested state
