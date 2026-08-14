@@ -17,6 +17,10 @@ class GenerationUnsupportedError(LongfellowError):
     """A backend whose `can_generate` is False was asked to generate a circuit."""
 
 
+class CircuitIdUnsupportedError(LongfellowError):
+    """A backend that does not implement circuit id recomputation was asked for one."""
+
+
 class BackendUnavailableError(LongfellowError):
     """A backend's native dependency is not installed or built."""
 
@@ -105,6 +109,7 @@ def get_backend(name: str) -> Backend:
 __all__ = [
     "Backend",
     "BackendUnavailableError",
+    "CircuitIdUnsupportedError",
     "GenerationUnsupportedError",
     "get_backend",
 ]
