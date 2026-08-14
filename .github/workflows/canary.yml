@@ -42,144 +42,109 @@ jobs:
           {
             echo "goog=$(git -C vendor/longfellow-zk rev-parse HEAD)"
             echo "isrg=$(git -C vendor/zk-cred-longfellow rev-parse HEAD)"
-            echo "goog_fp=$(git -C vendor/longfellow-zk rev-parse HEAD:lib | sha256sum | cut -c1-12)"
-            echo "isrg_fp=$(git -C vendor/zk-cred-longfellow rev-parse HEAD:src HEAD:Cargo.toml HEAD:Cargo.lock | sha256sum | cut -c1-12)"
-            echo "self=$GITHUB_SHA"
-            echo "self_fp=$(git rev-parse HEAD:src HEAD:tests HEAD:native HEAD:pyproject.toml HEAD:uv.lock HEAD:.github/workflows/canary.yml | sha256sum | cut -c1-12)"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Baseline from the issue record
-        id: base
+      - name: Fingerprint watched paths
+        id: fp
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # The newest machine-readable marker on the record issue is the
-          # baseline: the upstream revisions and the suite fingerprint of the
-          # last posted run. On a scheduled run the suite runs iff any bound
-          # surface differs from the baseline — either upstream's, or this
-          # repository's own (src, tests, native, pyproject.toml, uv.lock, the
-          # workflow). A manual dispatch always runs. No marker, an unreadable
-          # marker, or an unresolvable revision defaults to run, never skip.
-          marker=$(gh api "repos/${GITHUB_REPOSITORY}/issues/21/comments" --paginate \
-            --jq '.[].body' \
-            | grep -o '<!-- canary goog=[0-9a-f]* isrg=[0-9a-f]* self=[0-9a-f]* -->' \
-            | tail -n 1 || true)
-          base_goog=$(echo "$marker" | sed -n 's/.*goog=\([0-9a-f]*\).*/\1/p')
-          base_isrg=$(echo "$marker" | sed -n 's/.*isrg=\([0-9a-f]*\).*/\1/p')
-          base_self=$(echo "$marker" | sed -n 's/.*self=\([0-9a-f]*\).*/\1/p')
-          goog_delta="no baseline"
-          isrg_delta="no baseline"
-          self_delta="no baseline"
-          if [ -n "$base_goog" ]; then
-            base_fp=$(git -C vendor/longfellow-zk rev-parse "${base_goog}:lib" 2>/dev/null | sha256sum | cut -c1-12 || true)
-            if [ "$base_fp" = "${{ steps.heads.outputs.goog_fp }}" ]; then
-              goog_delta="unchanged since last run"
-            else
-              goog_delta="changed since last run"
-            fi
-          fi
-          if [ -n "$base_isrg" ]; then
-            base_fp=$(git -C vendor/zk-cred-longfellow rev-parse "${base_isrg}:src" "${base_isrg}:Cargo.toml" "${base_isrg}:Cargo.lock" 2>/dev/null | sha256sum | cut -c1-12 || true)
-            if [ "$base_fp" = "${{ steps.heads.outputs.isrg_fp }}" ]; then
-              isrg_delta="unchanged since last run"
-            else
-              isrg_delta="changed since last run"
-            fi
-          fi
-          if [ -n "$base_self" ]; then
-            if [ "$base_self" = "${{ steps.heads.outputs.self_fp }}" ]; then
-              self_delta="unchanged since last run"
-            else
-              self_delta="changed since last run"
-            fi
-          fi
-          run=true
-          if [ "$GITHUB_EVENT_NAME" = "schedule" ] && [ "$goog_delta" = "unchanged since last run" ] && [ "$isrg_delta" = "unchanged since last run" ] && [ "$self_delta" = "unchanged since last run" ]; then
-            run=false
+          goog_fp=$(git -C vendor/longfellow-zk rev-parse HEAD:lib | sha256sum | cut -c1-12)
+          isrg_fp=$(git -C vendor/zk-cred-longfellow rev-parse HEAD:src HEAD:Cargo.toml HEAD:Cargo.lock | sha256sum | cut -c1-12)
+          self_fp=$(git rev-parse HEAD:src HEAD:tests HEAD:native HEAD:pyproject.toml HEAD:uv.lock HEAD:.github/workflows/canary.yml | sha256sum | cut -c1-12)
+          combined=$(echo "$goog_fp $isrg_fp $self_fp" | sha256sum | cut -c1-16)
+          {
+            echo "goog_fp=$goog_fp"
+            echo "isrg_fp=$isrg_fp"
+            echo "self_fp=$self_fp"
+            echo "combined=$combined"
+            echo "self=$GITHUB_SHA"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Restore tested state
+        id: state
+        uses: actions/cache/restore@v4
+        with:
+          path: canary-tested.txt
+          key: canary-tested-${{ steps.fp.outputs.combined }}
+          restore-keys: canary-tested-
+
+      - name: Previous tested state
+        id: prev
+        shell: bash
+        run: |
+          goog=""
+          isrg=""
+          if [ -f canary-tested.txt ]; then
+            goog=$(sed -n 's/^goog=//p' canary-tested.txt)
+            isrg=$(sed -n 's/^isrg=//p' canary-tested.txt)
           fi
           {
-            echo "run=$run"
-            echo "goog=$base_goog"
-            echo "isrg=$base_isrg"
-            echo "goog_delta=$goog_delta"
-            echo "isrg_delta=$isrg_delta"
-            echo "self_delta=$self_delta"
+            echo "goog=$goog"
+            echo "isrg=$isrg"
           } >> "$GITHUB_OUTPUT"
-          echo "google/longfellow-zk: $goog_delta; abetterinternet/zk-cred-longfellow: $isrg_delta; suite: $self_delta; run=$run"
 
-      - name: Bound surfaces unchanged
-        if: steps.base.outputs.run != 'true'
-        run: echo "Both bound surfaces match the baseline in the issue record; skipping build and test."
+      - name: Decide whether to run
+        id: gate
+        if: github.event_name == 'workflow_dispatch' || steps.state.outputs.cache-hit != 'true'
+        run: echo "run=true" >> "$GITHUB_OUTPUT"
 
-      - name: List upstream changes
-        if: steps.base.outputs.run == 'true'
-        shell: bash
-        run: |
-          # One block per moved upstream, consumed by the comment steps. An
-          # upstream without a baseline or without movement gets an empty file.
-          : > goog-changes.md
-          : > isrg-changes.md
-          if [ "${{ steps.base.outputs.goog_delta }}" = "changed since last run" ]; then
-            {
-              echo "Changed since last run — google/longfellow-zk ([compare](https://github.com/google/longfellow-zk/compare/${{ steps.base.outputs.goog }}...${{ steps.heads.outputs.goog }})):"
-              echo
-              echo '```'
-              git -C vendor/longfellow-zk log --oneline "${{ steps.base.outputs.goog }}..${{ steps.heads.outputs.goog }}" -- lib
-              echo '```'
-              echo
-            } > goog-changes.md
-          fi
-          if [ "${{ steps.base.outputs.isrg_delta }}" = "changed since last run" ]; then
-            {
-              echo "Changed since last run — abetterinternet/zk-cred-longfellow ([compare](https://github.com/abetterinternet/zk-cred-longfellow/compare/${{ steps.base.outputs.isrg }}...${{ steps.heads.outputs.isrg }})):"
-              echo
-              echo '```'
-              git -C vendor/zk-cred-longfellow log --oneline "${{ steps.base.outputs.isrg }}..${{ steps.heads.outputs.isrg }}" -- src Cargo.toml Cargo.lock
-              echo '```'
-              echo
-            } > isrg-changes.md
-          fi
+      - name: State already tested
+        if: steps.gate.outputs.run != 'true'
+        run: echo "Fingerprint ${{ steps.fp.outputs.combined }} was already tested; skipping build and suite."
 
       - name: Install build dependencies
-        if: steps.base.outputs.run == 'true'
+        if: steps.gate.outputs.run == 'true'
         run: sudo apt-get update && sudo apt-get install -y libssl-dev libzstd-dev libgtest-dev libbenchmark-dev
 
       - uses: hendrikmuhs/ccache-action@v1
-        if: steps.base.outputs.run == 'true'
+        if: steps.gate.outputs.run == 'true'
         with:
           key: canary
 
       - uses: astral-sh/setup-uv@v9.0.0
-        if: steps.base.outputs.run == 'true'
+        if: steps.gate.outputs.run == 'true'
         with:
           python-version: "3.14"
 
       - name: Build google backend
-        if: steps.base.outputs.run == 'true'
+        if: steps.gate.outputs.run == 'true'
         run: uv sync --locked
 
       - uses: dtolnay/rust-toolchain@stable
-        if: steps.base.outputs.run == 'true'
+        if: steps.gate.outputs.run == 'true'
 
       - uses: Swatinem/rust-cache@v2
-        if: steps.base.outputs.run == 'true'
+        if: steps.gate.outputs.run == 'true'
         with:
           workspaces: vendor/zk-cred-longfellow
           shared-key: zk-cred
 
       - name: Build ISRG backend
-        if: steps.base.outputs.run == 'true'
+        if: steps.gate.outputs.run == 'true'
         run: uv run --no-sync python native/isrg-rust/build.py
 
       - name: Differential suite
         id: suite
-        if: steps.base.outputs.run == 'true'
-        # Explicit bash so the step shell carries pipefail: the tee must not mask
-        # pytest's exit status. Collection is scoped to tests/ because the unpinned
-        # vendor trees may carry their own Python test files.
+        if: steps.gate.outputs.run == 'true'
         shell: bash
         run: uv run --no-sync pytest tests -m "slow or not slow" | tee pytest-output.txt
+
+      - name: Record tested state
+        if: always() && (steps.suite.outcome == 'success' || steps.suite.outcome == 'failure')
+        shell: bash
+        run: |
+          {
+            echo "goog=${{ steps.heads.outputs.goog }}"
+            echo "isrg=${{ steps.heads.outputs.isrg }}"
+            echo "self=$GITHUB_SHA"
+          } > canary-tested.txt
+
+      - name: Save tested state
+        if: always() && (steps.suite.outcome == 'success' || steps.suite.outcome == 'failure')
+        uses: actions/cache/save@v4
+        with:
+          path: canary-tested.txt
+          key: canary-tested-${{ steps.fp.outputs.combined }}
 
       - name: Report drift
         if: failure()
@@ -197,25 +162,29 @@ jobs:
             echo
             echo "Revisions under test:"
             echo
-            echo "- google/longfellow-zk \`${{ steps.heads.outputs.goog || 'unavailable' }}\` — bound surface (\`lib/\`) \`${{ steps.heads.outputs.goog_fp || 'unavailable' }}\`, ${{ steps.base.outputs.goog_delta || 'unknown' }}"
-            echo "- abetterinternet/zk-cred-longfellow \`${{ steps.heads.outputs.isrg || 'unavailable' }}\` — bound surface (\`src\`, \`Cargo.toml\`, \`Cargo.lock\`) \`${{ steps.heads.outputs.isrg_fp || 'unavailable' }}\`, ${{ steps.base.outputs.isrg_delta || 'unknown' }}"
-            echo "- ${GITHUB_REPOSITORY} \`${{ steps.heads.outputs.self || 'unavailable' }}\` — bound surface (\`src\`, \`tests\`, \`native\`, \`pyproject.toml\`, \`uv.lock\`, \`canary.yml\`) \`${{ steps.heads.outputs.self_fp || 'unavailable' }}\`, ${{ steps.base.outputs.self_delta || 'unknown' }}"
+            echo "- google/longfellow-zk \`${{ steps.heads.outputs.goog || 'unavailable' }}\` — watched paths (\`lib/\`) \`${{ steps.fp.outputs.goog_fp || 'unavailable' }}\`"
+            echo "- abetterinternet/zk-cred-longfellow \`${{ steps.heads.outputs.isrg || 'unavailable' }}\` — watched paths (\`src\`, \`Cargo.toml\`, \`Cargo.lock\`) \`${{ steps.fp.outputs.isrg_fp || 'unavailable' }}\`"
+            echo "- ${GITHUB_REPOSITORY} \`${{ steps.fp.outputs.self || 'unavailable' }}\` — watched paths (\`src\`, \`tests\`, \`native\`, \`pyproject.toml\`, \`uv.lock\`, \`canary.yml\`) \`${{ steps.fp.outputs.self_fp || 'unavailable' }}\`"
             echo
             echo "Failed phase: \`$phase\`"
             echo
-            cat goog-changes.md isrg-changes.md 2>/dev/null || true
+            if [ -n "${{ steps.prev.outputs.goog }}" ] && [ -n "${{ steps.heads.outputs.goog }}" ] && [ "${{ steps.prev.outputs.goog }}" != "${{ steps.heads.outputs.goog }}" ]; then
+              echo "Moved since the last tested state — google/longfellow-zk: [compare](https://github.com/google/longfellow-zk/compare/${{ steps.prev.outputs.goog }}...${{ steps.heads.outputs.goog }})"
+            fi
+            if [ -n "${{ steps.prev.outputs.isrg }}" ] && [ -n "${{ steps.heads.outputs.isrg }}" ] && [ "${{ steps.prev.outputs.isrg }}" != "${{ steps.heads.outputs.isrg }}" ]; then
+              echo "Moved since the last tested state — abetterinternet/zk-cred-longfellow: [compare](https://github.com/abetterinternet/zk-cred-longfellow/compare/${{ steps.prev.outputs.isrg }}...${{ steps.heads.outputs.isrg }})"
+            fi
+            echo
             echo "Release pins: google/longfellow-zk \`${{ steps.pin.outputs.goog }}\`, zk-cred-longfellow \`${{ steps.pin.outputs.isrg }}\`. The HEADs under test are not what released wheels build from."
             echo
             echo '```'
             tail -n 40 pytest-output.txt 2>/dev/null || echo "(no pytest output; failed during build)"
             echo '```'
-            echo
-            echo "<!-- canary goog=${{ steps.heads.outputs.goog }} isrg=${{ steps.heads.outputs.isrg }} self=${{ steps.heads.outputs.self_fp }} -->"
           } > comment.md
           gh issue comment 21 --repo "$GITHUB_REPOSITORY" --body-file comment.md
 
       - name: Report run
-        if: success() && steps.base.outputs.run == 'true'
+        if: success() && steps.gate.outputs.run == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -227,11 +196,17 @@ jobs:
             echo
             echo "Revisions under test:"
             echo
-            echo "- google/longfellow-zk \`${{ steps.heads.outputs.goog }}\` — bound surface (\`lib/\`) \`${{ steps.heads.outputs.goog_fp }}\`, ${{ steps.base.outputs.goog_delta }}"
-            echo "- abetterinternet/zk-cred-longfellow \`${{ steps.heads.outputs.isrg }}\` — bound surface (\`src\`, \`Cargo.toml\`, \`Cargo.lock\`) \`${{ steps.heads.outputs.isrg_fp }}\`, ${{ steps.base.outputs.isrg_delta }}"
-            echo "- ${GITHUB_REPOSITORY} \`${{ steps.heads.outputs.self }}\` — bound surface (\`src\`, \`tests\`, \`native\`, \`pyproject.toml\`, \`uv.lock\`, \`canary.yml\`) \`${{ steps.heads.outputs.self_fp }}\`, ${{ steps.base.outputs.self_delta }}"
+            echo "- google/longfellow-zk \`${{ steps.heads.outputs.goog }}\` — watched paths (\`lib/\`) \`${{ steps.fp.outputs.goog_fp }}\`"
+            echo "- abetterinternet/zk-cred-longfellow \`${{ steps.heads.outputs.isrg }}\` — watched paths (\`src\`, \`Cargo.toml\`, \`Cargo.lock\`) \`${{ steps.fp.outputs.isrg_fp }}\`"
+            echo "- ${GITHUB_REPOSITORY} \`${{ steps.fp.outputs.self }}\` — watched paths (\`src\`, \`tests\`, \`native\`, \`pyproject.toml\`, \`uv.lock\`, \`canary.yml\`) \`${{ steps.fp.outputs.self_fp }}\`"
             echo
-            cat goog-changes.md isrg-changes.md 2>/dev/null || true
+            if [ -n "${{ steps.prev.outputs.goog }}" ] && [ "${{ steps.prev.outputs.goog }}" != "${{ steps.heads.outputs.goog }}" ]; then
+              echo "Moved since the last tested state — google/longfellow-zk: [compare](https://github.com/google/longfellow-zk/compare/${{ steps.prev.outputs.goog }}...${{ steps.heads.outputs.goog }})"
+            fi
+            if [ -n "${{ steps.prev.outputs.isrg }}" ] && [ "${{ steps.prev.outputs.isrg }}" != "${{ steps.heads.outputs.isrg }}" ]; then
+              echo "Moved since the last tested state — abetterinternet/zk-cred-longfellow: [compare](https://github.com/abetterinternet/zk-cred-longfellow/compare/${{ steps.prev.outputs.isrg }}...${{ steps.heads.outputs.isrg }})"
+            fi
+            echo
             echo "Release pins: google/longfellow-zk \`${{ steps.pin.outputs.goog }}\`, zk-cred-longfellow \`${{ steps.pin.outputs.isrg }}\`. The HEADs under test are not what released wheels build from."
             echo
             echo "Both implementations of draft-google-cfrg-libzk at the revisions above agree on prove/verify across the committed corpus, and circuit regeneration reproduces the committed \`circuit_id\`s."
@@ -247,7 +222,5 @@ jobs:
               echo "$observations"
               echo '```'
             fi
-            echo
-            echo "<!-- canary goog=${{ steps.heads.outputs.goog }} isrg=${{ steps.heads.outputs.isrg }} self=${{ steps.heads.outputs.self_fp }} -->"
           } > run-comment.md
           gh issue comment 21 --repo "$GITHUB_REPOSITORY" --body-file run-comment.md
