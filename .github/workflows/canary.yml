@@ -48,13 +48,13 @@ jobs:
         id: fp
         shell: bash
         run: |
-          goog_fp=$(git -C vendor/longfellow-zk rev-parse HEAD:lib | sha256sum | cut -c1-12)
-          isrg_fp=$(git -C vendor/zk-cred-longfellow rev-parse HEAD:src HEAD:Cargo.toml HEAD:Cargo.lock | sha256sum | cut -c1-12)
+          google_cpp_fp=$(git -C vendor/longfellow-zk rev-parse HEAD:lib | sha256sum | cut -c1-12)
+          isrg_rust_fp=$(git -C vendor/zk-cred-longfellow rev-parse HEAD:src HEAD:Cargo.toml HEAD:Cargo.lock | sha256sum | cut -c1-12)
           self_fp=$(git rev-parse HEAD:src HEAD:tests HEAD:native HEAD:pyproject.toml HEAD:uv.lock HEAD:.github/workflows/canary.yml | sha256sum | cut -c1-12)
-          combined=$(echo "$goog_fp $isrg_fp $self_fp" | sha256sum | cut -c1-16)
+          combined=$(echo "$google_cpp_fp $isrg_rust_fp $self_fp" | sha256sum | cut -c1-16)
           {
-            echo "goog_fp=$goog_fp"
-            echo "isrg_fp=$isrg_fp"
+            echo "google_cpp_fp=$google_cpp_fp"
+            echo "isrg_rust_fp=$isrg_rust_fp"
             echo "self_fp=$self_fp"
             echo "combined=$combined"
             echo "self=$GITHUB_SHA"
@@ -162,8 +162,8 @@ jobs:
             echo
             echo "Revisions under test:"
             echo
-            echo "- google/longfellow-zk \`${{ steps.heads.outputs.goog || 'unavailable' }}\` — watched paths (\`lib/\`) \`${{ steps.fp.outputs.goog_fp || 'unavailable' }}\`"
-            echo "- abetterinternet/zk-cred-longfellow \`${{ steps.heads.outputs.isrg || 'unavailable' }}\` — watched paths (\`src\`, \`Cargo.toml\`, \`Cargo.lock\`) \`${{ steps.fp.outputs.isrg_fp || 'unavailable' }}\`"
+            echo "- google/longfellow-zk \`${{ steps.heads.outputs.goog || 'unavailable' }}\` — watched paths (\`lib/\`) \`${{ steps.fp.outputs.google_cpp_fp || 'unavailable' }}\`"
+            echo "- abetterinternet/zk-cred-longfellow \`${{ steps.heads.outputs.isrg || 'unavailable' }}\` — watched paths (\`src\`, \`Cargo.toml\`, \`Cargo.lock\`) \`${{ steps.fp.outputs.isrg_rust_fp || 'unavailable' }}\`"
             echo "- ${GITHUB_REPOSITORY} \`${{ steps.fp.outputs.self || 'unavailable' }}\` — watched paths (\`src\`, \`tests\`, \`native\`, \`pyproject.toml\`, \`uv.lock\`, \`canary.yml\`) \`${{ steps.fp.outputs.self_fp || 'unavailable' }}\`"
             echo
             echo "Failed phase: \`$phase\`"
@@ -196,8 +196,8 @@ jobs:
             echo
             echo "Revisions under test:"
             echo
-            echo "- google/longfellow-zk \`${{ steps.heads.outputs.goog }}\` — watched paths (\`lib/\`) \`${{ steps.fp.outputs.goog_fp }}\`"
-            echo "- abetterinternet/zk-cred-longfellow \`${{ steps.heads.outputs.isrg }}\` — watched paths (\`src\`, \`Cargo.toml\`, \`Cargo.lock\`) \`${{ steps.fp.outputs.isrg_fp }}\`"
+            echo "- google/longfellow-zk \`${{ steps.heads.outputs.goog }}\` — watched paths (\`lib/\`) \`${{ steps.fp.outputs.google_cpp_fp }}\`"
+            echo "- abetterinternet/zk-cred-longfellow \`${{ steps.heads.outputs.isrg }}\` — watched paths (\`src\`, \`Cargo.toml\`, \`Cargo.lock\`) \`${{ steps.fp.outputs.isrg_rust_fp }}\`"
             echo "- ${GITHUB_REPOSITORY} \`${{ steps.fp.outputs.self }}\` — watched paths (\`src\`, \`tests\`, \`native\`, \`pyproject.toml\`, \`uv.lock\`, \`canary.yml\`) \`${{ steps.fp.outputs.self_fp }}\`"
             echo
             if [ -n "${{ steps.prev.outputs.goog }}" ] && [ "${{ steps.prev.outputs.goog }}" != "${{ steps.heads.outputs.goog }}" ]; then
