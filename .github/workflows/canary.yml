@@ -62,7 +62,7 @@ jobs:
 
       - name: Restore tested state
         id: state
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: canary-tested.txt
           key: canary-tested-${{ steps.fp.outputs.combined }}
@@ -101,7 +101,7 @@ jobs:
         with:
           key: canary
 
-      - uses: astral-sh/setup-uv@v9.0.0
+      - uses: astral-sh/setup-uv@v10.0.1
         if: steps.gate.outputs.run == 'true'
         with:
           python-version: "3.14"
@@ -143,7 +143,7 @@ jobs:
 
       - name: Save tested state
         if: always() && (steps.suite.outcome == 'success' || steps.suite.outcome == 'failure')
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: canary-tested.txt
           key: canary-tested-${{ steps.fp.outputs.combined }}
