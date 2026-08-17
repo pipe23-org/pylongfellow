@@ -4,7 +4,7 @@ Sidecars and presentation.json files are read into plain records at collection
 time; the join computes the (circuit, presentation, prover, verifier) tuples
 the relationship tests parametrize over. A tuple whose inputs the corpus cannot
 supply is parametrized as a skip carrying the reason, and its id and reason are
-collected in UNTESTABLE_CELLS.
+collected in UNTESTABLE_CASES.
 """
 
 from __future__ import annotations
@@ -243,8 +243,8 @@ def _untestable_reason(case: VerifyCase | RoundTripCase) -> str:
 
 def _param(case: VerifyCase | RoundTripCase, backends: tuple[str, ...]) -> Any:
     if case.untestable:
-        # An untestable cell runs no backend code, so it carries no slow mark and
-        # appears in the summary of every run. The cell id goes in the reason
+        # An untestable case runs no backend code, so it carries no slow mark and
+        # appears in the summary of every run. The case id goes in the reason
         # because pytest groups the skip summary by (location, reason).
         skip = pytest.mark.skip(reason=f"{case.id}: {_untestable_reason(case)}")
         return pytest.param(case, id=case.id, marks=[skip])
@@ -261,7 +261,7 @@ ROUND_TRIP_PARAMS = [_param(c, (c.prover, c.verifier)) for c in ROUND_TRIP_CASES
 
 _ALL_CASES: tuple[VerifyCase | RoundTripCase, ...] = (*VERIFY_CASES, *ROUND_TRIP_CASES)
 
-UNTESTABLE_CELLS = tuple(
+UNTESTABLE_CASES = tuple(
     {"id": case.id, "reason": _untestable_reason(case)} for case in _ALL_CASES if case.untestable
 )
 

@@ -15,5 +15,5 @@ documented in `data/README.md`. A failure here means pylongfellow's own API brok
 and reject vectors (`reject-vectors/`) through both backends and compares the results.
 `conftest.py` joins the corpus into the (circuit, presentation, prover, verifier) tuples
 the tests parametrize over. A tuple the corpus cannot supply is parametrized as a skip.
-`untestable-cells.json` is the committed census of those skips. A failure here means the
+`untestable-cases.json` is the committed list of those skips. A failure here means the
 two implementations stopped agreeing.
