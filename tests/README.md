@@ -1,14 +1,19 @@
-# Tests
+# tests/
 
-This suite tests the backends in `pylongfellow.backends`, pairwise, against a set of test
-fixtures. "Pairwise" is accurate for two backends and may change if a third is added.
+The suite tests the backends (`google-cpp`, `isrg-rust`) pairwise against a set of test
+fixtures.
 
-## Directories
+## api/
 
-`api/` tests `pylongfellow`'s own API: input validation, error types, marshalling, and
-each backend's operations in isolation. A failure here means `pylongfellow`'s own API
-broke.
+`api/` tests pylongfellow's own API: circuit loading, presentation creation, proving,
+verification, marshalling, logging, and error handling. Its fixtures are in `data/`,
+documented in `data/README.md`. A failure here means pylongfellow's own API broke.
 
-`differential/` tests two backends against each other and against a shared corpus of
-circuits and presentations. A failure here means the two implementations stopped
-agreeing.
+## differential/
+
+`differential/` runs a corpus of circuits (`circuits/`), presentations (`presentations/`),
+and reject vectors (`reject-vectors/`) through both backends and compares the results.
+`conftest.py` joins the corpus into the (circuit, presentation, prover, verifier) tuples
+the tests parametrize over. A tuple the corpus cannot supply is parametrized as a skip.
+`untestable-cells.json` is the committed census of those skips. A failure here means the
+two implementations stopped agreeing.
