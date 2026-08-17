@@ -17,6 +17,7 @@ from pylongfellow import Pylongfellow, mdoc
 from pylongfellow.backends.google_cpp import find_zk_spec
 
 _DATA = Path(__file__).parent / "data"
+# upstream vectors. this will go away when test data moves to longfellow-vectors.
 _VECTORS = Path(__file__).parents[2] / "vendor" / "zk-cred-longfellow" / "test-vectors" / "mdoc_zk"
 
 
