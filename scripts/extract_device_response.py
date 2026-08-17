@@ -4,8 +4,8 @@
     python scripts/extract_device_response.py <device_response.json> <fixture_name>
 
 Reads a raw response (base64 Transcript + ZKDeviceResponseCBOR), pulls out the
-verify() inputs, and writes tests/data/<fixture_name>.json plus the referenced
-circuit blob into tests/data/circuits/. Run once; the output is committed and
+verify() inputs, and writes tests/api/data/<fixture_name>.json plus the referenced
+circuit blob into tests/api/data/circuits/. Run once; the output is committed and
 conftest loads it.
 """
 
@@ -20,7 +20,7 @@ from cryptography import x509
 
 ROOT = Path(__file__).resolve().parent.parent
 VENDOR_CIRCUITS = ROOT / "vendor/longfellow-zk/lib/circuits/mdoc/circuits"
-DATA = ROOT / "tests/data"
+DATA = ROOT / "tests/api/data"
 
 
 def _issuer_pk(cert_der: bytes) -> tuple[str, str]:
@@ -59,7 +59,7 @@ def main(src: str, name: str) -> None:
     (DATA / f"{name}.json").write_text(json.dumps(fixture, indent=2) + "\n")
     (DATA / "circuits").mkdir(exist_ok=True)
     shutil.copyfile(VENDOR_CIRCUITS / circuit_hash, DATA / "circuits" / circuit_hash)
-    print(f"wrote tests/data/{name}.json + circuits/{circuit_hash[:16]}…")
+    print(f"wrote tests/api/data/{name}.json + circuits/{circuit_hash[:16]}…")
 
 
 if __name__ == "__main__":

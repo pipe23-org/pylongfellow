@@ -41,6 +41,7 @@ A `Backend` implements one longfellow implementation. `Pylongfellow` takes a reg
       members: false
 ::: pylongfellow.backends.get_backend
 ::: pylongfellow.backends.GenerationUnsupportedError
+::: pylongfellow.backends.CircuitIdUnsupportedError
 ::: pylongfellow.backends.BackendUnavailableError
 
 ## `pylongfellow.backends.google_cpp`

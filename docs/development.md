@@ -35,7 +35,5 @@ $ git submodule update --init vendor/zk-cred-longfellow
 $ uv sync --reinstall-package pylongfellow -C cmake.define.PYLONGFELLOW_BUILD_GOOGLE=OFF
 ```
 
-`uv sync` builds the `_zk_cred` module. `native/isrg-rust/build.py` applies
-`zk-cred-longfellow-circuit-id.patch` to the submodule's working tree and drives cargo
-and `uniffi-bindgen`, so `vendor/zk-cred-longfellow` shows two modified files after a
-build.
+`uv sync` builds the `_zk_cred` module. `native/isrg-rust/build.py` drives cargo and
+`uniffi-bindgen` against the submodule's unmodified working tree.

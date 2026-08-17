@@ -1,8 +1,8 @@
 # Test data
 
-The files in this directory back the test fixtures in `tests/conftest.py`, generated
+The files in this directory back the test fixtures in `tests/api/conftest.py`, generated
 from test data in the `vendor/longfellow-zk` submodule (see the table below). Circuits
-used for testing reside in `tests/data/circuits/`.
+used for testing reside in `tests/api/data/circuits/`.
 
 | File | Type | Claim | Source (in `vendor/longfellow-zk/`) | Generator |
 |---|---|---|---|---|

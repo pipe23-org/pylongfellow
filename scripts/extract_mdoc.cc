@@ -1,10 +1,10 @@
 // Extract one entry from the vendored mdoc test corpus into a clean prove
-// fixture (tests/data/mdoc_<name>.json) — the C++ analogue of
+// fixture (tests/api/data/mdoc_<name>.json) — the C++ analogue of
 // extract_device_response.py. Run once; re-run on a submodule bump.
 //
 //   g++ -std=c++17 -I vendor/longfellow-zk/lib scripts/extract_mdoc.cc -o /tmp/extract_mdoc
-//   /tmp/extract_mdoc 15 > tests/data/mdoc_eu_av.json
-//   cp vendor/longfellow-zk/lib/circuits/mdoc/circuits/8d079211* tests/data/circuits/
+//   /tmp/extract_mdoc 15 > tests/api/data/mdoc_eu_av.json
+//   cp vendor/longfellow-zk/lib/circuits/mdoc/circuits/8d079211* tests/api/data/circuits/
 
 #include <cstdio>
 #include <cstdlib>
