@@ -7,8 +7,8 @@ from dataclasses import dataclass, field
 from datetime import UTC
 from typing import TYPE_CHECKING, Any, cast
 
-from ..mdoc._errors import Error, ProverError, VerifierError
-from . import BackendUnavailableError, GenerationUnsupportedError
+from ..mdoc._errors import ProverError, VerifierError
+from . import BackendUnavailableError, CircuitIdUnsupportedError, GenerationUnsupportedError
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -65,28 +65,15 @@ def _single_namespace(claims: list[RequestedAttribute]) -> str:
 
 
 def circuit_id(circuit: bytes) -> str:
-    """Recompute a circuit's canonical id from its bytes.
-
-    Binds `mdoc_circuit_id`. The id is 64 hex chars and equals
-    [`CircuitSpec.circuit_hash`][pylongfellow.mdoc.CircuitSpec].
+    """Reject circuit id recomputation; this backend cannot recompute circuit ids.
 
     Args:
         circuit: zstd-compressed circuit bytes.
 
-    Returns:
-        The canonical id, as 64-char hex.
-
     Raises:
-        BackendUnavailableError: The isrg-rust backend is not built.
-        Error: The bytes could not be parsed.
+        CircuitIdUnsupportedError: always.
     """
-    import zstandard
-
-    zk = _zk()
-    try:
-        return cast(str, zk.mdoc_circuit_id(_decompress(circuit)))
-    except (zstandard.ZstdError, zk.MdocZkError) as e:
-        raise Error("circuit_id failed (unparseable circuit bytes)") from e
+    raise CircuitIdUnsupportedError("the isrg-rust backend cannot recompute circuit ids")
 
 
 @dataclass

@@ -2,8 +2,8 @@
 
 ## Unreleased
 
-- Added `circuit_id` to the isrg-rust backend, via a build-time patch to the vendored
-  crate (#50).
+- `circuit_id` on the isrg-rust backend raises `CircuitIdUnsupportedError`; the build-time
+  patch to the vendored crate that added a `circuit_id` export is removed (#50).
 - Moved the native build inputs to `native/`, one directory per backend;
   `scripts/build_isrg_rust_backend.py` is now `native/isrg-rust/build.py` (#49).
 - Added a pinned-hash test over the vendored `mdoc_zk.h` header that the cffi cdef

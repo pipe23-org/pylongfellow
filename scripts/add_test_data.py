@@ -9,7 +9,7 @@
 import-circuit copies an externally produced circuit blob byte-identically.
 generate-circuit produces a blob with the pinned google-cpp backend. Both write
 the blob under tests/differential/circuits/ with a same-stem JSON sidecar.
-add-presentation converts a committed fixture from tests/data/ into a directory under
+add-presentation converts a committed fixture from tests/api/data/ into a directory under
 tests/differential/presentations/, writing presentation.json and, when the
 fixture carries a proof, a .proof file with its sidecar.
 """

@@ -1,4 +1,4 @@
-"""Corpus integrity: sidecars, byte hashes, cross-references, untestable cells, every run.
+"""Corpus integrity: sidecars, byte hashes, cross-references, untestable cases, every run.
 
 circuit_id claims are verified by scripts/add_test_data.py, not here; the
 byte_sha256 checks pin the artifacts instead.
@@ -14,7 +14,7 @@ from .conftest import (
     PRESENTATIONS,
     PRESENTATIONS_DIR,
     REJECT_VECTORS_DIR,
-    UNTESTABLE_CELLS,
+    UNTESTABLE_CASES,
 )
 
 _CIRCUITS_BY_ID = {c.circuit_id: c for c in CIRCUITS}
@@ -70,9 +70,9 @@ def test_presentations_with_mdoc_carry_device_namespaces():
             assert presentation.device_namespaces is not None, presentation.name
 
 
-def test_untestable_cells_match_the_census():
-    committed = json.loads((CORPUS / "untestable-cells.json").read_text())
-    assert list(UNTESTABLE_CELLS) == committed
+def test_untestable_cases_match_the_committed_list():
+    committed = json.loads((CORPUS / "untestable-cases.json").read_text())
+    assert list(UNTESTABLE_CASES) == committed
 
 
 def test_every_reject_vector_has_a_sidecar():

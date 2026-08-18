@@ -4,13 +4,11 @@ Sidecars and presentation.json files are read into plain records at collection
 time; the join computes the (circuit, presentation, prover, verifier) tuples
 the relationship tests parametrize over. A tuple whose inputs the corpus cannot
 supply is parametrized as a skip carrying the reason, and its id and reason are
-collected in UNTESTABLE_CELLS. The corpus contract is README.md in this
-directory.
+collected in UNTESTABLE_CASES.
 """
 
 from __future__ import annotations
 
-import importlib
 import json
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -21,7 +19,7 @@ from typing import Any
 import pytest
 
 from pylongfellow import Pylongfellow, mdoc
-from pylongfellow.backends import _REGISTRY, BackendUnavailableError
+from pylongfellow.backends import _REGISTRY, BackendUnavailableError, google_cpp
 
 CORPUS = Path(__file__).parent
 CIRCUITS_DIR = CORPUS / "circuits"
@@ -35,7 +33,7 @@ _NO_MDOC_CLAUSE = "the capture carries no mdoc bytes, which the prover requires 
 
 
 class ObservationWarning(Warning):
-    """An observed event that breaks no contract (see README taxonomy)."""
+    """An observed event that breaks no contract."""
 
 
 @dataclass(frozen=True)
@@ -148,9 +146,7 @@ def load_presentations() -> tuple[Presentation, ...]:
 CIRCUITS = load_circuits()
 PRESENTATIONS = load_presentations()
 BACKENDS = tuple(sorted(_REGISTRY))
-CIRCUIT_ID_FUNCTIONS: dict[str, Callable[[bytes], str]] = {
-    name: importlib.import_module(_REGISTRY[name]).circuit_id for name in BACKENDS
-}
+CIRCUIT_ID_FUNCTIONS: Callable[[bytes], str] = google_cpp.circuit_id
 
 _CIRCUITS_BY_ID = {c.circuit_id: c for c in CIRCUITS}
 
@@ -235,6 +231,7 @@ def _round_trip_cases() -> list[RoundTripCase]:
 # characterization here is wrong or upstream changed.
 _GOOGLE_DEVICE_NAMESPACES_XFAIL = pytest.mark.xfail(
     strict=True,
+    raises=mdoc.Error,
     reason="google fixes DeviceNameSpacesBytes to the empty map; "
     "lib/circuits/mdoc/mdoc_witness.h:413 @ fe83ec6",
 )
@@ -246,8 +243,8 @@ def _untestable_reason(case: VerifyCase | RoundTripCase) -> str:
 
 def _param(case: VerifyCase | RoundTripCase, backends: tuple[str, ...]) -> Any:
     if case.untestable:
-        # An untestable cell runs no backend code, so it carries no slow mark and
-        # appears in the summary of every run. The cell id goes in the reason
+        # An untestable case runs no backend code, so it carries no slow mark and
+        # appears in the summary of every run. The case id goes in the reason
         # because pytest groups the skip summary by (location, reason).
         skip = pytest.mark.skip(reason=f"{case.id}: {_untestable_reason(case)}")
         return pytest.param(case, id=case.id, marks=[skip])
@@ -264,7 +261,7 @@ ROUND_TRIP_PARAMS = [_param(c, (c.prover, c.verifier)) for c in ROUND_TRIP_CASES
 
 _ALL_CASES: tuple[VerifyCase | RoundTripCase, ...] = (*VERIFY_CASES, *ROUND_TRIP_CASES)
 
-UNTESTABLE_CELLS = tuple(
+UNTESTABLE_CASES = tuple(
     {"id": case.id, "reason": _untestable_reason(case)} for case in _ALL_CASES if case.untestable
 )
 

@@ -5,11 +5,11 @@ import sys
 from datetime import UTC, datetime
 
 import pytest
-import zstandard
 
 from pylongfellow import mdoc
 from pylongfellow.backends import (
     BackendUnavailableError,
+    CircuitIdUnsupportedError,
     GenerationUnsupportedError,
     isrg_rust,
 )
@@ -35,6 +35,11 @@ def _one_attr() -> list[mdoc.RequestedAttribute]:
 def test_generate_circuit_unsupported():
     with pytest.raises(GenerationUnsupportedError):
         isrg_rust.BACKEND.generate_circuit(_SPEC)
+
+
+def test_circuit_id_unsupported():
+    with pytest.raises(CircuitIdUnsupportedError):
+        isrg_rust.circuit_id(b"")
 
 
 def test_load_rejects_bad_version(vendored_vector):
@@ -90,26 +95,6 @@ def test_verify_reports_unavailable_backend(monkeypatch):
         isrg_rust.BACKEND.verify(
             _dummy_state(), mdoc.PublicKey(1, 2), b"", _one_attr(), _AWARE, b"", "doc", b"\xa0"
         )
-
-
-@pytest.mark.slow
-@skip_without_isrg_rust
-def test_circuit_id_matches_the_vector_filename(vendored_vector):
-    assert isrg_rust.circuit_id(vendored_vector.circuit) == vendored_vector.spec.circuit_hash
-
-
-@pytest.mark.slow
-@skip_without_isrg_rust
-def test_circuit_id_rejects_uncompressed_garbage():
-    with pytest.raises(mdoc.Error, match="unparseable"):
-        isrg_rust.circuit_id(b"not a circuit" * 20)
-
-
-@pytest.mark.slow
-@skip_without_isrg_rust
-def test_circuit_id_rejects_compressed_garbage():
-    with pytest.raises(mdoc.Error, match="unparseable"):
-        isrg_rust.circuit_id(zstandard.ZstdCompressor().compress(b"not a circuit" * 20))
 
 
 @pytest.mark.slow

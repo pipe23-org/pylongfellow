@@ -12,5 +12,5 @@
   "issuer_pk_x": "ab4bb1a19d6bc9d61138cf43a004ba5156ae4f3080804c910cf638eacf3b4e00",
   "issuer_pk_y": "216a667060dae40ecca6fb4b39f1c93e1098ac64667b6e5bbf0140518672cb7b",
   "timestamp": "2025-12-01T23:59:59+00:00",
-  "origin": "tests/data/proof_age_over_18.json"
+  "origin": "tests/api/data/proof_age_over_18.json"
 }
