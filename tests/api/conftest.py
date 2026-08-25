@@ -14,7 +14,6 @@ from pathlib import Path
 import pytest
 
 from pylongfellow import Pylongfellow, mdoc
-from pylongfellow.backends.google_cpp import find_zk_spec
 
 _DATA = Path(__file__).parent / "data"
 # upstream vectors. this will go away when test data moves to longfellow-vectors.
@@ -43,7 +42,8 @@ class VerifyInputs:
     timestamp: datetime
     proof: bytes
     doctype: str
-    spec: mdoc.CircuitSpec
+    version: int
+    num_attributes: int
 
 
 @dataclass(frozen=True)
@@ -55,7 +55,8 @@ class ProveInputs:
     attrs: list[mdoc.RequestedAttribute]
     timestamp: datetime
     doctype: str
-    spec: mdoc.CircuitSpec
+    version: int
+    num_attributes: int
 
 
 def _attrs(fixture) -> list[mdoc.RequestedAttribute]:
@@ -67,10 +68,8 @@ def _attrs(fixture) -> list[mdoc.RequestedAttribute]:
     ]
 
 
-def _load_verify(name: str) -> VerifyInputs:
+def _load_verify(name: str, version: int, num_attributes: int) -> VerifyInputs:
     fixture = json.loads((_DATA / f"{name}.json").read_text())
-    spec = find_zk_spec(fixture["system"], fixture["circuit_hash"])
-    assert spec is not None, f"no spec for {fixture['circuit_hash']}"
     return VerifyInputs(
         circuit=(_DATA / "circuits" / fixture["circuit_hash"]).read_bytes(),
         issuer_pk=mdoc.PublicKey(int(fixture["issuer_pk_x"], 16), int(fixture["issuer_pk_y"], 16)),
@@ -79,14 +78,13 @@ def _load_verify(name: str) -> VerifyInputs:
         timestamp=datetime.fromisoformat(fixture["timestamp"]),
         proof=base64.b64decode(fixture["proof_b64"]),
         doctype=fixture["doctype"],
-        spec=spec,
+        version=version,
+        num_attributes=num_attributes,
     )
 
 
-def _load_prove(name: str) -> ProveInputs:
+def _load_prove(name: str, version: int, num_attributes: int) -> ProveInputs:
     fixture = json.loads((_DATA / f"{name}.json").read_text())
-    spec = find_zk_spec(fixture["system"], fixture["circuit_hash"])
-    assert spec is not None, f"no spec for {fixture['circuit_hash']}"
     return ProveInputs(
         circuit=(_DATA / "circuits" / fixture["circuit_hash"]).read_bytes(),
         mdoc_bytes=bytes.fromhex(fixture["mdoc_hex"]),
@@ -95,18 +93,19 @@ def _load_prove(name: str) -> ProveInputs:
         attrs=_attrs(fixture),
         timestamp=datetime.fromisoformat(fixture["timestamp"]),
         doctype=fixture["doctype"],
-        spec=spec,
+        version=version,
+        num_attributes=num_attributes,
     )
 
 
 @pytest.fixture
 def proof_age_over_18() -> VerifyInputs:
-    return _load_verify("proof_age_over_18")
+    return _load_verify("proof_age_over_18", 6, 1)
 
 
 @pytest.fixture
 def mdoc_eu_av() -> ProveInputs:
-    return _load_prove("mdoc_eu_av")
+    return _load_prove("mdoc_eu_av", 7, 1)
 
 
 _CIRCUIT_V6_1 = "6_1_137e5a75ce72735a37c8a72da1a8a0a5df8d13365c2ae3d2c2bd6a0e7197c7c6"
@@ -122,8 +121,9 @@ _ISSUE_DATE_CBOR = b"\xd9\x03\xec\x6a" + b"2024-03-15"
 
 @dataclass(frozen=True)
 class VendoredVector:
-    spec: mdoc.CircuitSpec
     circuit: bytes
+    version: int
+    num_attributes: int
     mdoc_bytes: bytes
     transcript: bytes
     attrs: list[mdoc.RequestedAttribute]
@@ -143,11 +143,10 @@ def vendored_vector() -> VendoredVector:
     the JSON; they are the values the crate's own mdoc_zk interop tests pass for this vector.
     """
     payload = json.loads((_VECTORS / "v6_v7_1attr_issue_date.json").read_text())
-    spec = find_zk_spec("longfellow-libzk-v1", _CIRCUIT_V6_1.split("_")[-1])
-    assert spec is not None
     return VendoredVector(
-        spec=spec,
         circuit=(_VECTORS / _CIRCUIT_V6_1).read_bytes(),
+        version=6,
+        num_attributes=1,
         mdoc_bytes=bytes.fromhex(payload["mdoc"]),
         transcript=bytes.fromhex(payload["transcript"]),
         attrs=[mdoc.RequestedAttribute(_NAMESPACE, "issue_date", _ISSUE_DATE_CBOR)],
@@ -176,7 +175,9 @@ def isrg(vendored_vector: VendoredVector) -> Pylongfellow:
     per instance, and every test here runs over the same circuit.
     """
     longfellow = Pylongfellow(backend="isrg-rust")
-    longfellow.load_circuit(vendored_vector.spec, vendored_vector.circuit)
+    longfellow.load_circuit(
+        vendored_vector.circuit, vendored_vector.version, vendored_vector.num_attributes
+    )
     return longfellow
 
 

@@ -10,15 +10,7 @@ from .._errors import LongfellowError
 if TYPE_CHECKING:
     from datetime import datetime
 
-    from ..mdoc._types import CircuitSpec, PublicKey, RequestedAttribute
-
-
-class GenerationUnsupportedError(LongfellowError):
-    """A backend whose `can_generate` is False was asked to generate a circuit."""
-
-
-class CircuitIdUnsupportedError(LongfellowError):
-    """A backend that does not implement circuit id recomputation was asked for one."""
+    from ..mdoc._types import PublicKey, RequestedAttribute
 
 
 class BackendUnavailableError(LongfellowError):
@@ -29,20 +21,17 @@ class Backend(Protocol):
     """The operations a backend provides."""
 
     name: str
-    can_generate: bool
 
     def ensure_available(self) -> None:
         """Raise BackendUnavailableError unless the backend's native dependency is built."""
 
-    def load_circuit(self, spec: CircuitSpec, circuit: bytes) -> object:
-        """Load a circuit and return the state prove and verify take.
+    def load_circuit(self, circuit: bytes, version: int, num_attributes: int) -> object:
+        """Load a circuit declared to be `version` with `num_attributes`, and return the state.
 
         The state's type is the backend's own; `prove` and `verify` take it back as
-        `state`, so a backend may put expensive parsed state in it.
+        `state`, so a backend may put expensive parsed state in it. What a backend checks
+        the declared version and count against is its own behaviour.
         """
-
-    def generate_circuit(self, spec: CircuitSpec) -> bytes:
-        """Generate the circuit identified by `spec`."""
 
     def prove(
         self,
@@ -109,7 +98,5 @@ def get_backend(name: str) -> Backend:
 __all__ = [
     "Backend",
     "BackendUnavailableError",
-    "CircuitIdUnsupportedError",
-    "GenerationUnsupportedError",
     "get_backend",
 ]

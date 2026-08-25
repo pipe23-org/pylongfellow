@@ -11,22 +11,18 @@ from datetime import datetime
 from pathlib import Path
 
 from pylongfellow import Pylongfellow, mdoc
-from pylongfellow.backends.google_cpp import circuit_id, find_zk_spec
+from pylongfellow.backends.google_cpp import circuit_id, generate_circuit
 
 longfellow = Pylongfellow(backend="google-cpp")
 
 credential = json.loads((Path(__file__).parent / "mdoc_eu_av.json").read_text())
 
-spec = find_zk_spec(credential["system"], credential["circuit_hash"])
-if spec is None:
-    raise SystemExit(f"no built-in spec for {credential['circuit_hash']}")
+print("generating the v7 1-attribute circuit...")
+circuit = generate_circuit(7, 1)
+if circuit_id(circuit) != credential["circuit_hash"]:
+    raise SystemExit("generated circuit id does not match the credential's circuit")
 
-print(f"generating circuit for {spec.system} (v{spec.version}, {spec.num_attributes} attr)...")
-circuit = longfellow.generate_circuit(spec)
-if circuit_id(circuit) != spec.circuit_hash:
-    raise SystemExit("generated circuit id does not match the spec")
-
-longfellow.load_circuit(spec, circuit)
+longfellow.load_circuit(circuit, 7, 1)
 
 claims = [
     mdoc.RequestedAttribute(a["namespace"], a["id"], bytes.fromhex(a["cbor_value_hex"]))

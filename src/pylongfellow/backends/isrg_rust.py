@@ -8,12 +8,12 @@ from datetime import UTC
 from typing import TYPE_CHECKING, Any, cast
 
 from ..mdoc._errors import ProverError, VerifierError
-from . import BackendUnavailableError, CircuitIdUnsupportedError, GenerationUnsupportedError
+from . import BackendUnavailableError
 
 if TYPE_CHECKING:
     from datetime import datetime
 
-    from ..mdoc._types import CircuitSpec, PublicKey, RequestedAttribute
+    from ..mdoc._types import PublicKey, RequestedAttribute
 
 _VERSIONS = frozenset({6, 7})
 
@@ -64,18 +64,6 @@ def _single_namespace(claims: list[RequestedAttribute]) -> str:
     return namespaces.pop()
 
 
-def circuit_id(circuit: bytes) -> str:
-    """Reject circuit id recomputation; this backend cannot recompute circuit ids.
-
-    Args:
-        circuit: zstd-compressed circuit bytes.
-
-    Raises:
-        CircuitIdUnsupportedError: always.
-    """
-    raise CircuitIdUnsupportedError("the isrg-rust backend cannot recompute circuit ids")
-
-
 @dataclass
 class _LoadedCircuit:
     """The decompressed circuit, and the prover and verifier initialised from it on first use."""
@@ -109,45 +97,34 @@ class _IsrgRustBackend:
     """abetterinternet/zk-cred-longfellow (ISRG) via UniFFI; it cannot generate circuits."""
 
     name: str = "isrg-rust"
-    can_generate: bool = False
 
     def ensure_available(self) -> None:
         """Raise BackendUnavailableError unless the UniFFI extension is built."""
         _zk()
 
-    def load_circuit(self, spec: CircuitSpec, circuit: bytes) -> object:
-        """Decompress a circuit and return it as circuit state.
+    def load_circuit(self, circuit: bytes, version: int, num_attributes: int) -> object:
+        """Decompress a circuit and return it as circuit state, on the declared version.
 
-        Circuit identity is backend-native behaviour: this backend does not
-        check that `spec.circuit_hash` matches `circuit`. A wrong circuit of
-        the same version and attribute count is not detected at load;
-        version/count mismatches surface as errors at prove/verify.
+        Nothing is checked against the circuit bytes: a wrong circuit of the declared
+        version and attribute count is not detected at load, and surfaces as a prover
+        or verifier error.
 
         Args:
-            spec: CircuitSpec identifying the circuit; its version must be 6 or 7.
             circuit: zstd-compressed circuit bytes.
+            version: Circuit version, 6 or 7.
+            num_attributes: Number of attributes the circuit proves over, passed to
+                the crate as given.
 
         Returns:
             The circuit state prove and verify take.
 
         Raises:
-            ValueError: `spec.version` is not 6 or 7.
+            ValueError: `version` is not 6 or 7.
         """
-        if spec.version not in _VERSIONS:
-            raise ValueError(f"unsupported circuit version {spec.version} (expected 6 or 7)")
+        if version not in _VERSIONS:
+            raise ValueError(f"unsupported circuit version {version} (expected 6 or 7)")
         decompressed = _decompress(circuit)
-        return _LoadedCircuit(decompressed, spec.version, spec.num_attributes)
-
-    def generate_circuit(self, spec: CircuitSpec) -> bytes:
-        """Reject circuit generation; this backend cannot generate circuits.
-
-        Args:
-            spec: CircuitSpec identifying the circuit to generate.
-
-        Raises:
-            GenerationUnsupportedError: always.
-        """
-        raise GenerationUnsupportedError("the isrg-rust backend cannot generate circuits")
+        return _LoadedCircuit(decompressed, version, num_attributes)
 
     def prove(
         self,

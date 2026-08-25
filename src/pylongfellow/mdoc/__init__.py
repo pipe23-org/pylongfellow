@@ -9,12 +9,11 @@ from ._errors import (
     VerifierError,
     VerifierErrorCode,
 )
-from ._types import CircuitSpec, PublicKey, RequestedAttribute
+from ._types import PublicKey, RequestedAttribute
 
 __all__ = [
     "CircuitError",
     "CircuitGenerationErrorCode",
-    "CircuitSpec",
     "Error",
     "ProverError",
     "ProverErrorCode",

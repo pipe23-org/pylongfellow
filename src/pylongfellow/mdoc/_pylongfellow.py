@@ -10,9 +10,9 @@ if TYPE_CHECKING:
     from datetime import datetime
 
     # Docstring cross-references resolve through this module's imports.
-    from ..backends import BackendUnavailableError, GenerationUnsupportedError  # noqa: F401
-    from ._errors import CircuitError, ProverError, VerifierError  # noqa: F401
-    from ._types import CircuitSpec, PublicKey, RequestedAttribute
+    from ..backends import BackendUnavailableError  # noqa: F401
+    from ._errors import Error, ProverError, VerifierError  # noqa: F401
+    from ._types import PublicKey, RequestedAttribute
 
 
 class Pylongfellow:
@@ -21,7 +21,7 @@ class Pylongfellow:
     Example:
         ```python
         longfellow = Pylongfellow(backend="google-cpp")
-        longfellow.load_circuit(spec, circuit)
+        longfellow.load_circuit(circuit, 7, 1)
         proof = longfellow.prove(mdoc, issuer_public_key, transcript, claims, timestamp)
         longfellow.verify(issuer_public_key, transcript, claims, timestamp, proof, doctype)
         ```
@@ -53,38 +53,26 @@ class Pylongfellow:
             raise RuntimeError("no circuit is loaded; call load_circuit first")
         return self._circuit
 
-    def load_circuit(self, spec: CircuitSpec, circuit: bytes) -> None:
+    def load_circuit(self, circuit: bytes, version: int, num_attributes: int) -> None:
         """Load the circuit this instance proves and verifies with.
 
-        A second call replaces the loaded circuit.
+        A second call replaces the loaded circuit. What the declared `version` and
+        `num_attributes` are checked against is backend behaviour.
 
         Args:
-            spec: CircuitSpec identifying the circuit.
             circuit: Circuit bytes, as from
-                [`generate_circuit`][pylongfellow.Pylongfellow.generate_circuit].
+                [`generate_circuit`][pylongfellow.backends.google_cpp.generate_circuit]
+                or from disk.
+            version: Version of the ZK specification the circuit is declared to be.
+            num_attributes: Number of attributes the circuit is declared to prove over.
 
         Raises:
-            ValueError: `spec` is rejected by the backend, e.g. it is not
-                registered or does not match `circuit` (google-cpp), or its
-                version is unsupported (isrg-rust).
+            ValueError: `circuit` is not a compiled-in circuit with the declared
+                version and attribute count (google-cpp), or `version` is not
+                supported (isrg-rust).
+            Error: The circuit bytes could not be parsed (google-cpp).
         """
-        self._circuit = self.backend.load_circuit(spec, circuit)
-
-    def generate_circuit(self, spec: CircuitSpec) -> bytes:
-        """Generate the circuit identified by `spec`.
-
-        Args:
-            spec: CircuitSpec identifying the circuit to generate.
-
-        Returns:
-            Circuit bytes.
-
-        Raises:
-            ValueError: `spec` is not registered on the backend (google-cpp).
-            CircuitError: Generation failed, e.g. an unsupported spec version (google-cpp).
-            GenerationUnsupportedError: The backend cannot generate circuits (isrg-rust).
-        """
-        return self.backend.generate_circuit(spec)
+        self._circuit = self.backend.load_circuit(circuit, version, num_attributes)
 
     def prove(
         self,
@@ -100,7 +88,7 @@ class Pylongfellow:
             mdoc: CBOR-encoded mdoc credential.
             issuer_public_key: The issuer's public key.
             transcript: Session transcript to bind the proof to.
-            claims: Claims to prove; `len(claims)` must equal the loaded spec's
+            claims: Claims to prove; `len(claims)` must equal the loaded circuit's
                 `num_attributes`.
             timestamp: Timezone-aware verification time.
 
@@ -110,7 +98,7 @@ class Pylongfellow:
         Raises:
             RuntimeError: No circuit is loaded.
             ValueError: `timestamp` is naive; `len(claims)` does not match the
-                loaded spec's `num_attributes` (google-cpp); or `claims` do not
+                loaded circuit's `num_attributes` (google-cpp); or `claims` do not
                 share one namespace (isrg-rust).
             ProverError: The prover rejected the inputs.
         """
@@ -135,7 +123,7 @@ class Pylongfellow:
         Args:
             issuer_public_key: The issuer's public key.
             transcript: Session transcript the proof is bound to.
-            claims: Claims to verify; `len(claims)` must equal the loaded spec's
+            claims: Claims to verify; `len(claims)` must equal the loaded circuit's
                 `num_attributes`.
             timestamp: Timezone-aware verification time.
             proof: Proof bytes from [`prove`][pylongfellow.Pylongfellow.prove].
@@ -146,7 +134,7 @@ class Pylongfellow:
         Raises:
             RuntimeError: No circuit is loaded.
             ValueError: `timestamp` is naive; `len(claims)` does not match the
-                loaded spec's `num_attributes` or `doctype` is 256 bytes or longer
+                loaded circuit's `num_attributes` or `doctype` is 256 bytes or longer
                 (google-cpp); or `device_namespaces` is None (isrg-rust).
             VerifierError: The proof does not hold.
         """

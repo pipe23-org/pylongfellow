@@ -14,7 +14,6 @@ from datetime import datetime
 from pathlib import Path
 
 from pylongfellow import Pylongfellow, mdoc
-from pylongfellow.backends.google_cpp import find_zk_spec
 
 
 def _stderr(level: str | None) -> str:
@@ -41,14 +40,12 @@ if __name__ == "__main__":
     # verify, which logs at INFO.
     data = Path(__file__).parent / "data"
     fx = json.loads((data / "proof_age_over_18.json").read_text())
-    spec = find_zk_spec(fx["system"], fx["circuit_hash"])
-    assert spec is not None
     attrs = [
         mdoc.RequestedAttribute(a["namespace"], a["id"], bytes.fromhex(a["cbor_value_hex"]))
         for a in fx["attrs"]
     ]
     longfellow = Pylongfellow(backend="google-cpp")
-    longfellow.load_circuit(spec, (data / "circuits" / fx["circuit_hash"]).read_bytes())
+    longfellow.load_circuit((data / "circuits" / fx["circuit_hash"]).read_bytes(), 6, 1)
     longfellow.verify(
         mdoc.PublicKey(int(fx["issuer_pk_x"], 16), int(fx["issuer_pk_y"], 16)),
         base64.b64decode(fx["transcript_b64"]),

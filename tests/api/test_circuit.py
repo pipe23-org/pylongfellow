@@ -1,6 +1,5 @@
-"""circuit_id and find_zk_spec — circuit/spec identity."""
+"""circuit_id, find_zk_spec, and generate_circuit — the compiled-in circuit table."""
 
-import dataclasses
 from pathlib import Path
 
 import pytest
@@ -43,45 +42,22 @@ def test_find_zk_spec_miss_returns_none():
     assert google_cpp.find_zk_spec("nope", _KNOWN[0][0]) is None
 
 
-def test_generate_circuit_rejects_old_version(google):
-    # generate_circuit only makes the latest version; an older spec is rejected.
-    spec = google_cpp.find_zk_spec(_SYSTEM, _KNOWN[0][0])  # v6, not the latest
-    assert spec is not None
+def test_generate_circuit_rejects_old_version():
+    # generate_circuit only makes the latest version for a count; v6/1 is superseded.
     with pytest.raises(mdoc.CircuitError):
-        google.generate_circuit(spec)
+        google_cpp.generate_circuit(6, 1)
 
 
-@pytest.mark.slow
-def test_generate_circuit_rejects_noncanonical_spec(google):
-    # A hand-built spec that isn't in the library's table must be refused before
-    # reaching C (block_enc/version SIGABRT; oversize hash is a heap overflow).
-    spec = google_cpp.find_zk_spec(_SYSTEM, _KNOWN[1][0])
-    assert spec is not None
-    with pytest.raises(ValueError, match="compiled-in spec table"):
-        google.generate_circuit(dataclasses.replace(spec, block_enc_hash=spec.block_enc_hash + 1))
+def test_generate_circuit_rejects_unknown_pair():
+    with pytest.raises(ValueError, match="no compiled-in circuit"):
+        google_cpp.generate_circuit(7, 9)
 
 
-def test_build_spec_rejects_oversize_hash():
-    # Direct protection on the marshalling primitive: a circuit_hash longer than
-    # the 65-byte C field is an out-of-bounds write. Callers via prove/verify/
-    # generate_circuit are shielded earlier by the canonical guard; this covers
-    # the primitive itself.
-    from pylongfellow._longfellow import ffi
-    from pylongfellow.backends.google_cpp import _build_spec
-
-    spec = google_cpp.find_zk_spec(_SYSTEM, _KNOWN[1][0])
-    assert spec is not None
-    with pytest.raises(ValueError, match="circuit_hash too long"):
-        _build_spec(ffi, dataclasses.replace(spec, circuit_hash="a" * 200))
-
-
-def test_generate_circuit_self_validates(google):
+def test_generate_circuit_self_validates():
     # Generation must reproduce the canonical id — the interoperable circuit,
     # not merely a valid one.
     circuit_hash = _KNOWN[1][0]  # v7/n1
-    spec = google_cpp.find_zk_spec(_SYSTEM, circuit_hash)
-    assert spec is not None
-    assert google_cpp.circuit_id(google.generate_circuit(spec)) == circuit_hash
+    assert google_cpp.circuit_id(google_cpp.generate_circuit(7, 1)) == circuit_hash
 
 
 def test_zk_specs_length():

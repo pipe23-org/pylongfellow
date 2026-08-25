@@ -6,11 +6,10 @@ import cbor2
 import pytest
 
 from pylongfellow import mdoc
-from pylongfellow.backends.google_cpp import find_zk_spec
 
 
 def _prove(longfellow, inputs):
-    longfellow.load_circuit(inputs.spec, inputs.circuit)
+    longfellow.load_circuit(inputs.circuit, inputs.version, inputs.num_attributes)
     return longfellow.prove(
         inputs.mdoc_bytes,
         inputs.issuer_pk,
@@ -70,14 +69,3 @@ def test_prove_rejects_attr_count_mismatch(google, mdoc_eu_av, resize):
     inputs = mdoc_eu_av
     with pytest.raises(ValueError, match="num_attributes"):
         _prove(google, dataclasses.replace(inputs, attrs=resize(inputs.attrs)))
-
-
-def test_prove_rejects_spec_for_wrong_circuit(google, mdoc_eu_av):
-    # A spec naming a different circuit must be a clean ValueError, not the
-    # upstream SIGABRT (the binding's spec<->circuit guard).
-    wrong = find_zk_spec(
-        "longfellow-libzk-v1",
-        "137e5a75ce72735a37c8a72da1a8a0a5df8d13365c2ae3d2c2bd6a0e7197c7c6",  # v6, not the v7 circuit
-    )
-    with pytest.raises(ValueError, match="does not match the circuit"):
-        _prove(google, dataclasses.replace(mdoc_eu_av, spec=wrong))

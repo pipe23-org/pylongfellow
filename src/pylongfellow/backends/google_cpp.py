@@ -14,11 +14,34 @@ from ..mdoc._errors import (
     VerifierError,
     VerifierErrorCode,
 )
-from ..mdoc._types import CircuitSpec, PublicKey, RequestedAttribute
+from ..mdoc._types import PublicKey, RequestedAttribute
 from . import BackendUnavailableError
+
+_SYSTEM = "longfellow-libzk-v1"
 
 # C fixed-buffer sizes (from the upstream RequestedAttribute struct).
 _NAMESPACE_MAX, _ID_MAX, _VALUE_MAX = 64, 32, 64
+
+
+@dataclass(frozen=True)
+class ZkSpec:
+    """A row of the compiled-in circuit table; what `find_zk_spec` and `zk_specs` return.
+
+    Attributes:
+        system: ZK system name and version (e.g. `longfellow-libzk-v*`).
+        circuit_hash: SHA-256 (hex) pinning which circuit the row describes.
+        num_attributes: Number of attributes the circuit proves over.
+        version: Version of the ZK specification.
+        block_enc_hash: `block_enc` parameter for the proof (upstream field).
+        block_enc_sig: `block_enc` parameter for the proof (upstream field).
+    """
+
+    system: str
+    circuit_hash: str
+    num_attributes: int
+    version: int
+    block_enc_hash: int
+    block_enc_sig: int
 
 
 def _load() -> tuple[Any, Any]:
@@ -56,7 +79,7 @@ def _fill_attrs(ffi: Any, attrs: list[RequestedAttribute]) -> Any:
     return c_attrs
 
 
-def _build_spec(ffi: Any, spec: CircuitSpec) -> tuple[Any, Any]:
+def _build_spec(ffi: Any, spec: ZkSpec) -> tuple[Any, Any]:
     """Build the C ZkSpecStruct from the dataclass.
 
     Returns (struct, system_buf). The struct's `system` field is a raw char*
@@ -67,10 +90,6 @@ def _build_spec(ffi: Any, spec: CircuitSpec) -> tuple[Any, Any]:
     system_buf = ffi.new("char[]", spec.system.encode())
     c_spec.system = system_buf
     hash_bytes = spec.circuit_hash.encode()
-    # The C field is char[65]; memmove of anything longer is an out-of-bounds
-    # heap write (silent at 66-80 bytes, allocator abort beyond). Refuse here.
-    if len(hash_bytes) > 64:
-        raise ValueError(f"circuit_hash too long ({len(hash_bytes)} > 64 bytes)")
     ffi.memmove(c_spec.circuit_hash, hash_bytes, len(hash_bytes))
     c_spec.num_attributes = spec.num_attributes
     c_spec.version = spec.version
@@ -79,41 +98,30 @@ def _build_spec(ffi: Any, spec: CircuitSpec) -> tuple[Any, Any]:
     return c_spec, system_buf
 
 
-def _require_claims_match_spec(claims: list[RequestedAttribute], spec: CircuitSpec) -> None:
-    # The C entry points never read spec.num_attributes; the invariant is
-    # attrs_len == the circuit's attribute count, for which the spec field is the
-    # proxy (tied to the circuit by the hash check below). A mismatch hard-aborts
-    # in C (DenseFiller overfill on too many; the Ligero subfield check on too
-    # few, prover side) — only verify-with-too-few returns a clean status.
+def _require_claims_match_spec(claims: list[RequestedAttribute], spec: ZkSpec) -> None:
+    # The C entry points never read num_attributes; the invariant is attrs_len ==
+    # the circuit's attribute count, for which the loaded row's field is the proxy
+    # (tied to the circuit by the id check at load). A mismatch hard-aborts in C
+    # (DenseFiller overfill on too many; the Ligero subfield check on too few,
+    # prover side) — only verify-with-too-few returns a clean status.
     if len(claims) != spec.num_attributes:
         raise ValueError(
-            f"len(claims) ({len(claims)}) does not match spec.num_attributes ({spec.num_attributes})"
+            f"len(claims) ({len(claims)}) does not match the loaded circuit's "
+            f"num_attributes ({spec.num_attributes})"
         )
 
 
-def _require_canonical_spec(spec: CircuitSpec) -> None:
-    # The C entry points read version and block_enc_* straight from the struct.
-    # A block_enc_hash/block_enc_sig value past the Ligero layout bound SIGABRTs
-    # even when the hash matches; in-range non-canonical values are
-    # uncharacterized. num_attributes/system/circuit_hash are the only fields C
-    # does *not* read, so the spec's self-report is otherwise unchecked. Pin the
-    # whole tuple to the library's own table: a registered (system,
-    # circuit_hash) has one canonical spec, and any deviation is a lie.
-    if spec != find_zk_spec(spec.system, spec.circuit_hash):
-        raise ValueError("spec is not registered in the compiled-in spec table")
+def _find_row(version: int, num_attributes: int) -> ZkSpec | None:
+    """Return the compiled-in row with this version and attribute count, or None."""
+    for row in zk_specs():
+        if (row.system, row.version, row.num_attributes) == (_SYSTEM, version, num_attributes):
+            return row
+    return None
 
 
-def _require_spec_matches_circuit(circuit: bytes, spec: CircuitSpec) -> None:
-    # The C entry points never read circuit_hash, so nothing downstream checks
-    # that a spec names the circuit it is used with; this guard is that check.
-    # circuit_id is cached, so a reused circuit pays the parse once.
-    if circuit_id(circuit) != spec.circuit_hash:
-        raise ValueError("spec.circuit_hash does not match the circuit")
-
-
-def _spec_from_struct(ffi: Any, c_spec: Any) -> CircuitSpec:
-    """Convert a ZkSpecStruct (pointer or array element) to a CircuitSpec."""
-    return CircuitSpec(
+def _spec_from_struct(ffi: Any, c_spec: Any) -> ZkSpec:
+    """Convert a ZkSpecStruct (pointer or array element) to a ZkSpec."""
+    return ZkSpec(
         system=ffi.string(c_spec.system).decode(),
         circuit_hash=ffi.string(c_spec.circuit_hash).decode(),
         num_attributes=c_spec.num_attributes,
@@ -128,7 +136,7 @@ def circuit_id(circuit: bytes) -> str:
     """Recompute a circuit's canonical id from its bytes.
 
     Binds `circuit_id`. The id is 64 hex chars and equals
-    [`CircuitSpec.circuit_hash`][pylongfellow.mdoc.CircuitSpec].
+    [`ZkSpec.circuit_hash`][pylongfellow.backends.google_cpp.ZkSpec].
 
     Args:
         circuit: Circuit bytes.
@@ -141,7 +149,7 @@ def circuit_id(circuit: bytes) -> str:
     """
     ffi, lib = _load()
     # v0.9 circuit_id only null-checks the spec; the id is a pure function of the circuit.
-    dummy_spec = CircuitSpec("", "0" * 64, 0, 0, 0, 0)
+    dummy_spec = ZkSpec("", "0" * 64, 0, 0, 0, 0)
     c_spec, _keepalive = _build_spec(ffi, dummy_spec)
     out = ffi.new("uint8_t[32]")
     if lib.circuit_id(out, circuit, len(circuit), c_spec) != 1:
@@ -149,8 +157,8 @@ def circuit_id(circuit: bytes) -> str:
     return bytes(ffi.buffer(out, 32)).hex()
 
 
-def find_zk_spec(system: str, circuit_hash: str) -> CircuitSpec | None:
-    """Look up the built-in CircuitSpec for a (system, circuit_hash) pair.
+def find_zk_spec(system: str, circuit_hash: str) -> ZkSpec | None:
+    """Look up the built-in ZkSpec for a (system, circuit_hash) pair.
 
     Binds `find_zk_spec`.
 
@@ -160,7 +168,7 @@ def find_zk_spec(system: str, circuit_hash: str) -> CircuitSpec | None:
             [`circuit_id`][pylongfellow.backends.google_cpp.circuit_id].
 
     Returns:
-        The matching CircuitSpec, or None if the build has no spec for that pair.
+        The matching ZkSpec, or None if the build has no spec for that pair.
     """
     ffi, lib = _load()
     spec_ptr = lib.find_zk_spec(system.encode(), circuit_hash.encode())
@@ -170,8 +178,8 @@ def find_zk_spec(system: str, circuit_hash: str) -> CircuitSpec | None:
 
 
 @functools.cache
-def zk_specs() -> tuple[CircuitSpec, ...]:
-    """Return every CircuitSpec compiled into the linked library, in table order.
+def zk_specs() -> tuple[ZkSpec, ...]:
+    """Return every ZkSpec compiled into the linked library, in table order.
 
     Binds the `kZkSpecs` table. Entries include superseded circuit versions:
     for a given `num_attributes`, several `(version, circuit_hash)` rows may be
@@ -179,17 +187,55 @@ def zk_specs() -> tuple[CircuitSpec, ...]:
     `num_attributes`.
 
     Returns:
-        The table's CircuitSpec entries, in table order.
+        The table's ZkSpec entries, in table order.
     """
     ffi, lib = _load()
     return tuple(_spec_from_struct(ffi, c_spec) for c_spec in lib.kZkSpecs)
 
 
+def generate_circuit(version: int, num_attributes: int) -> bytes:
+    """Generate the compiled-in circuit with this version and attribute count.
+
+    Binds `generate_circuit`. C generates only the highest version the table holds
+    for an attribute count, so an older version of a known count raises
+    `CircuitError`.
+
+    Args:
+        version: Version of the ZK specification.
+        num_attributes: Number of attributes the circuit proves over.
+
+    Returns:
+        Circuit bytes.
+
+    Raises:
+        ValueError: The compiled-in table has no circuit with that version and
+            attribute count.
+        CircuitError: Generation failed.
+    """
+    ffi, lib = _load()
+    spec = _find_row(version, num_attributes)
+    if spec is None:
+        raise ValueError(
+            f"no compiled-in circuit with version {version} and num_attributes {num_attributes}"
+        )
+    c_spec, _keepalive = _build_spec(ffi, spec)
+    circuit_ptr = ffi.new("uint8_t**")
+    circuit_len = ffi.new("size_t*")
+    status = lib.generate_circuit(c_spec, circuit_ptr, circuit_len)
+    if status != lib.CIRCUIT_GENERATION_SUCCESS:
+        raise CircuitError(CircuitGenerationErrorCode(status))
+    try:
+        return bytes(ffi.buffer(circuit_ptr[0], circuit_len[0]))
+    finally:
+        if circuit_ptr[0] != ffi.NULL:
+            lib.free(circuit_ptr[0])
+
+
 @dataclass(frozen=True)
 class _LoadedCircuit:
-    """A circuit and the spec it was checked against; every C call takes both."""
+    """A circuit and the table row it was matched to; every C call takes both."""
 
-    spec: CircuitSpec
+    spec: ZkSpec
     circuit: bytes
 
 
@@ -197,58 +243,37 @@ class _GoogleBackend:
     """google/longfellow-zk's C++ library via its C ABI."""
 
     name: str = "google-cpp"
-    can_generate: bool = True
 
     def ensure_available(self) -> None:
         """Raise BackendUnavailableError unless the native extension is built."""
         _load()
 
-    def load_circuit(self, spec: CircuitSpec, circuit: bytes) -> object:
-        """Validate the circuit against the spec and return both as circuit state.
+    def load_circuit(self, circuit: bytes, version: int, num_attributes: int) -> object:
+        """Return circuit state for bytes that are the declared compiled-in circuit.
+
+        The circuit id is recomputed from the bytes; the table row it resolves to
+        must carry the declared version and attribute count.
 
         Args:
-            spec: CircuitSpec identifying the circuit.
             circuit: Circuit bytes.
+            version: Version of the ZK specification the bytes are declared to be.
+            num_attributes: Number of attributes the circuit is declared to prove over.
 
         Returns:
             The circuit state prove and verify take.
 
         Raises:
-            ValueError: `spec` is not registered in the compiled-in spec table,
-                or does not match `circuit`.
+            Error: The bytes could not be parsed.
+            ValueError: The bytes are not a compiled-in circuit with the declared
+                version and attribute count.
         """
-        _require_canonical_spec(spec)
-        _require_spec_matches_circuit(circuit, spec)
+        spec = find_zk_spec(_SYSTEM, circuit_id(circuit))
+        if spec is None or (spec.version, spec.num_attributes) != (version, num_attributes):
+            raise ValueError(
+                f"circuit bytes do not match a compiled-in circuit with version {version} "
+                f"and num_attributes {num_attributes}"
+            )
         return _LoadedCircuit(spec=spec, circuit=circuit)
-
-    def generate_circuit(self, spec: CircuitSpec) -> bytes:
-        """Generate a circuit blob.
-
-        Binds `generate_circuit`. Only the latest circuit version is generated.
-
-        Args:
-            spec: CircuitSpec identifying the circuit to generate.
-
-        Returns:
-            Circuit bytes.
-
-        Raises:
-            ValueError: `spec` is not registered in the compiled-in spec table.
-            CircuitError: Generation failed, e.g. an unsupported spec version.
-        """
-        ffi, lib = _load()
-        _require_canonical_spec(spec)
-        c_spec, _keepalive = _build_spec(ffi, spec)
-        circuit_ptr = ffi.new("uint8_t**")
-        circuit_len = ffi.new("size_t*")
-        status = lib.generate_circuit(c_spec, circuit_ptr, circuit_len)
-        if status != lib.CIRCUIT_GENERATION_SUCCESS:
-            raise CircuitError(CircuitGenerationErrorCode(status))
-        try:
-            return bytes(ffi.buffer(circuit_ptr[0], circuit_len[0]))
-        finally:
-            if circuit_ptr[0] != ffi.NULL:
-                lib.free(circuit_ptr[0])
 
     def prove(
         self,
@@ -268,7 +293,7 @@ class _GoogleBackend:
             mdoc: CBOR-encoded mdoc credential.
             issuer_public_key: The issuer's public key.
             transcript: Session transcript to bind the proof to.
-            claims: Claims to prove; `len(claims)` must equal the loaded spec's
+            claims: Claims to prove; `len(claims)` must equal the loaded circuit's
                 `num_attributes`.
             timestamp: Timezone-aware verification time.
 
@@ -276,7 +301,7 @@ class _GoogleBackend:
             Proof bytes.
 
         Raises:
-            ValueError: `len(claims)` does not match the loaded spec's `num_attributes`.
+            ValueError: `len(claims)` does not match the loaded circuit's `num_attributes`.
             ProverError: The prover rejected the inputs.
         """
         ffi, lib = _load()
@@ -331,7 +356,7 @@ class _GoogleBackend:
             state: Circuit state from `load_circuit`.
             issuer_public_key: The issuer's public key.
             transcript: Session transcript the proof is bound to.
-            claims: Claims to verify; `len(claims)` must equal the loaded spec's
+            claims: Claims to verify; `len(claims)` must equal the loaded circuit's
                 `num_attributes`.
             timestamp: Timezone-aware verification time.
             proof: Proof bytes from [`prove`][pylongfellow.Pylongfellow.prove].
@@ -339,7 +364,7 @@ class _GoogleBackend:
             device_namespaces: Inner bytes of the tag-24 DeviceNameSpacesBytes.
 
         Raises:
-            ValueError: `len(claims)` does not match the loaded spec's `num_attributes`,
+            ValueError: `len(claims)` does not match the loaded circuit's `num_attributes`,
                 or `doctype` is 256 bytes or longer.
             VerifierError: The proof does not hold.
         """
