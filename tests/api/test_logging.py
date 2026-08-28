@@ -1,10 +1,3 @@
-"""PYLONGFELLOW_GOOGLE_CPP_LOG_LEVEL sets upstream's stderr level at load (default WARNING).
-
-Read once in a load-time constructor, so each value needs its own process: every
-test re-runs this file as a subprocess with the env controlled. "ms]" is upstream's
-log-line timestamp — on stderr iff the per-call firehose is on.
-"""
-
 import base64
 import json
 import os
@@ -16,6 +9,9 @@ from pathlib import Path
 from pylongfellow import Pylongfellow, mdoc
 
 
+# The log level is read once in a load-time constructor, so each value needs its own
+# process. "ms]" is upstream's log-line timestamp, on stderr only when the per-call
+# firehose is on.
 def _stderr(level: str | None) -> str:
     env = {k: v for k, v in os.environ.items() if k != "PYLONGFELLOW_GOOGLE_CPP_LOG_LEVEL"}
     if level is not None:

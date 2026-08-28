@@ -1,5 +1,3 @@
-"""Pylongfellow: backend selection, circuit loading, and what the loaded circuit gates."""
-
 import sys
 from datetime import UTC, datetime
 

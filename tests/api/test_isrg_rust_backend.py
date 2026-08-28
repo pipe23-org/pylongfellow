@@ -1,5 +1,3 @@
-"""The isrg-rust backend: input-validation branches without the native module, then round trips."""
-
 import dataclasses
 import sys
 from datetime import UTC, datetime

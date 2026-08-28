@@ -1,5 +1,3 @@
-"""Each call's failure is a distinct exception carrying its own code enum."""
-
 import pytest
 
 import pylongfellow

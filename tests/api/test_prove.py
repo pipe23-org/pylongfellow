@@ -1,5 +1,3 @@
-"""Prove from a real upstream mdoc: the round trip, and the rejections."""
-
 import dataclasses
 
 import cbor2

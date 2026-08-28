@@ -1,5 +1,3 @@
-"""circuit_id, find_zk_spec, and generate_circuit — the compiled-in circuit table."""
-
 from pathlib import Path
 
 import pytest

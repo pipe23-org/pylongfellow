@@ -1,5 +1,3 @@
-"""verify() against a real upstream proof — the positive case and the rejections."""
-
 import dataclasses
 
 import cbor2
