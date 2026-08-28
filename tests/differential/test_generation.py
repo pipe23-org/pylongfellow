@@ -1,11 +1,3 @@
-"""Generation drift check over the latest circuit per attribute count.
-
-Each circuit is regenerated at test time on the google-cpp backend. Generated
-bytes that do not load as the declared version and attribute count fail the
-case. A changed serialization at a stable load is emitted as an
-ObservationWarning without failing the case.
-"""
-
 import hashlib
 import io
 import warnings

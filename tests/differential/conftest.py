@@ -1,12 +1,3 @@
-"""Collection loading and the case join.
-
-Circuits, presentations, and proofs come from the installed longfellow-vectors
-package, which ships bytes and provenance and declares nothing about
-conformance. Attribute selection, verification times, and the proofs expected
-to verify are declared here. The join computes the (circuit, presentation,
-prover, verifier) tuples the relationship tests parametrize over.
-"""
-
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -168,13 +159,6 @@ BIT_FLIPPED_PARAMS = [
 
 @pytest.fixture(scope="session")
 def longfellow_for() -> Callable[[str, Circuit], Pylongfellow]:
-    """Return a session-cached Pylongfellow per (registry name, circuit), skipping if unbuilt.
-
-    A Pylongfellow proves and verifies over one circuit, so the cases key on the
-    pair. The isrg-rust backend initialises its prover and verifier engines
-    lazily per instance, and sharing the instance across cases initialises them
-    once.
-    """
     cache: dict[tuple[str, str], Pylongfellow | None] = {}
 
     def get(name: str, circuit: Circuit) -> Pylongfellow:

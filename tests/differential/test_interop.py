@@ -1,10 +1,3 @@
-"""Interop relationship tests over the collection join.
-
-A valid case asserts both directions of the pass criteria: the proof is
-accepted and a corrupted copy of it is rejected. The parametrizations come
-from the conftest join, computed over the backend set.
-"""
-
 import pytest
 
 from pylongfellow import mdoc
