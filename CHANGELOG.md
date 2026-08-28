@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 - 2026-08-28
 
 - **BACKWARDS INCOMPATIBLE:** `Pylongfellow.load_circuit` now takes
   `(circuit, version, num_attributes)` in place of a `CircuitSpec` and the circuit bytes (#72).
@@ -10,10 +10,7 @@
   `pylongfellow.backends.google_cpp.generate_circuit(version, num_attributes)` (#72).
 - **BACKWARDS INCOMPATIBLE:** The `Backend` protocol's `load_circuit` now takes
   `(circuit, version, num_attributes)`, and its `can_generate` and `generate_circuit` members
-  are removed, along with `GenerationUnsupportedError` and `CircuitIdUnsupportedError` from
-  `pylongfellow.backends` (#72).
-- Removed `circuit_id` from the isrg-rust backend and the build-time patch to the vendored
-  crate that added a `circuit_id` export (#50).
+  are removed, along with `GenerationUnsupportedError` from `pylongfellow.backends` (#72).
 - Moved the native build inputs to `native/`, one directory per backend;
   `scripts/build_isrg_rust_backend.py` is now `native/isrg-rust/build.py` (#49).
 - Added a pinned-hash test over the vendored `mdoc_zk.h` header that the cffi cdef
