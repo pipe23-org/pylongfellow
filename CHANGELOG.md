@@ -18,6 +18,7 @@
   `scripts/build_isrg_rust_backend.py` is now `native/isrg-rust/build.py` (#49).
 - Added a pinned-hash test over the vendored `mdoc_zk.h` header that the cffi cdef
   transcribes (#49).
+- Added `longfellow-vectors` to the `test` dependency group (#72).
 
 ## 0.5.2 - 2026-08-07
 
