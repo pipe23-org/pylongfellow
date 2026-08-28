@@ -34,14 +34,12 @@ which builds both backends locally — see the
 import cbor2
 
 from pylongfellow import Pylongfellow, mdoc
-from pylongfellow.backends.google_cpp import find_zk_spec
+from pylongfellow.backends.google_cpp import generate_circuit
 
 longfellow = Pylongfellow(backend="google-cpp")
 
-# The circuit_hash is pre-shared between prover and verifier.
-spec = find_zk_spec("longfellow-libzk-v1", circuit_hash)
-circuit = longfellow.generate_circuit(spec)  # or Path(...).read_bytes()
-longfellow.load_circuit(spec, circuit)
+circuit = generate_circuit(7, 1)  # or Path(...).read_bytes()
+longfellow.load_circuit(circuit, 7, 1)
 
 claims = [mdoc.RequestedAttribute("org.iso.18013.5.1", "age_over_18", cbor2.dumps(True))]
 issuer_public_key = mdoc.PublicKey(x, y)
@@ -68,7 +66,7 @@ Both backends are vendored as git submodules and built from source into each whe
 
 The pins do not float: upstream ABIs and circuits can change between releases. A
 [nightly canary](https://github.com/pipe23-org/pylongfellow/actions/workflows/canary.yml)
-runs the differential suite against both upstream HEADs.
+runs the test suite against both upstream HEADs.
 
 ## Development
 

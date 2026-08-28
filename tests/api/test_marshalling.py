@@ -1,5 +1,3 @@
-"""Marshalling done before the C call — the transforms we own and can break."""
-
 from datetime import UTC, datetime, timedelta, timezone
 
 import pytest

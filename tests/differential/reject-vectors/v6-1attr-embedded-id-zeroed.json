@@ -1,6 +1,0 @@
-{
-  "derived_from": "v6-1attr",
-  "transformation": "The last 32 bytes of the decompressed circuit, the second circuit's embedded id, were zeroed and the stream recompressed.",
-  "byte_sha256": "93e6a13cb545c1caecfb569b67517b6f3c45a45c69915ba2733e6c03e158eae1",
-  "comment": "Promotion candidate for the standalone reject-vectors corpus; the accept/reject expectation for this specimen is per-backend (google-cpp rejects, isrg-rust accepts)."
-}

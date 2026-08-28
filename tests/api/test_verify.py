@@ -1,16 +1,13 @@
-"""verify() against a real upstream proof — the positive case and the rejections."""
-
 import dataclasses
 
 import cbor2
 import pytest
 
 from pylongfellow import mdoc
-from pylongfellow.backends.google_cpp import find_zk_spec
 
 
 def _verify(longfellow, inputs):
-    longfellow.load_circuit(inputs.spec, inputs.circuit)
+    longfellow.load_circuit(inputs.circuit, inputs.version, inputs.num_attributes)
     longfellow.verify(
         inputs.issuer_pk,
         inputs.transcript,
@@ -52,9 +49,7 @@ def _attr(inputs, **changes):
     ids=["proof", "pubkey", "transcript", "timestamp", "value", "id"],
 )
 def test_verify_rejects(google, proof_age_over_18, mutate):
-    # A tampered Zk statement the C verifier rejects with VerifierError. (A
-    # tampered *spec* is caught earlier by the canonical guard — see
-    # test_verify_rejects_noncanonical_spec — so it is not exercised here.)
+    # A tampered Zk statement the C verifier rejects with VerifierError.
     with pytest.raises(mdoc.VerifierError):
         _verify(google, mutate(proof_age_over_18))
 
@@ -65,26 +60,8 @@ def test_verify_rejects_long_doctype(google, proof_age_over_18):
         _verify(google, dataclasses.replace(proof_age_over_18, doctype="x" * 256))
 
 
-def test_verify_rejects_noncanonical_spec(google, proof_age_over_18):
-    # A lying block_enc with a matching hash would SIGABRT in C; caught here.
-    inputs = proof_age_over_18
-    bad = dataclasses.replace(inputs.spec, block_enc_sig=inputs.spec.block_enc_sig + 1)
-    with pytest.raises(ValueError, match="compiled-in spec table"):
-        _verify(google, dataclasses.replace(inputs, spec=bad))
-
-
 @pytest.mark.parametrize("resize", [lambda a: a + a, lambda a: []], ids=["over", "under"])
 def test_verify_rejects_attr_count_mismatch(google, proof_age_over_18, resize):
     inputs = proof_age_over_18
     with pytest.raises(ValueError, match="num_attributes"):
         _verify(google, dataclasses.replace(inputs, attrs=resize(inputs.attrs)))
-
-
-def test_verify_rejects_spec_for_wrong_circuit(google, proof_age_over_18):
-    # A spec naming a different circuit must be a clean ValueError (spec<->circuit guard).
-    wrong = find_zk_spec(
-        "longfellow-libzk-v1",
-        "8d079211715200ff06c5109639245502bfe94aa869908d31176aae4016182121",  # v7, not the v6 circuit
-    )
-    with pytest.raises(ValueError, match="does not match the circuit"):
-        _verify(google, dataclasses.replace(proof_age_over_18, spec=wrong))

@@ -11,7 +11,6 @@
 
 ::: pylongfellow.mdoc.RequestedAttribute
 ::: pylongfellow.mdoc.PublicKey
-::: pylongfellow.mdoc.CircuitSpec
 
 ### Errors
 
@@ -40,17 +39,41 @@ A `Backend` implements one longfellow implementation. `Pylongfellow` takes a reg
     options:
       members: false
 ::: pylongfellow.backends.get_backend
-::: pylongfellow.backends.GenerationUnsupportedError
-::: pylongfellow.backends.CircuitIdUnsupportedError
 ::: pylongfellow.backends.BackendUnavailableError
+
+### Backend scope
+
+google-cpp and isrg-rust differ in the following behaviour.
+
+- **Circuit identity at load.** google-cpp recomputes the circuit id from the bytes and
+  requires a compiled-in row with the declared version and attribute count. isrg-rust accepts
+  version 6 or 7, takes the attribute count as declared, and checks nothing against the bytes.
+  On isrg-rust a wrong circuit of the declared version and attribute count fails at prove or
+  verify, not at load.
+- **Circuit versions.** google-cpp accepts the versions in the compiled-in table: 5, 6, and 7
+  at the v0.9 pin, each with attribute counts 1 to 4. isrg-rust accepts versions 6 and 7.
+- **Circuit generation.** `google_cpp.generate_circuit` generates the highest table version
+  for an attribute count. isrg-rust generates no circuits.
+- **Claims count.** google-cpp requires `len(claims)` to equal the loaded circuit's attribute
+  count on prove and verify. isrg-rust passes the claims through.
+- **Namespace.** Neither verifier binds `RequestedAttribute.namespace`. google-cpp proves
+  under a namespace absent from the credential. isrg-rust's prover requires the namespace to
+  be present and all claims to share one namespace.
+- **`device_namespaces`.** isrg-rust's verifier requires `device_namespaces`. google-cpp does
+  not read it.
+- **`doctype`.** google-cpp rejects a `doctype` of 256 bytes or longer.
+- **Error codes.** `ProverError.code` and `VerifierError.code` carry a code on google-cpp and
+  are None on isrg-rust.
 
 ## `pylongfellow.backends.google_cpp`
 
 Binds the vendored google/longfellow-zk C++ library through cffi.
 
+::: pylongfellow.backends.google_cpp.ZkSpec
 ::: pylongfellow.backends.google_cpp.circuit_id
 ::: pylongfellow.backends.google_cpp.find_zk_spec
 ::: pylongfellow.backends.google_cpp.zk_specs
+::: pylongfellow.backends.google_cpp.generate_circuit
 
 ### Logging
 
@@ -67,8 +90,6 @@ log output.
 
 Binds the vendored abetterinternet/zk-cred-longfellow Rust library through generated UniFFI
 bindings.
-
-::: pylongfellow.backends.isrg_rust.circuit_id
 
 ## `pylongfellow.mdoc.testing`
 

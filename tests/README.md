@@ -1,8 +1,5 @@
 # tests/
 
-The suite tests the backends (`google-cpp`, `isrg-rust`) pairwise against a set of test
-fixtures.
-
 ## api/
 
 `api/` tests pylongfellow's own API: circuit loading, presentation creation, proving,
@@ -11,9 +8,8 @@ documented in `data/README.md`. A failure here means pylongfellow's own API brok
 
 ## differential/
 
-`differential/` runs a corpus of circuits (`circuits/`), presentations (`presentations/`),
-and reject vectors (`reject-vectors/`) through both backends and compares the results.
-`conftest.py` joins the corpus into the (circuit, presentation, prover, verifier) tuples
-the tests parametrize over. A tuple the corpus cannot supply is parametrized as a skip.
-`untestable-cases.json` is the committed list of those skips. A failure here means the
-two implementations stopped agreeing.
+`differential/` runs the circuits, presentations, and proofs of the `longfellow-vectors`
+package through both backends and compares the results. `conftest.py` declares the attribute
+selection, the verification times, and the proof names expected to verify, then joins them
+into the (circuit, presentation, prover, verifier) tuples the tests parametrize over. A
+failure here means the two implementations stopped agreeing.

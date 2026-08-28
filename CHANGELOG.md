@@ -2,12 +2,23 @@
 
 ## Unreleased
 
-- `circuit_id` on the isrg-rust backend raises `CircuitIdUnsupportedError`; the build-time
-  patch to the vendored crate that added a `circuit_id` export is removed (#50).
+- **BACKWARDS INCOMPATIBLE:** `Pylongfellow.load_circuit` now takes
+  `(circuit, version, num_attributes)` in place of a `CircuitSpec` and the circuit bytes (#72).
+- **BACKWARDS INCOMPATIBLE:** Removed `pylongfellow.mdoc.CircuitSpec`, replaced by
+  `pylongfellow.backends.google_cpp.ZkSpec`, the type `find_zk_spec` and `zk_specs` return (#72).
+- **BACKWARDS INCOMPATIBLE:** Removed `Pylongfellow.generate_circuit`, replaced by
+  `pylongfellow.backends.google_cpp.generate_circuit(version, num_attributes)` (#72).
+- **BACKWARDS INCOMPATIBLE:** The `Backend` protocol's `load_circuit` now takes
+  `(circuit, version, num_attributes)`, and its `can_generate` and `generate_circuit` members
+  are removed, along with `GenerationUnsupportedError` and `CircuitIdUnsupportedError` from
+  `pylongfellow.backends` (#72).
+- Removed `circuit_id` from the isrg-rust backend and the build-time patch to the vendored
+  crate that added a `circuit_id` export (#50).
 - Moved the native build inputs to `native/`, one directory per backend;
   `scripts/build_isrg_rust_backend.py` is now `native/isrg-rust/build.py` (#49).
 - Added a pinned-hash test over the vendored `mdoc_zk.h` header that the cffi cdef
   transcribes (#49).
+- Added `longfellow-vectors` to the `test` dependency group (#72).
 
 ## 0.5.2 - 2026-08-07
 

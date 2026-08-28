@@ -1,5 +1,3 @@
-"""The isrg-rust backend: input-validation branches without the native module, then round trips."""
-
 import dataclasses
 import sys
 from datetime import UTC, datetime
@@ -7,17 +5,11 @@ from datetime import UTC, datetime
 import pytest
 
 from pylongfellow import mdoc
-from pylongfellow.backends import (
-    BackendUnavailableError,
-    CircuitIdUnsupportedError,
-    GenerationUnsupportedError,
-    isrg_rust,
-)
+from pylongfellow.backends import BackendUnavailableError, isrg_rust
 
 from .conftest import ISRG_RUST_AVAILABLE
 
 _AWARE = datetime(2024, 10, 1, 9, 0, 0, tzinfo=UTC)
-_SPEC = mdoc.CircuitSpec("", "0" * 64, 1, 6, 0, 0)
 
 skip_without_isrg_rust = pytest.mark.skipif(
     not ISRG_RUST_AVAILABLE, reason="isrg-rust backend not built"
@@ -32,20 +24,9 @@ def _one_attr() -> list[mdoc.RequestedAttribute]:
     return [mdoc.RequestedAttribute("org.iso.18013.5.1", "issue_date", b"\x01")]
 
 
-def test_generate_circuit_unsupported():
-    with pytest.raises(GenerationUnsupportedError):
-        isrg_rust.BACKEND.generate_circuit(_SPEC)
-
-
-def test_circuit_id_unsupported():
-    with pytest.raises(CircuitIdUnsupportedError):
-        isrg_rust.circuit_id(b"")
-
-
 def test_load_rejects_bad_version(vendored_vector):
-    spec = dataclasses.replace(vendored_vector.spec, version=5)
     with pytest.raises(ValueError, match="unsupported circuit version"):
-        isrg_rust.BACKEND.load_circuit(spec, vendored_vector.circuit)
+        isrg_rust.BACKEND.load_circuit(vendored_vector.circuit, 5, 1)
 
 
 def test_prove_rejects_mixed_namespaces():

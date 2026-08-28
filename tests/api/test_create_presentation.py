@@ -1,9 +1,3 @@
-"""create_presentation and its companions — assembly, signatures, and the self-check.
-
-Every assertion re-derives COSE structures and digests with cryptography/cbor2
-directly; no ZK backend is involved anywhere in this file.
-"""
-
 import hashlib
 from datetime import UTC, datetime, timedelta, timezone
 

@@ -1,18 +1,13 @@
-"""The cdef in native/google-cpp/ffibuild.py is a hand transcription of the C ABI in
-vendor/longfellow-zk/lib/circuits/mdoc/mdoc_zk.h. cffi trusts the cdef at build time; a
-drift between the two is silent memory corruption at runtime, not a build failure.
-
-Skipped only when the header is absent (installed wheels ship no vendor/ checkout); a
-hash mismatch is always a hard failure.
-"""
-
 import hashlib
 from pathlib import Path
 
 import pytest
 
+# The cdef in native/google-cpp/ffibuild.py is a hand transcription of the C ABI in
+# mdoc_zk.h. cffi trusts the cdef at build time, so a drift between the two is silent
+# memory corruption at runtime rather than a build failure.
 _HEADER = (
-    Path(__file__).parents[1]
+    Path(__file__).parents[2]
     / "vendor"
     / "longfellow-zk"
     / "lib"
