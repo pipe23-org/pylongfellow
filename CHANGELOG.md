@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.0 - 2026-08-30
 
 - **BACKWARDS INCOMPATIBLE:** `load_circuit` on the google-cpp backend now looks the
   compiled-in circuit row up by the declared version and attribute count, where it previously
