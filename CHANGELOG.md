@@ -6,7 +6,7 @@
   compiled-in circuit row up by the declared version and attribute count, where it previously
   recomputed the circuit id from the bytes and required the resulting row to carry them.
   Circuit bytes that are not the declared circuit are no longer rejected at load, and
-  `ValueError` now names a version and attribute count with no compiled-in row (#NN).
+  `ValueError` now names a version and attribute count with no compiled-in row (#74).
 
 ## 0.6.0 - 2026-08-28
 
