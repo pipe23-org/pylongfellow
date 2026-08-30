@@ -56,8 +56,6 @@ google-cpp and isrg-rust differ in the following behaviour.
   for an attribute count. isrg-rust generates no circuits.
 - **Claims count.** google-cpp requires `len(claims)` to equal the loaded circuit's attribute
   count on prove and verify. isrg-rust passes the claims through.
-- **Namespace.** isrg-rust takes one namespace for all claims and raises `ValueError` on a
-  mixed set. google-cpp takes a namespace per claim.
 - **`device_namespaces`.** isrg-rust's verifier requires `device_namespaces`. google-cpp does
   not read it.
 - **`doctype`.** google-cpp rejects a `doctype` of 256 bytes or longer.
