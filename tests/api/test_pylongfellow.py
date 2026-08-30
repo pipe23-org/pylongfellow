@@ -129,15 +129,10 @@ def test_verify_rejects_naive_timestamp():
     assert "verify" not in stub.calls
 
 
-def test_load_circuit_rejects_wrong_declared_version(google, mdoc_eu_av):
-    # The bytes are the v7 1-attribute circuit; the declared version names the v6 row.
-    with pytest.raises(ValueError, match="do not match a compiled-in circuit"):
-        google.load_circuit(mdoc_eu_av.circuit, 6, 1)
-
-
-def test_load_circuit_rejects_wrong_declared_num_attributes(google, mdoc_eu_av):
-    with pytest.raises(ValueError, match="do not match a compiled-in circuit"):
-        google.load_circuit(mdoc_eu_av.circuit, 7, 2)
+def test_load_circuit_rejects_unknown_pair(google, mdoc_eu_av):
+    # The table's counts run 1 to 4, so no row carries 9 attributes.
+    with pytest.raises(ValueError, match="no compiled-in circuit"):
+        google.load_circuit(mdoc_eu_av.circuit, 7, 9)
 
 
 def test_google_error_populates_code(google, proof_age_over_18):

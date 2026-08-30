@@ -100,10 +100,10 @@ def _build_spec(ffi: Any, spec: ZkSpec) -> tuple[Any, Any]:
 
 def _require_claims_match_spec(claims: list[RequestedAttribute], spec: ZkSpec) -> None:
     # The C entry points never read num_attributes; the invariant is attrs_len ==
-    # the circuit's attribute count, for which the loaded row's field is the proxy
-    # (tied to the circuit by the id check at load). A mismatch hard-aborts in C
-    # (DenseFiller overfill on too many; the Ligero subfield check on too few,
-    # prover side) — only verify-with-too-few returns a clean status.
+    # the circuit's attribute count, for which the loaded row's field is the proxy.
+    # A mismatch hard-aborts in C (DenseFiller overfill on too many; the Ligero
+    # subfield check on too few, prover side) — only verify-with-too-few returns a
+    # clean status.
     if len(claims) != spec.num_attributes:
         raise ValueError(
             f"len(claims) ({len(claims)}) does not match the loaded circuit's "
@@ -233,7 +233,7 @@ def generate_circuit(version: int, num_attributes: int) -> bytes:
 
 @dataclass(frozen=True)
 class _LoadedCircuit:
-    """A circuit and the table row it was matched to; every C call takes both."""
+    """A circuit and the table row for its declared version and count; every C call takes both."""
 
     spec: ZkSpec
     circuit: bytes
@@ -249,10 +249,11 @@ class _GoogleBackend:
         _load()
 
     def load_circuit(self, circuit: bytes, version: int, num_attributes: int) -> object:
-        """Return circuit state for bytes that are the declared compiled-in circuit.
+        """Return circuit state on the compiled-in row with the declared version and count.
 
-        The circuit id is recomputed from the bytes; the table row it resolves to
-        must carry the declared version and attribute count.
+        Nothing is checked against the circuit bytes: a wrong circuit of the declared
+        version and attribute count is not detected at load, and surfaces as a prover
+        or verifier error.
 
         Args:
             circuit: Circuit bytes.
@@ -263,15 +264,13 @@ class _GoogleBackend:
             The circuit state prove and verify take.
 
         Raises:
-            Error: The bytes could not be parsed.
-            ValueError: The bytes are not a compiled-in circuit with the declared
-                version and attribute count.
+            ValueError: The compiled-in table has no circuit with the declared version
+                and attribute count.
         """
-        spec = find_zk_spec(_SYSTEM, circuit_id(circuit))
-        if spec is None or (spec.version, spec.num_attributes) != (version, num_attributes):
+        spec = _find_row(version, num_attributes)
+        if spec is None:
             raise ValueError(
-                f"circuit bytes do not match a compiled-in circuit with version {version} "
-                f"and num_attributes {num_attributes}"
+                f"no compiled-in circuit with version {version} and num_attributes {num_attributes}"
             )
         return _LoadedCircuit(spec=spec, circuit=circuit)
 

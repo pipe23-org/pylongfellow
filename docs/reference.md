@@ -45,11 +45,11 @@ A `Backend` implements one longfellow implementation. `Pylongfellow` takes a reg
 
 google-cpp and isrg-rust differ in the following behaviour.
 
-- **Circuit identity at load.** google-cpp recomputes the circuit id from the bytes and
-  requires a compiled-in row with the declared version and attribute count. isrg-rust accepts
-  version 6 or 7, takes the attribute count as declared, and checks nothing against the bytes.
-  On isrg-rust a wrong circuit of the declared version and attribute count fails at prove or
-  verify, not at load.
+- **Circuit identity at load.** Neither backend checks the circuit bytes against the declared
+  version and attribute count, so a wrong circuit of the declared version and attribute count
+  fails at prove or verify, not at load. google-cpp requires a compiled-in row with the
+  declared version and attribute count. isrg-rust accepts version 6 or 7 and takes the
+  attribute count as declared.
 - **Circuit versions.** google-cpp accepts the versions in the compiled-in table: 5, 6, and 7
   at the v0.9 pin, each with attribute counts 1 to 4. isrg-rust accepts versions 6 and 7.
 - **Circuit generation.** `google_cpp.generate_circuit` generates the highest table version

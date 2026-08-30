@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
     # Docstring cross-references resolve through this module's imports.
     from ..backends import BackendUnavailableError  # noqa: F401
-    from ._errors import Error, ProverError, VerifierError  # noqa: F401
+    from ._errors import ProverError, VerifierError  # noqa: F401
     from ._types import PublicKey, RequestedAttribute
 
 
@@ -67,10 +67,8 @@ class Pylongfellow:
             num_attributes: Number of attributes the circuit is declared to prove over.
 
         Raises:
-            ValueError: `circuit` is not a compiled-in circuit with the declared
-                version and attribute count (google-cpp), or `version` is not
-                supported (isrg-rust).
-            Error: The circuit bytes could not be parsed (google-cpp).
+            ValueError: The declared version and attribute count are not a compiled-in
+                circuit (google-cpp), or `version` is not supported (isrg-rust).
         """
         self._circuit = self.backend.load_circuit(circuit, version, num_attributes)
 
