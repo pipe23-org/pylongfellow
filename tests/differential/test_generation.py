@@ -32,7 +32,6 @@ def test_generation(name: str):
     circuit = VECTORS.circuit(name)
     generated = _generated(circuit)
 
-    # The load resolves the bytes to the compiled-in row for the declared version and count.
     Pylongfellow(backend="google-cpp").load_circuit(
         generated, circuit.version, circuit.num_attributes
     )

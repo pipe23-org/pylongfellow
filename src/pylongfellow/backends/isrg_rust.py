@@ -103,11 +103,7 @@ class _IsrgRustBackend:
         _zk()
 
     def load_circuit(self, circuit: bytes, version: int, num_attributes: int) -> object:
-        """Decompress a circuit and return it as circuit state, on the declared version.
-
-        Nothing is checked against the circuit bytes: a wrong circuit of the declared
-        version and attribute count is not detected at load, and surfaces as a prover
-        or verifier error.
+        """Decompress a circuit and return it as circuit state.
 
         Args:
             circuit: zstd-compressed circuit bytes.

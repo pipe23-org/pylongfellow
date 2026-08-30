@@ -2,11 +2,9 @@
 
 ## 0.7.0 - 2026-08-30
 
-- **BACKWARDS INCOMPATIBLE:** `load_circuit` on the google-cpp backend now looks the
-  compiled-in circuit row up by the declared version and attribute count, where it previously
-  recomputed the circuit id from the bytes and required the resulting row to carry them.
-  Circuit bytes that are not the declared circuit are no longer rejected at load, and
-  `ValueError` now names a version and attribute count with no compiled-in row (#74).
+- **BACKWARDS INCOMPATIBLE:** `load_circuit` on the google-cpp backend no longer computes the
+  circuit id from the bytes; it takes the declared version and attribute count as given.
+  `ValueError` is raised when no circuit has that version and attribute count (#74).
 
 ## 0.6.0 - 2026-08-28
 

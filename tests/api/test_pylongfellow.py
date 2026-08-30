@@ -131,7 +131,7 @@ def test_verify_rejects_naive_timestamp():
 
 def test_load_circuit_rejects_unknown_pair(google, mdoc_eu_av):
     # The table's counts run 1 to 4, so no row carries 9 attributes.
-    with pytest.raises(ValueError, match="no compiled-in circuit"):
+    with pytest.raises(ValueError, match="no circuit with"):
         google.load_circuit(mdoc_eu_av.circuit, 7, 9)
 
 
