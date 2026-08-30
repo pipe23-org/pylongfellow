@@ -47,7 +47,7 @@ def test_generate_circuit_rejects_old_version():
 
 
 def test_generate_circuit_rejects_unknown_pair():
-    with pytest.raises(ValueError, match="no compiled-in circuit"):
+    with pytest.raises(ValueError, match="no circuit with"):
         google_cpp.generate_circuit(7, 9)
 
 
@@ -81,7 +81,7 @@ def test_zk_specs_versions_unique_per_group():
 @pytest.mark.parametrize(("circuit_hash", "version", "num_attributes"), _KNOWN, ids=["v6", "v7"])
 def test_known_blobs_present_in_table(circuit_hash, version, num_attributes):
     # Ties the hand-maintained _KNOWN list (committed circuit blobs by filename)
-    # to the compiled-in table.
+    # to the library's circuit table.
     matches = [s for s in google_cpp.zk_specs() if s.circuit_hash == circuit_hash]
     assert len(matches) == 1
     assert matches[0].version == version

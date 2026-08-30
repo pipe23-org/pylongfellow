@@ -58,8 +58,8 @@ BIT_FLIPPED_PROOFS = (
     "google-cpp-mdl-mustermann-v7-1attr-bit-flipped",
 )
 
-# Circuit generation makes only the highest version the compiled-in table holds
-# for an attribute count; an older version of a known count raises CircuitError.
+# Circuit generation makes only the highest version the library holds for an
+# attribute count; an older version of a known count raises CircuitError.
 GENERATED_CIRCUITS = (
     "google-v7-1attr",
     "google-v7-2attr",

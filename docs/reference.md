@@ -45,20 +45,11 @@ A `Backend` implements one longfellow implementation. `Pylongfellow` takes a reg
 
 google-cpp and isrg-rust differ in the following behaviour.
 
-- **Circuit identity at load.** Neither backend checks the circuit bytes against the declared
-  version and attribute count, so a wrong circuit of the declared version and attribute count
-  fails at prove or verify, not at load. google-cpp requires a compiled-in row with the
-  declared version and attribute count. isrg-rust accepts version 6 or 7 and takes the
-  attribute count as declared.
-- **Circuit versions.** google-cpp accepts the versions in the compiled-in table: 5, 6, and 7
-  at the v0.9 pin, each with attribute counts 1 to 4. isrg-rust accepts versions 6 and 7.
+- **Circuit versions.** google-cpp accepts versions 5, 6, and 7 at the v0.9 pin, each with attribute counts 1 to 4. isrg-rust accepts versions 6 and 7.
 - **Circuit generation.** `google_cpp.generate_circuit` generates the highest table version
   for an attribute count. isrg-rust generates no circuits.
 - **Claims count.** google-cpp requires `len(claims)` to equal the loaded circuit's attribute
   count on prove and verify. isrg-rust passes the claims through.
-- **Namespace.** Neither verifier binds `RequestedAttribute.namespace`. google-cpp proves
-  under a namespace absent from the credential. isrg-rust's prover requires the namespace to
-  be present and all claims to share one namespace.
 - **`device_namespaces`.** isrg-rust's verifier requires `device_namespaces`. google-cpp does
   not read it.
 - **`doctype`.** google-cpp rejects a `doctype` of 256 bytes or longer.

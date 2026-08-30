@@ -25,7 +25,7 @@ _NAMESPACE_MAX, _ID_MAX, _VALUE_MAX = 64, 32, 64
 
 @dataclass(frozen=True)
 class ZkSpec:
-    """A row of the compiled-in circuit table; what `find_zk_spec` and `zk_specs` return.
+    """A row of the library's circuit table; what `find_zk_spec` and `zk_specs` return.
 
     Attributes:
         system: ZK system name and version (e.g. `longfellow-libzk-v*`).
@@ -112,7 +112,7 @@ def _require_claims_match_spec(claims: list[RequestedAttribute], spec: ZkSpec) -
 
 
 def _find_row(version: int, num_attributes: int) -> ZkSpec | None:
-    """Return the compiled-in row with this version and attribute count, or None."""
+    """Return the table row with this version and attribute count, or None."""
     for row in zk_specs():
         if (row.system, row.version, row.num_attributes) == (_SYSTEM, version, num_attributes):
             return row
@@ -179,7 +179,7 @@ def find_zk_spec(system: str, circuit_hash: str) -> ZkSpec | None:
 
 @functools.cache
 def zk_specs() -> tuple[ZkSpec, ...]:
-    """Return every ZkSpec compiled into the linked library, in table order.
+    """Return every ZkSpec in the library's circuit table, in table order.
 
     Binds the `kZkSpecs` table. Entries include superseded circuit versions:
     for a given `num_attributes`, several `(version, circuit_hash)` rows may be
@@ -194,7 +194,7 @@ def zk_specs() -> tuple[ZkSpec, ...]:
 
 
 def generate_circuit(version: int, num_attributes: int) -> bytes:
-    """Generate the compiled-in circuit with this version and attribute count.
+    """Generate the circuit with this version and attribute count.
 
     Binds `generate_circuit`. C generates only the highest version the table holds
     for an attribute count, so an older version of a known count raises
@@ -208,16 +208,13 @@ def generate_circuit(version: int, num_attributes: int) -> bytes:
         Circuit bytes.
 
     Raises:
-        ValueError: The compiled-in table has no circuit with that version and
-            attribute count.
+        ValueError: No circuit has that version and attribute count.
         CircuitError: Generation failed.
     """
     ffi, lib = _load()
     spec = _find_row(version, num_attributes)
     if spec is None:
-        raise ValueError(
-            f"no compiled-in circuit with version {version} and num_attributes {num_attributes}"
-        )
+        raise ValueError(f"no circuit with version {version} and num_attributes {num_attributes}")
     c_spec, _keepalive = _build_spec(ffi, spec)
     circuit_ptr = ffi.new("uint8_t**")
     circuit_len = ffi.new("size_t*")
@@ -249,11 +246,7 @@ class _GoogleBackend:
         _load()
 
     def load_circuit(self, circuit: bytes, version: int, num_attributes: int) -> object:
-        """Return circuit state on the compiled-in row with the declared version and count.
-
-        Nothing is checked against the circuit bytes: a wrong circuit of the declared
-        version and attribute count is not detected at load, and surfaces as a prover
-        or verifier error.
+        """Return circuit state for the declared version and attribute count.
 
         Args:
             circuit: Circuit bytes.
@@ -264,13 +257,12 @@ class _GoogleBackend:
             The circuit state prove and verify take.
 
         Raises:
-            ValueError: The compiled-in table has no circuit with the declared version
-                and attribute count.
+            ValueError: No circuit has the declared version and attribute count.
         """
         spec = _find_row(version, num_attributes)
         if spec is None:
             raise ValueError(
-                f"no compiled-in circuit with version {version} and num_attributes {num_attributes}"
+                f"no circuit with version {version} and num_attributes {num_attributes}"
             )
         return _LoadedCircuit(spec=spec, circuit=circuit)
 

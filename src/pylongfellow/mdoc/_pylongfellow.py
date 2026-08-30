@@ -56,8 +56,7 @@ class Pylongfellow:
     def load_circuit(self, circuit: bytes, version: int, num_attributes: int) -> None:
         """Load the circuit this instance proves and verifies with.
 
-        A second call replaces the loaded circuit. What the declared `version` and
-        `num_attributes` are checked against is backend behaviour.
+        A second call replaces the loaded circuit.
 
         Args:
             circuit: Circuit bytes, as from
@@ -67,8 +66,8 @@ class Pylongfellow:
             num_attributes: Number of attributes the circuit is declared to prove over.
 
         Raises:
-            ValueError: The declared version and attribute count are not a compiled-in
-                circuit (google-cpp), or `version` is not supported (isrg-rust).
+            ValueError: No circuit has the declared version and attribute count
+                (google-cpp); `version` is not 6 or 7 (isrg-rust).
         """
         self._circuit = self.backend.load_circuit(circuit, version, num_attributes)
 
