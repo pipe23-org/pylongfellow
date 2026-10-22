@@ -1,0 +1,31 @@
+[package]
+name = "longfellow_zk_uniffi"
+version = "0.1.0"
+edition = "2021"
+description = "UniFFI bindings to the longfellow-zk mdoc prover, verifier, and circuit provider"
+license = "Apache-2.0"
+
+[workspace]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+longfellow-zk = { path = "../../vendor/longfellow-zk/rust", default-features = false, features = [
+    "prover",
+    "verifier",
+    "compiler",
+    "mdoc",
+] }
+uniffi = { version = "0.32", features = ["cli"] }
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "src/bin/uniffi-bindgen.rs"
+
+# uniffi wraps every exported call in catch_unwind and reports a panic as an
+# error, which `panic = "abort"` would turn into a process abort instead.
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
