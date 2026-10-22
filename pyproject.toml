@@ -33,7 +33,7 @@ Homepage = "https://github.com/pipe23-org/pylongfellow"
 Documentation = "https://pylongfellow.readthedocs.io/en/stable/"
 Repository = "https://github.com/pipe23-org/pylongfellow"
 Issues = "https://github.com/pipe23-org/pylongfellow/issues"
-Upstream = "https://github.com/google/longfellow-zk"
+Upstream = "https://github.com/longfellow-zk/longfellow-zk"
 
 [dependency-groups]
 test = [
@@ -61,6 +61,7 @@ CMAKE_POSITION_INDEPENDENT_CODE = "ON"
 CMAKE_BUILD_TYPE = "Release"
 
 [tool.pytest.ini_options]
+testpaths = ["tests"]
 markers = [
   "slow: real circuit generation (~15s) and isrg-rust cases; excluded by default, run with -m slow",
 ]

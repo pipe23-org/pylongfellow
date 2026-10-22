@@ -6,7 +6,7 @@ credentials.
 
 Two backends are supported:
 
-- [`google/longfellow-zk`](https://github.com/google/longfellow-zk)
+- [`longfellow-zk/longfellow-zk`](https://github.com/longfellow-zk/longfellow-zk)
 - [`abetterinternet/zk-cred-longfellow`](https://github.com/abetterinternet/zk-cred-longfellow)
 
 The package is experimental and unstable.
@@ -59,8 +59,8 @@ docstrings and carries the exact types of every function.
 
 Both backends are vendored as git submodules and built from source into each wheel:
 
-- [`google/longfellow-zk`](https://github.com/google/longfellow-zk) — pinned to **v0.9**
-  (`fe83ec6`).
+- [`longfellow-zk/longfellow-zk`](https://github.com/longfellow-zk/longfellow-zk) — pinned to
+  `de5f949` (2026-10-21, after the last tag v0.9).
 - [`abetterinternet/zk-cred-longfellow`](https://github.com/abetterinternet/zk-cred-longfellow)
   — pinned to `b22d84e`. Upstream publishes no tags.
 
@@ -94,7 +94,7 @@ You should not rely on this code.
 
 The vendored backends are licensed as follows:
 
-- `google/longfellow-zk` — Apache-2.0
+- `longfellow-zk/longfellow-zk` — Apache-2.0
 - `abetterinternet/zk-cred-longfellow` — MPL-2.0
 
 `pylongfellow` is not affiliated with Google, ISRG, or the European Commission.
