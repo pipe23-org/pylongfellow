@@ -101,7 +101,7 @@ jobs:
         with:
           key: canary
 
-      - uses: astral-sh/setup-uv@v10.0.1
+      - uses: astral-sh/setup-uv@v10.1.0
         if: steps.gate.outputs.run == 'true'
         with:
           python-version: "3.14"
