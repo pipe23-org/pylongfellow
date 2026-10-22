@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- The vendored longfellow-zk pin moved from v0.9 (`fe83ec6`) to `de5f949` (2026-10-21); the
+  submodule URL now points at `longfellow-zk/longfellow-zk`, where the repository moved.
+
 ## 0.7.0 - 2026-08-30
 
 - **BACKWARDS INCOMPATIBLE:** `load_circuit` on the google-cpp backend no longer computes the
