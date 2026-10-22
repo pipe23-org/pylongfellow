@@ -1,8 +1,14 @@
 """Exceptions and error-code enums for `pylongfellow.mdoc`."""
 
+from __future__ import annotations
+
 from enum import IntEnum
+from typing import TYPE_CHECKING
 
 from .._errors import LongfellowError
+
+if TYPE_CHECKING:
+    from ..backends import lf_rust
 
 
 class ProverErrorCode(IntEnum):
@@ -81,10 +87,15 @@ class ProverError(Error):
     """A prover call failed.
 
     Attributes:
-        code: The `ProverErrorCode` when the backend supplies one, else None.
+        code: The error code the backend supplies, from its own table, else None.
     """
 
-    def __init__(self, code: ProverErrorCode | None = None, *, message: str | None = None) -> None:
+    def __init__(
+        self,
+        code: ProverErrorCode | lf_rust.ProverErrorCode | None = None,
+        *,
+        message: str | None = None,
+    ) -> None:
         self.code = code
         if message is not None:
             super().__init__(message)
@@ -98,11 +109,14 @@ class VerifierError(Error):
     """A verifier call failed.
 
     Attributes:
-        code: The `VerifierErrorCode` when the backend supplies one, else None.
+        code: The error code the backend supplies, from its own table, else None.
     """
 
     def __init__(
-        self, code: VerifierErrorCode | None = None, *, message: str | None = None
+        self,
+        code: VerifierErrorCode | lf_rust.VerifierErrorCode | None = None,
+        *,
+        message: str | None = None,
     ) -> None:
         self.code = code
         if message is not None:
@@ -117,11 +131,12 @@ class CircuitError(Error):
     """Circuit generation failed.
 
     Attributes:
-        code: The `CircuitGenerationErrorCode` when the backend supplies one,
-            else None.
+        code: The error code the backend supplies, from its own table, else None.
     """
 
-    def __init__(self, code: CircuitGenerationErrorCode | None = None) -> None:
+    def __init__(
+        self, code: CircuitGenerationErrorCode | lf_rust.ProverErrorCode | None = None
+    ) -> None:
         self.code = code
         super().__init__(
             f"{code.name} ({code.value})" if code is not None else "circuit generation failed"

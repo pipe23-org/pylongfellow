@@ -70,7 +70,7 @@ addopts = "-m 'not slow' -rsxX"
 [tool.coverage.run]
 branch = true
 source = ["pylongfellow"]
-omit = ["*/ffibuild.py", "*/backends/_zk_cred/*"]
+omit = ["*/ffibuild.py", "*/backends/_zk_cred/*", "*/backends/_lf_rust/*"]
 
 [tool.coverage.report]
 fail_under = 100
@@ -80,7 +80,11 @@ exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError"]
 [tool.ruff]
 line-length = 100
 src = ["src", "tests"]
-extend-exclude = ["vendor", "src/pylongfellow/backends/_zk_cred"]
+extend-exclude = [
+  "vendor",
+  "src/pylongfellow/backends/_zk_cred",
+  "src/pylongfellow/backends/_lf_rust",
+]
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I", "UP", "B", "S", "RUF", "SIM", "C4", "PT", "PERF", "D"]
@@ -98,10 +102,22 @@ convention = "google"
 python_version = "3.11"
 strict = true
 files = ["src/pylongfellow", "native", "tests"]
-exclude = ["src/pylongfellow/backends/_zk_cred"]
+# native/isrg-rust/build.py and native/lf-rust/build.py both map to the module
+# name "build", which mypy refuses; the hyphens in the directory names keep it
+# from qualifying them.
+exclude = [
+  "src/pylongfellow/backends/_zk_cred",
+  "src/pylongfellow/backends/_lf_rust",
+  "native/lf-rust/build.py",
+  "native/lf-rust/target",
+]
 
 [[tool.mypy.overrides]]
 module = "pylongfellow.backends._zk_cred.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pylongfellow.backends._lf_rust.*"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
@@ -117,7 +133,16 @@ ignore-private = true
 ignore-semiprivate = true
 ignore-magic = true
 ignore-nested-functions = true
-exclude = ["tests", "scripts", "scratch", "native", "build", "vendor", "src/pylongfellow/backends/_zk_cred"]
+exclude = [
+  "tests",
+  "scripts",
+  "scratch",
+  "native",
+  "build",
+  "vendor",
+  "src/pylongfellow/backends/_zk_cred",
+  "src/pylongfellow/backends/_lf_rust",
+]
 
 [tool.cibuildwheel]
 build = "cp311-* cp312-* cp313-* cp314-*"
