@@ -25,7 +25,7 @@ CIRCUITS = (
     "google-v7-4attr",
 )
 
-BACKENDS = ("google-cpp", "isrg-rust")
+BACKENDS = ("google-cpp", "isrg-rust", "lf-rust")
 
 # The claims a presentation discloses at each attribute count.
 DISCLOSED_CLAIMS: dict[str, dict[int, tuple[str, ...]]] = {
@@ -129,7 +129,7 @@ _GOOGLE_DEVICE_NAMESPACES_XFAIL = pytest.mark.xfail(
 def _param(
     case: VerifyCase | RoundTripCase, backends: tuple[str, ...], device_namespaces: bytes | None
 ) -> Any:
-    marks = [pytest.mark.slow] if "isrg-rust" in backends else []
+    marks = [pytest.mark.slow] if {"isrg-rust", "lf-rust"} & set(backends) else []
     if device_namespaces != b"\xa0" and "google-cpp" in backends:
         marks.append(_GOOGLE_DEVICE_NAMESPACES_XFAIL)
     return pytest.param(case, id=case.id, marks=marks)
