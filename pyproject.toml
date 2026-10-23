@@ -63,7 +63,7 @@ CMAKE_BUILD_TYPE = "Release"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
-  "slow: real circuit generation (~15s) and isrg-rust cases; excluded by default, run with -m slow",
+  "slow: real circuit generation (~15s) and Rust backend cases; excluded by default, run with -m slow",
 ]
 addopts = "-m 'not slow' -rsxX"
 
