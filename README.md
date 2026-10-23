@@ -4,10 +4,13 @@
 [Longfellow](https://eprint.iacr.org/2024/2010) zero-knowledge proofs over ISO 18013-5 mdoc
 credentials.
 
-Two backends are supported:
+Three backends are supported:
 
-- [`google/longfellow-zk`](https://github.com/google/longfellow-zk)
-- [`abetterinternet/zk-cred-longfellow`](https://github.com/abetterinternet/zk-cred-longfellow)
+- `google-cpp`: the C++ implementation in
+  [`longfellow-zk/longfellow-zk`](https://github.com/longfellow-zk/longfellow-zk)
+- `lf-rust`: the Rust implementation in the same repository
+- `isrg-rust`:
+  [`abetterinternet/zk-cred-longfellow`](https://github.com/abetterinternet/zk-cred-longfellow)
 
 The package is experimental and unstable.
 
@@ -23,9 +26,10 @@ The package is experimental and unstable.
 pip install pylongfellow
 ```
 
-Wheels containing both backends are published for **CPython 3.11–3.14 on Linux x86_64**
-(manylinux and musllinux). On any other platform `pip` falls back to the source distribution,
-which builds both backends locally — see the
+Wheels containing the google-cpp and isrg-rust backends are published for **CPython 3.11–3.14
+on Linux x86_64** (manylinux and musllinux). On any other platform `pip` falls back to the
+source distribution, which builds those two backends locally. The lf-rust backend builds from
+source only, behind `PYLONGFELLOW_BUILD_LF_RUST=ON`. See the
 [development page](https://pylongfellow.readthedocs.io/en/stable/development/).
 
 ## Usage
@@ -57,10 +61,11 @@ docstrings and carries the exact types of every function.
 
 ## Upstream
 
-Both backends are vendored as git submodules and built from source into each wheel:
+The upstreams are vendored as git submodules and built from source:
 
-- [`google/longfellow-zk`](https://github.com/google/longfellow-zk) — pinned to **v0.9**
-  (`fe83ec6`).
+- [`longfellow-zk/longfellow-zk`](https://github.com/longfellow-zk/longfellow-zk) — pinned to
+  `de5f949` (2026-10-21, after the last tag v0.9). google-cpp builds its `lib/` tree; lf-rust
+  its `rust/` tree.
 - [`abetterinternet/zk-cred-longfellow`](https://github.com/abetterinternet/zk-cred-longfellow)
   — pinned to `b22d84e`. Upstream publishes no tags.
 
@@ -86,6 +91,7 @@ Build prerequisites and single-backend builds are on the
 You should not rely on this code.
 
 - Wheels cover CPython 3.11–3.14 on Linux x86_64 only; other platforms build from source.
+- The lf-rust backend builds from source only; the wheels omit it.
 - The API changes between minor versions.
 
 ## License
@@ -94,7 +100,7 @@ You should not rely on this code.
 
 The vendored backends are licensed as follows:
 
-- `google/longfellow-zk` — Apache-2.0
+- `longfellow-zk/longfellow-zk` — Apache-2.0
 - `abetterinternet/zk-cred-longfellow` — MPL-2.0
 
 `pylongfellow` is not affiliated with Google, ISRG, or the European Commission.

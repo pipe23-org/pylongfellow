@@ -68,7 +68,7 @@ def test_backend_instance_is_bound_and_checked():
 
 def test_unknown_backend_name_lists_registered():
     with pytest.raises(
-        ValueError, match=r"unknown backend 'nope' \(registered: google-cpp, isrg-rust\)"
+        ValueError, match=r"unknown backend 'nope' \(registered: google-cpp, isrg-rust, lf-rust\)"
     ):
         Pylongfellow(backend="nope")
 

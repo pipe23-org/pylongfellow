@@ -28,7 +28,7 @@ jobs:
   types:
     runs-on: ubuntu-latest
     env:
-      CMAKE_ARGS: "-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+      CMAKE_ARGS: "-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DPYLONGFELLOW_BUILD_LF_RUST=ON"
     steps:
       - uses: actions/checkout@v7
         with:
@@ -37,13 +37,15 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1
         with:
           key: types
-      # uv sync builds the project, which builds both backends; the isrg-rust
-      # cdylib needs the runner's Rust toolchain and benefits from the cache.
+      # uv sync builds the project, which builds all three backends; the two Rust
+      # cdylibs need the runner's Rust toolchain and benefit from the cache.
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: vendor/zk-cred-longfellow
-          shared-key: zk-cred
+          workspaces: |
+            vendor/zk-cred-longfellow
+            native/lf-rust
+          shared-key: rust-backends
       - uses: astral-sh/setup-uv@v10.1.0
         with:
           python-version: "3.14"
@@ -54,7 +56,7 @@ jobs:
     if: ${{ github.event_name == 'push' && github.ref != 'refs/heads/main' }}
     runs-on: ubuntu-latest
     env:
-      CMAKE_ARGS: "-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+      CMAKE_ARGS: "-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DPYLONGFELLOW_BUILD_LF_RUST=ON"
     steps:
       - uses: actions/checkout@v7
         with:
@@ -66,13 +68,17 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: vendor/zk-cred-longfellow
-          shared-key: zk-cred
+          workspaces: |
+            vendor/zk-cred-longfellow
+            native/lf-rust
+          shared-key: rust-backends
       - uses: astral-sh/setup-uv@v10.1.0
         with:
           python-version: "3.14"
       - run: uv sync --locked
       - run: uv run --no-sync pytest
+        env:
+          PYLONGFELLOW_REQUIRE_BACKENDS: google-cpp,isrg-rust,lf-rust
 
   docs:
     runs-on: ubuntu-latest
@@ -94,7 +100,7 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12", "3.13", "3.14"]
     env:
-      CMAKE_ARGS: "-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+      CMAKE_ARGS: "-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DPYLONGFELLOW_BUILD_LF_RUST=ON"
     steps:
       - uses: actions/checkout@v7
         with:
@@ -104,14 +110,18 @@ jobs:
         with:
           key: test
       # Toolchain and cache before uv sync: the editable build runs the cargo
-      # build via CMake (native/isrg-rust/build.py, zk_cred_backend target).
+      # builds via CMake (native/isrg-rust/build.py and native/lf-rust/build.py).
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: vendor/zk-cred-longfellow
-          shared-key: zk-cred
+          workspaces: |
+            vendor/zk-cred-longfellow
+            native/lf-rust
+          shared-key: rust-backends
       - uses: astral-sh/setup-uv@v10.1.0
         with:
           python-version: ${{ matrix.python-version }}
       - run: uv sync --locked
       - run: uv run --no-sync pytest -m "slow or not slow" --cov
+        env:
+          PYLONGFELLOW_REQUIRE_BACKENDS: google-cpp,isrg-rust,lf-rust

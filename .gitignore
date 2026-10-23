@@ -12,3 +12,5 @@ __pycache__/
 .ruff_cache/
 .coverage
 src/pylongfellow/backends/_zk_cred/
+src/pylongfellow/backends/_lf_rust/
+native/lf-rust/target/

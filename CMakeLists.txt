@@ -12,6 +12,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 #   pip install pylongfellow -C cmake.define.PYLONGFELLOW_BUILD_ISRG=OFF
 option(PYLONGFELLOW_BUILD_GOOGLE "Build the google-cpp backend (cffi extension)" ON)
 option(PYLONGFELLOW_BUILD_ISRG "Build the isrg-rust backend (uniffi cdylib)" ON)
+option(PYLONGFELLOW_BUILD_LF_RUST "Build the lf-rust backend (uniffi cdylib)" OFF)
 
 find_package(Python REQUIRED COMPONENTS Interpreter)
 
@@ -70,5 +71,25 @@ if(PYLONGFELLOW_BUILD_ISRG)
     "${_zk_cred}/zk_cred_longfellow.py"
     "${_zk_cred}/libzk_cred_longfellow.so"
     DESTINATION pylongfellow/backends/_zk_cred
+  )
+endif()
+
+# --- lf-rust backend: uniffi cdylib ---------------------------------------
+# Default OFF: the wrapper crate builds the vendored Rust tree with LTO, which
+# the wheel and coverage jobs do not pay for today. Enable with
+#   uv sync --reinstall-package pylongfellow -C cmake.define.PYLONGFELLOW_BUILD_LF_RUST=ON
+if(PYLONGFELLOW_BUILD_LF_RUST)
+  add_custom_target(lf_rust_backend ALL
+    COMMAND "${Python_EXECUTABLE}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/native/lf-rust/build.py"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    VERBATIM
+  )
+  set(_lf_rust "${CMAKE_CURRENT_SOURCE_DIR}/src/pylongfellow/backends/_lf_rust")
+  install(FILES
+    "${_lf_rust}/__init__.py"
+    "${_lf_rust}/longfellow_zk_uniffi.py"
+    "${_lf_rust}/liblongfellow_zk_uniffi.so"
+    DESTINATION pylongfellow/backends/_lf_rust
   )
 endif()

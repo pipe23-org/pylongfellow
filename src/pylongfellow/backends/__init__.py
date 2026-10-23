@@ -66,11 +66,13 @@ class Backend(Protocol):
         """
 
 
-# Registry names distinguish implementation, not just institution: google ships
-# a second (Rust) implementation upstream, so "google-rust" is reserved.
+# Registry names distinguish implementation, not just institution: the
+# longfellow-zk repository holds a C++ and a Rust implementation of the same
+# proof system.
 _REGISTRY = {
     "google-cpp": "pylongfellow.backends.google_cpp",
     "isrg-rust": "pylongfellow.backends.isrg_rust",
+    "lf-rust": "pylongfellow.backends.lf_rust",
 }
 
 
@@ -78,7 +80,7 @@ def get_backend(name: str) -> Backend:
     """Return the named backend.
 
     Args:
-        name: Registry name, one of `google-cpp` or `isrg-rust`.
+        name: Registry name, one of `google-cpp`, `isrg-rust`, or `lf-rust`.
 
     Returns:
         The named backend.
