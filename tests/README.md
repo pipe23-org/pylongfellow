@@ -9,7 +9,7 @@ documented in `data/README.md`. A failure here means pylongfellow's own API brok
 ## differential/
 
 `differential/` runs the circuits, presentations, and proofs of the `longfellow-vectors`
-package through both backends and compares the results. `conftest.py` declares the attribute
+package through every backend and compares the results. `conftest.py` declares the attribute
 selection, the verification times, and the proof names expected to verify, then joins them
 into the (circuit, presentation, prover, verifier) tuples the tests parametrize over. A
-failure here means the two implementations stopped agreeing.
+failure here means the implementations stopped agreeing.

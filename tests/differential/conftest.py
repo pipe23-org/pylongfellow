@@ -27,6 +27,9 @@ CIRCUITS = (
 
 BACKENDS = ("google-cpp", "isrg-rust", "lf-rust")
 
+# Cases on either Rust backend take the slow mark.
+SLOW_BACKENDS = frozenset({"isrg-rust", "lf-rust"})
+
 # The claims a presentation discloses at each attribute count.
 DISCLOSED_CLAIMS: dict[str, dict[int, tuple[str, ...]]] = {
     "av-over-18-device-namespaces-empty": {1: ("age_over_18",)},
@@ -113,25 +116,28 @@ def _verify_cases(proofs: tuple[str, ...]) -> list[VerifyCase]:
     return [VerifyCase(proof, verifier) for proof in proofs for verifier in BACKENDS]
 
 
-# The google harness fixes DeviceNameSpacesBytes to the empty map (constant
-# {0xD8, 0x18, 0x41, 0xA0}, lib/circuits/mdoc/mdoc_witness.h:413 @ fe83ec6), so a
-# presentation whose device signed a non-empty map cannot prove or verify there.
-# strict: if a google backend ever accepts one, the run fails with XPASS and the
-# characterization here is wrong or upstream changed.
-_GOOGLE_DEVICE_NAMESPACES_XFAIL = pytest.mark.xfail(
+# Both longfellow-zk implementations fix DeviceNameSpacesBytes to the empty map
+# (constant {0xD8, 0x18, 0x41, 0xA0}: C++ at lib/circuits/mdoc/mdoc_witness.h:466,
+# Rust at rust/applications/mdoc_zk/circuits/src/cbor/mdoc.rs:690, both @ de5f949),
+# so a presentation whose device signed a non-empty map cannot prove or verify
+# there. strict: if either backend ever accepts one, the run fails with XPASS and
+# the characterization here is wrong or upstream changed.
+_DEVICE_NAMESPACES_BACKENDS = frozenset({"google-cpp", "lf-rust"})
+_DEVICE_NAMESPACES_XFAIL = pytest.mark.xfail(
     strict=True,
     raises=mdoc.Error,
-    reason="google fixes DeviceNameSpacesBytes to the empty map; "
-    "lib/circuits/mdoc/mdoc_witness.h:413 @ fe83ec6",
+    reason="longfellow-zk fixes DeviceNameSpacesBytes to the empty map; "
+    "lib/circuits/mdoc/mdoc_witness.h:466 and "
+    "rust/applications/mdoc_zk/circuits/src/cbor/mdoc.rs:690 @ de5f949",
 )
 
 
 def _param(
     case: VerifyCase | RoundTripCase, backends: tuple[str, ...], device_namespaces: bytes | None
 ) -> Any:
-    marks = [pytest.mark.slow] if {"isrg-rust", "lf-rust"} & set(backends) else []
-    if device_namespaces != b"\xa0" and "google-cpp" in backends:
-        marks.append(_GOOGLE_DEVICE_NAMESPACES_XFAIL)
+    marks = [pytest.mark.slow] if SLOW_BACKENDS & set(backends) else []
+    if device_namespaces != b"\xa0" and _DEVICE_NAMESPACES_BACKENDS & set(backends):
+        marks.append(_DEVICE_NAMESPACES_XFAIL)
     return pytest.param(case, id=case.id, marks=marks)
 
 
@@ -152,7 +158,9 @@ VERIFY_PARAMS = [
 # The xfail marks cases that expect acceptance. These cases expect rejection,
 # so they take only the slow mark.
 BIT_FLIPPED_PARAMS = [
-    pytest.param(case, id=case.id, marks=[pytest.mark.slow] if case.verifier == "isrg-rust" else [])
+    pytest.param(
+        case, id=case.id, marks=[pytest.mark.slow] if case.verifier in SLOW_BACKENDS else []
+    )
     for case in _verify_cases(BIT_FLIPPED_PROOFS)
 ]
 
