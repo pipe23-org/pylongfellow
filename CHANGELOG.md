@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.8.0 - 2026-11-14
 
 - The vendored longfellow-zk pin moved from v0.9 (`fe83ec6`) to `1c06629` (2026-11-03); the
   submodule URL now points at `longfellow-zk/longfellow-zk`, where the repository moved (#79).
