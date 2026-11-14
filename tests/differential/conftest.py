@@ -116,9 +116,7 @@ def _verify_cases(proofs: tuple[str, ...]) -> list[VerifyCase]:
     return [VerifyCase(proof, verifier) for proof in proofs for verifier in BACKENDS]
 
 
-# Both longfellow-zk implementations fix DeviceNameSpacesBytes to the empty map
-# (constant {0xD8, 0x18, 0x41, 0xA0}: C++ at lib/circuits/mdoc/mdoc_witness.h:466,
-# Rust at rust/applications/mdoc_zk/circuits/src/cbor/mdoc.rs:690, both @ de5f949),
+# Both longfellow-zk implementations fix DeviceNameSpacesBytes to the empty map,
 # so a presentation whose device signed a non-empty map cannot prove or verify
 # there. strict: if either backend ever accepts one, the run fails with XPASS and
 # the characterization here is wrong or upstream changed.
@@ -126,9 +124,7 @@ _DEVICE_NAMESPACES_BACKENDS = frozenset({"google-cpp", "lf-rust"})
 _DEVICE_NAMESPACES_XFAIL = pytest.mark.xfail(
     strict=True,
     raises=mdoc.Error,
-    reason="longfellow-zk fixes DeviceNameSpacesBytes to the empty map; "
-    "lib/circuits/mdoc/mdoc_witness.h:466 and "
-    "rust/applications/mdoc_zk/circuits/src/cbor/mdoc.rs:690 @ de5f949",
+    reason="longfellow-zk fixes DeviceNameSpacesBytes to the empty map",
 )
 
 
