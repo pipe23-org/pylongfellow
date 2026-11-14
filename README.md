@@ -27,8 +27,8 @@ pip install pylongfellow
 ```
 
 Wheels containing all three backends are published for **CPython 3.11–3.14 on Linux x86_64**
-(manylinux and musllinux). On any other platform `pip` falls back to the source distribution,
-which builds all three locally. See the
+(manylinux and musllinux). On any other platform `pip` falls back to the source distribution.
+Source builds are tested on Linux only. See the
 [development page](https://pylongfellow.readthedocs.io/en/stable/development/).
 
 ## Usage
@@ -89,7 +89,8 @@ Build prerequisites and single-backend builds are on the
 
 You should not rely on this code.
 
-- Wheels cover CPython 3.11–3.14 on Linux x86_64 only; other platforms build from source.
+- Wheels cover CPython 3.11–3.14 on Linux x86_64 only.
+- Source builds are tested on Linux only.
 - The API changes between minor versions.
 
 ## License
