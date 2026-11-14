@@ -131,12 +131,11 @@ class CircuitError(Error):
     """Circuit generation failed.
 
     Attributes:
-        code: The error code the backend supplies, from its own table, else None.
+        code: The `CircuitGenerationErrorCode` when the backend supplies one,
+            else None.
     """
 
-    def __init__(
-        self, code: CircuitGenerationErrorCode | lf_rust.ProverErrorCode | None = None
-    ) -> None:
+    def __init__(self, code: CircuitGenerationErrorCode | None = None) -> None:
         self.code = code
         super().__init__(
             f"{code.name} ({code.value})" if code is not None else "circuit generation failed"

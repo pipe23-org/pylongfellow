@@ -14,9 +14,7 @@
 
 use std::fmt;
 
-use longfellow_zk::mdoc::v1::{
-    provider, run_mdoc_prover, run_mdoc_verifier, ZkSpecStruct, ZK_SPECS,
-};
+use longfellow_zk::mdoc::v1::{run_mdoc_prover, run_mdoc_verifier, ZkSpecStruct, ZK_SPECS};
 
 /// An attribute the proof discloses: (`namespace_id`, `id`) holds `cbor_value`.
 #[derive(uniffi::Record)]
@@ -126,12 +124,4 @@ pub fn verify(
         proof,
     )
     .map_err(|code| Error::Verifier { code: code as u32 })
-}
-
-/// Returns the compressed circuit for a version and attribute count.
-#[uniffi::export]
-pub fn materialize_circuit(version: u32, num_attributes: u32) -> Result<Vec<u8>, Error> {
-    provider::materialize(version as usize, num_attributes as usize)
-        .map(|circuit| circuit.compressed)
-        .map_err(|code| Error::Prover { code: code as u32 })
 }

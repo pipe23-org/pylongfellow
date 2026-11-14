@@ -49,8 +49,7 @@ The backends differ in the following behaviour.
   attribute counts 1 to 4. lf-rust accepts the same versions and counts at the same pin.
   isrg-rust accepts versions 6 and 7.
 - **Circuit generation.** `google_cpp.generate_circuit` generates the highest table version
-  for an attribute count. `lf_rust.materialize_circuit` returns the archived circuit for
-  versions 5 to 7. isrg-rust generates no circuits.
+  for an attribute count. lf-rust and isrg-rust generate no circuits.
 - **Claims count.** google-cpp and lf-rust require `len(claims)` to equal the loaded circuit's
   attribute count on prove and verify. isrg-rust passes the claims through.
 - **`device_namespaces`.** isrg-rust's verifier requires `device_namespaces`. google-cpp and
@@ -88,10 +87,8 @@ bindings.
 ## `pylongfellow.backends.lf_rust`
 
 Binds the Rust implementation in the vendored longfellow-zk/longfellow-zk repository through
-generated UniFFI bindings. The backend is built only when `PYLONGFELLOW_BUILD_LF_RUST=ON`
-(see [Development](development.md)).
+generated UniFFI bindings.
 
-::: pylongfellow.backends.lf_rust.materialize_circuit
 ::: pylongfellow.backends.lf_rust.ProverErrorCode
 ::: pylongfellow.backends.lf_rust.VerifierErrorCode
 
