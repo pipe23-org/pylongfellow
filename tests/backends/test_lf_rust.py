@@ -15,8 +15,10 @@ _REPO = Path(__file__).parents[2]
 _DATA = _REPO / "tests" / "api" / "data"
 _RUST = _REPO / "vendor" / "longfellow-zk" / "rust" / "applications" / "mdoc_zk"
 _ARCHIVES = _RUST / "artifacts" / "circuits"
-_ERROR_RS = _RUST / "runtime" / "src" / "error.rs"
+_ERROR_RS = _RUST / "runtime" / "src" / "v1" / "error.rs"
 
+_V5_1ATTR = "f88a39e561ec0be02bb3dfe38fb609ad154e98decbbe632887d850fc612fea6f"
+_V6_1ATTR = "137e5a75ce72735a37c8a72da1a8a0a5df8d13365c2ae3d2c2bd6a0e7197c7c6"
 _V7_1ATTR = "8d079211715200ff06c5109639245502bfe94aa869908d31176aae4016182121"
 
 
@@ -193,7 +195,17 @@ def test_prove_rejects_unknown_claim():
 
 
 @skip_without_lf_rust
-def test_materialize_circuit_matches_committed_archive():
+def test_materialize_circuit_v5():
+    assert lf_rust.materialize_circuit(5, 1) == (_ARCHIVES / f"{_V5_1ATTR}.lfa2").read_bytes()
+
+
+@skip_without_lf_rust
+def test_materialize_circuit_v6():
+    assert lf_rust.materialize_circuit(6, 1) == (_ARCHIVES / f"{_V6_1ATTR}.lfa2").read_bytes()
+
+
+@skip_without_lf_rust
+def test_materialize_circuit_v7():
     assert lf_rust.materialize_circuit(7, 1) == (_ARCHIVES / f"{_V7_1ATTR}.lfa2").read_bytes()
 
 
@@ -204,10 +216,11 @@ def test_materialize_circuit_rejects_unknown_version():
     assert excinfo.value.code is lf_rust.ProverErrorCode.InvalidZkSpecVersion
 
 
-@pytest.mark.slow
 @skip_without_lf_rust
-def test_materialize_circuit_compiles_current_version():
-    assert lf_rust.materialize_circuit(8, 1)
+def test_materialize_circuit_rejects_v8():
+    with pytest.raises(mdoc.CircuitError) as excinfo:
+        lf_rust.materialize_circuit(8, 1)
+    assert excinfo.value.code is lf_rust.ProverErrorCode.InvalidZkSpecVersion
 
 
 @pytest.mark.slow

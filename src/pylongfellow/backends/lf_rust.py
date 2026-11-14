@@ -120,8 +120,8 @@ def _records(lf: Any, claims: list[RequestedAttribute]) -> list[Any]:
 def materialize_circuit(version: int, num_attributes: int) -> bytes:
     """Return the compressed circuit for this version and attribute count.
 
-    Binds `provider::materialize`. Versions below the current one come from the archives
-    committed in the `vendor/longfellow-zk` checkout; the current version is compiled.
+    Binds `provider::materialize`, which loads the archives committed in the
+    `vendor/longfellow-zk` checkout. Upstream commits archives for versions 5 to 7.
 
     Args:
         version: Version of the ZK specification.

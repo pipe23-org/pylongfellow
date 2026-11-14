@@ -45,12 +45,12 @@ A `Backend` implements one longfellow implementation. `Pylongfellow` takes a reg
 
 The backends differ in the following behaviour.
 
-- **Circuit versions.** google-cpp accepts versions 5, 6, and 7 at the de5f949 pin, each with
-  attribute counts 1 to 4. lf-rust accepts versions 5 to 8 at the same pin, each with attribute
-  counts 1 to 4. isrg-rust accepts versions 6 and 7.
+- **Circuit versions.** google-cpp accepts versions 5, 6, and 7 at the 1c06629 pin, each with
+  attribute counts 1 to 4. lf-rust accepts the same versions and counts at the same pin.
+  isrg-rust accepts versions 6 and 7.
 - **Circuit generation.** `google_cpp.generate_circuit` generates the highest table version
   for an attribute count. `lf_rust.materialize_circuit` returns the archived circuit for
-  versions 5 to 7 and compiles version 8. isrg-rust generates no circuits.
+  versions 5 to 7. isrg-rust generates no circuits.
 - **Claims count.** google-cpp and lf-rust require `len(claims)` to equal the loaded circuit's
   attribute count on prove and verify. isrg-rust passes the claims through.
 - **`device_namespaces`.** isrg-rust's verifier requires `device_namespaces`. google-cpp and

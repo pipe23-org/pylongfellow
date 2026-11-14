@@ -14,7 +14,6 @@ crate-type = ["cdylib"]
 longfellow-zk = { path = "../../vendor/longfellow-zk/rust", default-features = false, features = [
     "prover",
     "verifier",
-    "compiler",
     "mdoc",
 ] }
 uniffi = { version = "0.32", features = ["cli"] }

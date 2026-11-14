@@ -14,8 +14,8 @@
 
 use std::fmt;
 
-use longfellow_zk::mdoc::runtime::{
-    provider, run_mdoc_prover, run_mdoc_verifier, ZkSpecStruct, CURRENT_ZK_SPECS, ZK_SPECS,
+use longfellow_zk::mdoc::v1::{
+    provider, run_mdoc_prover, run_mdoc_verifier, ZkSpecStruct, ZK_SPECS,
 };
 
 /// An attribute the proof discloses: (`namespace_id`, `id`) holds `cbor_value`.
@@ -51,17 +51,16 @@ fn find_spec(version: u32, num_attributes: u32) -> Result<&'static ZkSpecStruct,
     let num_attributes = num_attributes as usize;
     ZK_SPECS
         .iter()
-        .chain(CURRENT_ZK_SPECS.iter())
         .find(|spec| spec.version == version && spec.num_attributes == num_attributes)
         .ok_or(Error::UnknownCircuit)
 }
 
 fn upstream_attrs(
     attrs: &[RequestedAttribute],
-) -> Vec<longfellow_zk::mdoc::runtime::RequestedAttribute> {
+) -> Vec<longfellow_zk::mdoc::v1::RequestedAttribute> {
     attrs
         .iter()
-        .map(|attr| longfellow_zk::mdoc::runtime::RequestedAttribute {
+        .map(|attr| longfellow_zk::mdoc::v1::RequestedAttribute {
             namespace_id: attr.namespace_id.clone(),
             id: attr.id.clone(),
             cbor_value: attr.cbor_value.clone(),

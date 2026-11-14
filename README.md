@@ -64,7 +64,7 @@ docstrings and carries the exact types of every function.
 The upstreams are vendored as git submodules and built from source:
 
 - [`longfellow-zk/longfellow-zk`](https://github.com/longfellow-zk/longfellow-zk) — pinned to
-  `de5f949` (2026-10-21, after the last tag v0.9). google-cpp builds its `lib/` tree; lf-rust
+  `1c06629` (2026-11-03, after the last tag v0.9). google-cpp builds its `lib/` tree; lf-rust
   its `rust/` tree.
 - [`abetterinternet/zk-cred-longfellow`](https://github.com/abetterinternet/zk-cred-longfellow)
   — pinned to `b22d84e`. Upstream publishes no tags.
