@@ -12,7 +12,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 #   pip install pylongfellow -C cmake.define.PYLONGFELLOW_BUILD_ISRG=OFF
 option(PYLONGFELLOW_BUILD_GOOGLE "Build the google-cpp backend (cffi extension)" ON)
 option(PYLONGFELLOW_BUILD_ISRG "Build the isrg-rust backend (uniffi cdylib)" ON)
-option(PYLONGFELLOW_BUILD_LF_RUST "Build the lf-rust backend (uniffi cdylib)" OFF)
+option(PYLONGFELLOW_BUILD_LF_RUST "Build the lf-rust backend (uniffi cdylib)" ON)
 
 find_package(Python REQUIRED COMPONENTS Interpreter)
 
@@ -75,9 +75,8 @@ if(PYLONGFELLOW_BUILD_ISRG)
 endif()
 
 # --- lf-rust backend: uniffi cdylib ---------------------------------------
-# Default OFF: the wrapper crate builds the vendored Rust tree with LTO, which
-# the wheel and coverage jobs do not pay for today. Enable with
-#   uv sync --reinstall-package pylongfellow -C cmake.define.PYLONGFELLOW_BUILD_LF_RUST=ON
+# The wrapper crate builds the vendored Rust tree with LTO, so this is the
+# slowest part of a clean build.
 if(PYLONGFELLOW_BUILD_LF_RUST)
   add_custom_target(lf_rust_backend ALL
     COMMAND "${Python_EXECUTABLE}"

@@ -1,8 +1,4 @@
-"""UniFFI bindings to the longfellow-zk Rust implementation behind the Backend protocol.
-
-`materialize_circuit` reads the archives in the `vendor/longfellow-zk` checkout through a
-path the crate resolves at compile time, so that checkout must be on disk when it is called.
-"""
+"""UniFFI bindings to the longfellow-zk Rust implementation behind the Backend protocol."""
 
 from __future__ import annotations
 
@@ -12,7 +8,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import cbor2
 
-from ..mdoc._errors import CircuitError, ProverError, VerifierError
+from ..mdoc._errors import ProverError, VerifierError
 from . import BackendUnavailableError
 from .google_cpp import _fmt_timestamp
 
@@ -23,7 +19,7 @@ if TYPE_CHECKING:
 
 
 class ProverErrorCode(IntEnum):
-    """Return codes from the Rust `run_mdoc_prover` and `provider::materialize`."""
+    """Return codes from the Rust `run_mdoc_prover`."""
 
     Success = 0
     NullInput = 1
@@ -86,8 +82,8 @@ def _lf() -> Any:
         from ._lf_rust import longfellow_zk_uniffi
     except ImportError as e:
         raise BackendUnavailableError(
-            "the lf-rust backend is not built; source builds omit it unless configured "
-            "with PYLONGFELLOW_BUILD_LF_RUST=ON, and a dev checkout builds it with "
+            "the lf-rust backend is not built; source builds omit it when configured "
+            "with PYLONGFELLOW_BUILD_LF_RUST=OFF, and a dev checkout builds it with "
             "native/lf-rust/build.py"
         ) from e
     return longfellow_zk_uniffi
@@ -115,30 +111,6 @@ def _records(lf: Any, claims: list[RequestedAttribute]) -> list[Any]:
         )
         for claim in claims
     ]
-
-
-def materialize_circuit(version: int, num_attributes: int) -> bytes:
-    """Return the compressed circuit for this version and attribute count.
-
-    Binds `provider::materialize`, which loads the archives committed in the
-    `vendor/longfellow-zk` checkout. Upstream commits archives for versions 5 to 7.
-
-    Args:
-        version: Version of the ZK specification.
-        num_attributes: Number of attributes the circuit proves over.
-
-    Returns:
-        Compressed circuit bytes, in the archive format the Rust tree writes.
-
-    Raises:
-        BackendUnavailableError: the lf-rust backend is not built.
-        CircuitError: upstream has no circuit for the pair, or materialization failed.
-    """
-    lf = _lf()
-    try:
-        return cast(bytes, lf.materialize_circuit(version, num_attributes))
-    except lf.Error.Prover as e:
-        raise CircuitError(ProverErrorCode(e.code)) from e
 
 
 @dataclass(frozen=True)

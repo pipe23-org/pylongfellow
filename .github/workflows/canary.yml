@@ -48,7 +48,7 @@ jobs:
         id: fp
         shell: bash
         run: |
-          google_cpp_fp=$(git -C vendor/longfellow-zk rev-parse HEAD:lib | sha256sum | cut -c1-12)
+          google_cpp_fp=$(git -C vendor/longfellow-zk rev-parse HEAD:lib HEAD:rust | sha256sum | cut -c1-12)
           isrg_rust_fp=$(git -C vendor/zk-cred-longfellow rev-parse HEAD:src HEAD:Cargo.toml HEAD:Cargo.lock | sha256sum | cut -c1-12)
           self_fp=$(git rev-parse HEAD:src HEAD:tests HEAD:native HEAD:pyproject.toml HEAD:uv.lock HEAD:.github/workflows/canary.yml | sha256sum | cut -c1-12)
           combined=$(echo "$google_cpp_fp $isrg_rust_fp $self_fp" | sha256sum | cut -c1-16)
@@ -106,18 +106,22 @@ jobs:
         with:
           python-version: "3.14"
 
-      - name: Build google backend
-        if: steps.gate.outputs.run == 'true'
-        run: uv sync --locked
-
       - uses: dtolnay/rust-toolchain@stable
         if: steps.gate.outputs.run == 'true'
 
       - uses: Swatinem/rust-cache@v2
         if: steps.gate.outputs.run == 'true'
         with:
-          workspaces: vendor/zk-cred-longfellow
+          workspaces: |
+            vendor/zk-cred-longfellow
+            native/lf-rust
           shared-key: zk-cred
+
+      # Toolchain and cache before uv sync: the build runs both cargo builds via
+      # CMake (native/isrg-rust/build.py and native/lf-rust/build.py).
+      - name: Build the three backends
+        if: steps.gate.outputs.run == 'true'
+        run: uv sync --locked
 
       - name: Build ISRG backend
         if: steps.gate.outputs.run == 'true'
@@ -128,7 +132,7 @@ jobs:
         if: steps.gate.outputs.run == 'true'
         shell: bash
         env:
-          PYLONGFELLOW_REQUIRE_BACKENDS: google-cpp,isrg-rust
+          PYLONGFELLOW_REQUIRE_BACKENDS: google-cpp,isrg-rust,lf-rust
         run: uv run --no-sync pytest tests -m "slow or not slow" | tee pytest-output.txt
 
       - name: Record tested state
@@ -164,7 +168,7 @@ jobs:
             echo
             echo "Revisions under test:"
             echo
-            echo "- google/longfellow-zk \`${{ steps.heads.outputs.goog || 'unavailable' }}\` — watched paths (\`lib/\`) \`${{ steps.fp.outputs.google_cpp_fp || 'unavailable' }}\`"
+            echo "- google/longfellow-zk \`${{ steps.heads.outputs.goog || 'unavailable' }}\` — watched paths (\`lib/\`, \`rust/\`) \`${{ steps.fp.outputs.google_cpp_fp || 'unavailable' }}\`"
             echo "- abetterinternet/zk-cred-longfellow \`${{ steps.heads.outputs.isrg || 'unavailable' }}\` — watched paths (\`src\`, \`Cargo.toml\`, \`Cargo.lock\`) \`${{ steps.fp.outputs.isrg_rust_fp || 'unavailable' }}\`"
             echo "- ${GITHUB_REPOSITORY} \`${{ steps.fp.outputs.self || 'unavailable' }}\` — watched paths (\`src\`, \`tests\`, \`native\`, \`pyproject.toml\`, \`uv.lock\`, \`canary.yml\`) \`${{ steps.fp.outputs.self_fp || 'unavailable' }}\`"
             echo
@@ -198,7 +202,7 @@ jobs:
             echo
             echo "Revisions under test:"
             echo
-            echo "- google/longfellow-zk \`${{ steps.heads.outputs.goog }}\` — watched paths (\`lib/\`) \`${{ steps.fp.outputs.google_cpp_fp }}\`"
+            echo "- google/longfellow-zk \`${{ steps.heads.outputs.goog }}\` — watched paths (\`lib/\`, \`rust/\`) \`${{ steps.fp.outputs.google_cpp_fp }}\`"
             echo "- abetterinternet/zk-cred-longfellow \`${{ steps.heads.outputs.isrg }}\` — watched paths (\`src\`, \`Cargo.toml\`, \`Cargo.lock\`) \`${{ steps.fp.outputs.isrg_rust_fp }}\`"
             echo "- ${GITHUB_REPOSITORY} \`${{ steps.fp.outputs.self }}\` — watched paths (\`src\`, \`tests\`, \`native\`, \`pyproject.toml\`, \`uv.lock\`, \`canary.yml\`) \`${{ steps.fp.outputs.self_fp }}\`"
             echo
@@ -211,7 +215,7 @@ jobs:
             echo
             echo "Release pins: google/longfellow-zk \`${{ steps.pin.outputs.goog }}\`, zk-cred-longfellow \`${{ steps.pin.outputs.isrg }}\`. The HEADs under test are not what released wheels build from."
             echo
-            echo "Both implementations of draft-google-cfrg-libzk at the revisions above agree on prove/verify across the committed corpus, and circuit regeneration reproduces the committed \`circuit_id\`s."
+            echo "All three backends over the two upstreams at the revisions above agree on prove/verify across the committed corpus, and circuit regeneration reproduces the committed \`circuit_id\`s."
             echo
             echo '```'
             echo "$summary"

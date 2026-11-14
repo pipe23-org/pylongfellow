@@ -1,7 +1,7 @@
 """A Python interface to implementations of Longfellow zero-knowledge mdoc proofs.
 
 [`Pylongfellow`][pylongfellow.Pylongfellow] is constructed with a choice of backend
-(`google-cpp` or `isrg-rust`). It proves and verifies.
+(`google-cpp`, `isrg-rust`, or `lf-rust`). It proves and verifies.
 [`generate_circuit`][pylongfellow.backends.google_cpp.generate_circuit] generates circuits.
 """
 

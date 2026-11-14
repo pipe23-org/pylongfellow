@@ -26,10 +26,9 @@ The package is experimental and unstable.
 pip install pylongfellow
 ```
 
-Wheels containing the google-cpp and isrg-rust backends are published for **CPython 3.11–3.14
-on Linux x86_64** (manylinux and musllinux). On any other platform `pip` falls back to the
-source distribution, which builds those two backends locally. The lf-rust backend builds from
-source only, behind `PYLONGFELLOW_BUILD_LF_RUST=ON`. See the
+Wheels containing all three backends are published for **CPython 3.11–3.14 on Linux x86_64**
+(manylinux and musllinux). On any other platform `pip` falls back to the source distribution,
+which builds all three locally. See the
 [development page](https://pylongfellow.readthedocs.io/en/stable/development/).
 
 ## Usage
@@ -91,7 +90,6 @@ Build prerequisites and single-backend builds are on the
 You should not rely on this code.
 
 - Wheels cover CPython 3.11–3.14 on Linux x86_64 only; other platforms build from source.
-- The lf-rust backend builds from source only; the wheels omit it.
 - The API changes between minor versions.
 
 ## License

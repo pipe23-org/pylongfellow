@@ -149,7 +149,7 @@ build = "cp311-* cp312-* cp313-* cp314-*"
 build-frontend = "build[uv]"
 build-verbosity = 1
 test-groups = ["test"]
-test-command = 'PYLONGFELLOW_REQUIRE_BACKENDS=google-cpp,isrg-rust pytest {project}/tests -m "slow or not slow"'
+test-command = 'PYLONGFELLOW_REQUIRE_BACKENDS=google-cpp,isrg-rust,lf-rust pytest {project}/tests -m "slow or not slow"'
 
 [tool.cibuildwheel.linux]
 manylinux-x86_64-image = "manylinux_2_28"

@@ -17,8 +17,6 @@ _RUST = _REPO / "vendor" / "longfellow-zk" / "rust" / "applications" / "mdoc_zk"
 _ARCHIVES = _RUST / "artifacts" / "circuits"
 _ERROR_RS = _RUST / "runtime" / "src" / "v1" / "error.rs"
 
-_V5_1ATTR = "f88a39e561ec0be02bb3dfe38fb609ad154e98decbbe632887d850fc612fea6f"
-_V6_1ATTR = "137e5a75ce72735a37c8a72da1a8a0a5df8d13365c2ae3d2c2bd6a0e7197c7c6"
 _V7_1ATTR = "8d079211715200ff06c5109639245502bfe94aa869908d31176aae4016182121"
 
 
@@ -32,8 +30,6 @@ def _lf_rust_available() -> bool:
         return False
 
 
-# PYLONGFELLOW_BUILD_LF_RUST defaults OFF, so an ordinary build has no cdylib to call.
-# Delete this skip when the switch defaults ON.
 skip_without_lf_rust = pytest.mark.skipif(
     not _lf_rust_available(), reason="lf-rust backend not built"
 )
@@ -118,12 +114,6 @@ def test_verify_reports_unavailable_backend(monkeypatch):
         )
 
 
-def test_materialize_circuit_reports_unavailable_backend(monkeypatch):
-    monkeypatch.setitem(sys.modules, "pylongfellow.backends._lf_rust", None)
-    with pytest.raises(BackendUnavailableError, match="lf-rust/build"):
-        lf_rust.materialize_circuit(7, 1)
-
-
 def test_prove_rejects_claims_count_mismatch():
     inputs = _mdoc_eu_av()
     state = lf_rust.BACKEND.load_circuit(inputs.circuit, 7, 2)
@@ -194,35 +184,6 @@ def test_prove_rejects_unknown_claim():
     assert excinfo.value.code is lf_rust.ProverErrorCode.AttributeNotFound
 
 
-@skip_without_lf_rust
-def test_materialize_circuit_v5():
-    assert lf_rust.materialize_circuit(5, 1) == (_ARCHIVES / f"{_V5_1ATTR}.lfa2").read_bytes()
-
-
-@skip_without_lf_rust
-def test_materialize_circuit_v6():
-    assert lf_rust.materialize_circuit(6, 1) == (_ARCHIVES / f"{_V6_1ATTR}.lfa2").read_bytes()
-
-
-@skip_without_lf_rust
-def test_materialize_circuit_v7():
-    assert lf_rust.materialize_circuit(7, 1) == (_ARCHIVES / f"{_V7_1ATTR}.lfa2").read_bytes()
-
-
-@skip_without_lf_rust
-def test_materialize_circuit_rejects_unknown_version():
-    with pytest.raises(mdoc.CircuitError) as excinfo:
-        lf_rust.materialize_circuit(4, 1)
-    assert excinfo.value.code is lf_rust.ProverErrorCode.InvalidZkSpecVersion
-
-
-@skip_without_lf_rust
-def test_materialize_circuit_rejects_v8():
-    with pytest.raises(mdoc.CircuitError) as excinfo:
-        lf_rust.materialize_circuit(8, 1)
-    assert excinfo.value.code is lf_rust.ProverErrorCode.InvalidZkSpecVersion
-
-
 @pytest.mark.slow
 @skip_without_lf_rust
 def test_round_trip_verifies_over_cpp_circuit():
@@ -244,10 +205,12 @@ def test_round_trip_verifies_over_cpp_circuit():
 
 @pytest.mark.slow
 @skip_without_lf_rust
-def test_round_trip_verifies_over_materialized_circuit():
+def test_round_trip_verifies_over_rust_archive():
     inputs = _mdoc_eu_av()
     longfellow = Pylongfellow(backend="lf-rust")
-    longfellow.load_circuit(lf_rust.materialize_circuit(7, 1), 7, 1)
+    # .lfa2 is the Rust tree's own archive format; the C++ tree's archive for the same
+    # circuit is a different encoding of it.
+    longfellow.load_circuit((_ARCHIVES / f"{_V7_1ATTR}.lfa2").read_bytes(), 7, 1)
     proof = longfellow.prove(
         inputs.mdoc_bytes, inputs.issuer_pk, inputs.transcript, inputs.claims, inputs.timestamp
     )

@@ -8,10 +8,9 @@
   whose value is a list or a map. The proof is now produced when that element is not among
   the claims (#79).
 - Added the `lf-rust` backend, binding the Rust implementation in longfellow-zk/longfellow-zk
-  through UniFFI. It is built only when `PYLONGFELLOW_BUILD_LF_RUST=ON`; the published wheels
-  omit it. `pylongfellow.backends.lf_rust.materialize_circuit` returns upstream's circuit for
-  a version and attribute count. `ProverError.code`, `VerifierError.code`, and
-  `CircuitError.code` carry lf-rust's own code tables on that backend (#79).
+  through UniFFI. It is built by default and ships in the published wheels. A source build
+  omits it with `-C cmake.define.PYLONGFELLOW_BUILD_LF_RUST=OFF`. `ProverError.code` and
+  `VerifierError.code` carry lf-rust's own code tables on that backend (#79, #85).
 
 ## 0.7.0 - 2026-08-30
 
