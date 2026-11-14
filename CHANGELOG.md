@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- The vendored longfellow-zk pin moved from v0.9 (`fe83ec6`) to `1c06629` (2026-11-03); the
+  submodule URL now points at `longfellow-zk/longfellow-zk`, where the repository moved (#79).
+- Fixed `prove` on the google-cpp backend aborting the process when the mdoc holds an element
+  whose value is a list or a map. The proof is now produced when that element is not among
+  the claims (#79).
+- Added the `lf-rust` backend, binding the Rust implementation in longfellow-zk/longfellow-zk
+  through UniFFI. It is built only when `PYLONGFELLOW_BUILD_LF_RUST=ON`; the published wheels
+  omit it. `pylongfellow.backends.lf_rust.materialize_circuit` returns upstream's circuit for
+  a version and attribute count. `ProverError.code`, `VerifierError.code`, and
+  `CircuitError.code` carry lf-rust's own code tables on that backend (#79).
+
 ## 0.7.0 - 2026-08-30
 
 - **BACKWARDS INCOMPATIBLE:** `load_circuit` on the google-cpp backend no longer computes the
