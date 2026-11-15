@@ -227,9 +227,9 @@ class _LfRustBackend:
         timestamp: datetime,
         proof: bytes,
         doctype: str,
-        device_namespaces: bytes | None,
+        device_namespaces: bytes,
     ) -> None:
-        """Verify a proof that the claims hold, against the transcript.
+        r"""Verify a proof that the claims hold, against the transcript.
 
         Binds `run_mdoc_verifier`.
 
@@ -242,17 +242,25 @@ class _LfRustBackend:
             timestamp: Timezone-aware verification time.
             proof: Proof bytes from `prove`.
             doctype: mdoc doctype the proof is scoped to.
-            device_namespaces: Inner bytes of the tag-24 DeviceNameSpacesBytes; not read.
+            device_namespaces: Inner bytes of the tag-24 DeviceNameSpacesBytes, which
+                must be the encoded empty map, `b"\xa0"`.
 
         Raises:
             ValueError: `len(claims)` does not match the loaded circuit's
-                `num_attributes`, or upstream has no circuit for the declared version
-                and attribute count.
+                `num_attributes`, `device_namespaces` is not the encoded empty map, or
+                upstream has no circuit for the declared version and attribute count.
             BackendUnavailableError: the lf-rust backend is not built.
             VerifierError: The proof does not hold.
         """
         loaded = cast("_LoadedCircuit", state)
         _require_claims_match(claims, loaded.num_attributes)
+        # lf.verify takes no device-namespaces input and verifies against the empty
+        # map. Refuse any other value rather than verify a different statement.
+        if device_namespaces != b"\xa0":
+            raise ValueError(
+                "device_namespaces must be the encoded empty map b'\\xa0', "
+                f"not {device_namespaces!r}"
+            )
         lf = _lf()
         try:
             lf.verify(

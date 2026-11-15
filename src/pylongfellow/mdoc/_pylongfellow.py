@@ -16,14 +16,22 @@ if TYPE_CHECKING:
 
 
 class Pylongfellow:
-    """A Longfellow prover and verifier.
+    r"""A Longfellow prover and verifier.
 
     Example:
         ```python
         longfellow = Pylongfellow(backend="google-cpp")
         longfellow.load_circuit(circuit, 7, 1)
         proof = longfellow.prove(mdoc, issuer_public_key, transcript, claims, timestamp)
-        longfellow.verify(issuer_public_key, transcript, claims, timestamp, proof, doctype)
+        longfellow.verify(
+            issuer_public_key,
+            transcript,
+            claims,
+            timestamp,
+            proof,
+            doctype,
+            device_namespaces=b"\xa0",
+        )
         ```
 
     Attributes:
@@ -113,7 +121,7 @@ class Pylongfellow:
         proof: bytes,
         doctype: str,
         *,
-        device_namespaces: bytes | None = None,
+        device_namespaces: bytes,
     ) -> None:
         """Verify a proof that the claims hold, against the transcript.
 
@@ -125,14 +133,14 @@ class Pylongfellow:
             timestamp: Timezone-aware verification time.
             proof: Proof bytes from [`prove`][pylongfellow.Pylongfellow.prove].
             doctype: mdoc doctype the proof is scoped to.
-            device_namespaces: Inner bytes of the tag-24 DeviceNameSpacesBytes;
-                required by the isrg-rust backend.
+            device_namespaces: Inner bytes of the tag-24 DeviceNameSpacesBytes.
 
         Raises:
             RuntimeError: No circuit is loaded.
             ValueError: `timestamp` is naive; `len(claims)` does not match the
                 loaded circuit's `num_attributes` or `doctype` is 256 bytes or longer
-                (google-cpp); or `device_namespaces` is None (isrg-rust).
+                (google-cpp); or `device_namespaces` is not the encoded empty map
+                (google-cpp, lf-rust).
             VerifierError: The proof does not hold.
         """
         state = self._loaded_circuit()

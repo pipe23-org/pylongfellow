@@ -52,8 +52,12 @@ The backends differ in the following behaviour.
   for an attribute count. lf-rust and isrg-rust generate no circuits.
 - **Claims count.** google-cpp and lf-rust require `len(claims)` to equal the loaded circuit's
   attribute count on prove and verify. isrg-rust passes the claims through.
-- **`device_namespaces`.** isrg-rust's verifier requires `device_namespaces`. google-cpp and
-  lf-rust fix DeviceNameSpacesBytes to the empty map, whatever the argument holds.
+- **`device_namespaces`.** isrg-rust's verifier takes `device_namespaces` as a verification
+  input. google-cpp and lf-rust fix DeviceNameSpacesBytes to the empty map and raise
+  `ValueError` for any other value. `prove` on google-cpp and lf-rust raises `ProverError`
+  for an mdoc whose device namespaces are not the empty map, with code
+  `MDOC_PROVER_DEVICE_SIGNATURE_FAILURE` on google-cpp and `GeneralFailure` on lf-rust.
+  isrg-rust proves such an mdoc.
 - **`doctype`.** google-cpp rejects a `doctype` of 256 bytes or longer.
 - **Error codes.** `ProverError.code` and `VerifierError.code` carry a code from the backend's
   own table on google-cpp and lf-rust and are None on isrg-rust.

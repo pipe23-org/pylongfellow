@@ -6,7 +6,7 @@ import pytest
 from pylongfellow import mdoc
 
 
-def _verify(longfellow, inputs):
+def _verify(longfellow, inputs, device_namespaces=b"\xa0"):
     longfellow.load_circuit(inputs.circuit, inputs.version, inputs.num_attributes)
     longfellow.verify(
         inputs.issuer_pk,
@@ -15,6 +15,7 @@ def _verify(longfellow, inputs):
         inputs.timestamp,
         inputs.proof,
         inputs.doctype,
+        device_namespaces=device_namespaces,
     )
 
 
@@ -65,3 +66,14 @@ def test_verify_rejects_attr_count_mismatch(google, proof_age_over_18, resize):
     inputs = proof_age_over_18
     with pytest.raises(ValueError, match="num_attributes"):
         _verify(google, dataclasses.replace(inputs, attrs=resize(inputs.attrs)))
+
+
+def test_verify_rejects_non_empty_device_namespaces(google, proof_age_over_18):
+    device_namespaces = cbor2.dumps({"org.iso.18013.5.1": {"age_over_18": True}})
+    with pytest.raises(ValueError, match="device_namespaces must be the encoded empty map"):
+        _verify(google, proof_age_over_18, device_namespaces)
+
+
+def test_verify_rejects_device_namespaces_that_are_not_cbor(google, proof_age_over_18):
+    with pytest.raises(ValueError, match="device_namespaces must be the encoded empty map"):
+        _verify(google, proof_age_over_18, b"not cbor")

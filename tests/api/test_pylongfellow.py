@@ -48,7 +48,7 @@ class _RecordingBackend:
         timestamp: datetime,
         proof: bytes,
         doctype: str,
-        device_namespaces: bytes | None,
+        device_namespaces: bytes,
     ) -> None:
         self.calls.append("verify")
         self.states.append(state)
@@ -84,7 +84,7 @@ def test_prove_and_verify_run_on_the_loaded_circuit():
     longfellow = Pylongfellow(backend=stub)
     longfellow.load_circuit(b"circuit", 0, 0)
     longfellow.prove(b"", mdoc.PublicKey(1, 2), b"", [], _AWARE)
-    longfellow.verify(mdoc.PublicKey(1, 2), b"", [], _AWARE, b"", "doc")
+    longfellow.verify(mdoc.PublicKey(1, 2), b"", [], _AWARE, b"", "doc", device_namespaces=b"\xa0")
     assert stub.calls == ["ensure_available", "load_circuit", "prove", "verify"]
     assert stub.states == [b"circuit", b"circuit"]
 
@@ -107,7 +107,9 @@ def test_prove_without_a_loaded_circuit():
 def test_verify_without_a_loaded_circuit():
     longfellow = Pylongfellow(backend=_RecordingBackend())
     with pytest.raises(RuntimeError, match="no circuit is loaded"):
-        longfellow.verify(mdoc.PublicKey(1, 2), b"", [], _AWARE, b"", "doc")
+        longfellow.verify(
+            mdoc.PublicKey(1, 2), b"", [], _AWARE, b"", "doc", device_namespaces=b"\xa0"
+        )
 
 
 def test_prove_rejects_naive_timestamp():
@@ -125,7 +127,20 @@ def test_verify_rejects_naive_timestamp():
     longfellow = Pylongfellow(backend=stub)
     longfellow.load_circuit(b"", 0, 0)
     with pytest.raises(ValueError, match="timezone-aware"):
-        longfellow.verify(mdoc.PublicKey(1, 2), b"", [], _NAIVE, b"", "doc")
+        longfellow.verify(
+            mdoc.PublicKey(1, 2), b"", [], _NAIVE, b"", "doc", device_namespaces=b"\xa0"
+        )
+    assert "verify" not in stub.calls
+
+
+def test_verify_requires_device_namespaces():
+    stub = _RecordingBackend()
+    longfellow = Pylongfellow(backend=stub)
+    longfellow.load_circuit(b"", 0, 0)
+    with pytest.raises(TypeError, match="device_namespaces"):
+        longfellow.verify(  # type: ignore[call-arg]
+            mdoc.PublicKey(1, 2), b"", [], _AWARE, b"", "doc"
+        )
     assert "verify" not in stub.calls
 
 
@@ -148,19 +163,6 @@ def test_google_error_populates_code(google, proof_age_over_18):
             inputs.timestamp,
             bytes(bad_proof),
             inputs.doctype,
+            device_namespaces=b"\xa0",
         )
     assert isinstance(excinfo.value.code, mdoc.VerifierErrorCode)
-
-
-def test_device_namespaces_ignored_on_google_verify(google, proof_age_over_18):
-    inputs = proof_age_over_18
-    google.load_circuit(inputs.circuit, inputs.version, inputs.num_attributes)
-    google.verify(
-        inputs.issuer_pk,
-        inputs.transcript,
-        inputs.attrs,
-        inputs.timestamp,
-        inputs.proof,
-        inputs.doctype,
-        device_namespaces=b"\xa0",
-    )
