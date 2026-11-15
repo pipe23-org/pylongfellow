@@ -337,9 +337,9 @@ class _GoogleBackend:
         timestamp: datetime,
         proof: bytes,
         doctype: str,
-        device_namespaces: bytes | None,
+        device_namespaces: bytes,
     ) -> None:
-        """Verify a proof that the claims hold, against the transcript.
+        r"""Verify a proof that the claims hold, against the transcript.
 
         Binds `run_mdoc_verifier`.
 
@@ -352,11 +352,13 @@ class _GoogleBackend:
             timestamp: Timezone-aware verification time.
             proof: Proof bytes from [`prove`][pylongfellow.Pylongfellow.prove].
             doctype: mdoc doctype the proof is scoped to.
-            device_namespaces: Inner bytes of the tag-24 DeviceNameSpacesBytes.
+            device_namespaces: Inner bytes of the tag-24 DeviceNameSpacesBytes, which
+                must be the encoded empty map, `b"\xa0"`.
 
         Raises:
             ValueError: `len(claims)` does not match the loaded circuit's `num_attributes`,
-                or `doctype` is 256 bytes or longer.
+                `doctype` is 256 bytes or longer, or `device_namespaces` is not the
+                encoded empty map.
             VerifierError: The proof does not hold.
         """
         ffi, lib = _load()
@@ -367,6 +369,13 @@ class _GoogleBackend:
         # proof against the wrong scope with no error. Refuse rather than mislead.
         if len(doctype.encode()) >= 256:
             raise ValueError(f"doctype too long ({len(doctype.encode())} >= 256 bytes)")
+        # run_mdoc_verifier takes no device-namespaces input and verifies against the
+        # empty map. Refuse any other value rather than verify a different statement.
+        if device_namespaces != b"\xa0":
+            raise ValueError(
+                "device_namespaces must be the encoded empty map b'\\xa0', "
+                f"not {device_namespaces!r}"
+            )
         pk_x, pk_y = issuer_public_key.x, issuer_public_key.y
         c_attrs = _fill_attrs(ffi, claims)
         c_spec, _keepalive = _build_spec(ffi, spec)

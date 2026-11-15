@@ -34,6 +34,7 @@ def test_prove_then_verify(google, mdoc_eu_av):
         inputs.timestamp,
         proof,
         inputs.doctype,
+        device_namespaces=b"\xa0",
     )
 
 

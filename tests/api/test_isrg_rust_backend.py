@@ -2,6 +2,7 @@ import dataclasses
 import sys
 from datetime import UTC, datetime
 
+import cbor2
 import pytest
 
 from pylongfellow import mdoc
@@ -36,13 +37,6 @@ def test_prove_rejects_mixed_namespaces():
     ]
     with pytest.raises(ValueError, match="one namespace"):
         isrg_rust.BACKEND.prove(_dummy_state(), b"", mdoc.PublicKey(1, 2), b"", attrs, _AWARE)
-
-
-def test_verify_rejects_missing_device_namespaces():
-    with pytest.raises(ValueError, match="device_namespaces is required"):
-        isrg_rust.BACKEND.verify(
-            _dummy_state(), mdoc.PublicKey(1, 2), b"", _one_attr(), _AWARE, b"", "doc", None
-        )
 
 
 def test_encode_public_key(vendored_vector):
@@ -112,6 +106,23 @@ def test_verify_rejects_tampered_proof(isrg, isrg_proof, vendored_vector):
         )
     assert excinfo.value.code is None
     assert str(excinfo.value) == str(excinfo.value.__cause__)
+
+
+@pytest.mark.slow
+@skip_without_isrg_rust
+def test_verify_rejects_non_empty_device_namespaces(isrg, isrg_proof, vendored_vector):
+    v = vendored_vector
+    device_namespaces = cbor2.dumps({"org.iso.18013.5.1": {"age_over_18": True}})
+    with pytest.raises(mdoc.VerifierError):
+        isrg.verify(
+            v.issuer_pk,
+            v.transcript,
+            v.attrs,
+            v.timestamp,
+            isrg_proof,
+            v.doctype,
+            device_namespaces=device_namespaces,
+        )
 
 
 @pytest.mark.slow

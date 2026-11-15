@@ -57,12 +57,14 @@ class Backend(Protocol):
         timestamp: datetime,
         proof: bytes,
         doctype: str,
-        device_namespaces: bytes | None,
+        device_namespaces: bytes,
     ) -> None:
         """Verify a proof of the claims against the transcript.
 
         `state` comes from this backend's `load_circuit`. `timestamp` is timezone-aware:
         `Pylongfellow` rejects naive datetimes before the backend is called.
+        `device_namespaces` is the inner bytes of the tag-24 DeviceNameSpacesBytes; a
+        backend that verifies against one fixed value raises `ValueError` for any other.
         """
 
 

@@ -39,5 +39,13 @@ proof = longfellow.prove(credential_mdoc, issuer_public_key, transcript, claims,
 print(f"proved: {len(proof)} bytes")
 
 # verify() returns None on success and raises VerifierError otherwise.
-longfellow.verify(issuer_public_key, transcript, claims, timestamp, proof, credential["doctype"])
+longfellow.verify(
+    issuer_public_key,
+    transcript,
+    claims,
+    timestamp,
+    proof,
+    credential["doctype"],
+    device_namespaces=b"\xa0",
+)
 print("verified")

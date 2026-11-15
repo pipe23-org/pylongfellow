@@ -6,6 +6,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+import cbor2
 import pytest
 
 from pylongfellow import Pylongfellow, mdoc
@@ -110,7 +111,7 @@ def test_verify_reports_unavailable_backend(monkeypatch):
             inputs.timestamp,
             b"",
             inputs.doctype,
-            None,
+            b"\xa0",
         )
 
 
@@ -140,7 +141,40 @@ def test_verify_rejects_claims_count_mismatch():
             inputs.timestamp,
             b"",
             inputs.doctype,
-            None,
+            b"\xa0",
+        )
+
+
+def test_verify_rejects_non_empty_device_namespaces():
+    inputs = _mdoc_eu_av()
+    state = lf_rust.BACKEND.load_circuit(inputs.circuit, 7, 1)
+    device_namespaces = cbor2.dumps({"org.iso.18013.5.1": {"age_over_18": True}})
+    with pytest.raises(ValueError, match="device_namespaces must be the encoded empty map"):
+        lf_rust.BACKEND.verify(
+            state,
+            inputs.issuer_pk,
+            inputs.transcript,
+            inputs.claims,
+            inputs.timestamp,
+            b"",
+            inputs.doctype,
+            device_namespaces,
+        )
+
+
+def test_verify_rejects_device_namespaces_that_are_not_cbor():
+    inputs = _mdoc_eu_av()
+    state = lf_rust.BACKEND.load_circuit(inputs.circuit, 7, 1)
+    with pytest.raises(ValueError, match="device_namespaces must be the encoded empty map"):
+        lf_rust.BACKEND.verify(
+            state,
+            inputs.issuer_pk,
+            inputs.transcript,
+            inputs.claims,
+            inputs.timestamp,
+            b"",
+            inputs.doctype,
+            b"not cbor",
         )
 
 
@@ -168,6 +202,7 @@ def test_verify_rejects_unknown_version():
             inputs.timestamp,
             b"",
             inputs.doctype,
+            device_namespaces=b"\xa0",
         )
 
 
@@ -200,6 +235,7 @@ def test_round_trip_verifies_over_cpp_circuit():
         inputs.timestamp,
         proof,
         inputs.doctype,
+        device_namespaces=b"\xa0",
     )
 
 
@@ -221,6 +257,7 @@ def test_round_trip_verifies_over_rust_archive():
         inputs.timestamp,
         proof,
         inputs.doctype,
+        device_namespaces=b"\xa0",
     )
 
 
@@ -244,5 +281,6 @@ def test_verify_rejects_tampered_proof():
             inputs.timestamp,
             bytes(proof),
             inputs.doctype,
+            device_namespaces=b"\xa0",
         )
     assert excinfo.value.code is lf_rust.VerifierErrorCode.GeneralFailure

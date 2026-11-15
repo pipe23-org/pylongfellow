@@ -109,23 +109,40 @@ def _round_trip_cases() -> list[RoundTripCase]:
         if VECTORS.circuit(circuit).num_attributes in counts
         for prover in BACKENDS
         for verifier in BACKENDS
+        if prover in _DEVICE_NAMESPACES_BACKENDS
+        or not _refuses_device_namespaces(
+            verifier, VECTORS.presentation(presentation).device_namespaces
+        )
     ]
 
 
 def _verify_cases(proofs: tuple[str, ...]) -> list[VerifyCase]:
-    return [VerifyCase(proof, verifier) for proof in proofs for verifier in BACKENDS]
+    return [
+        VerifyCase(proof, verifier)
+        for proof in proofs
+        for verifier in BACKENDS
+        if not _refuses_device_namespaces(verifier, VECTORS.proof(proof).device_namespaces)
+    ]
 
 
 # Both longfellow-zk implementations fix DeviceNameSpacesBytes to the empty map,
-# so a presentation whose device signed a non-empty map cannot prove or verify
-# there. strict: if either backend ever accepts one, the run fails with XPASS and
-# the characterization here is wrong or upstream changed.
+# so a presentation whose device signed a non-empty map cannot prove there.
+# strict: if either backend ever proves one, the run fails with XPASS and the
+# characterization here is wrong or upstream changed.
 _DEVICE_NAMESPACES_BACKENDS = frozenset({"google-cpp", "lf-rust"})
 _DEVICE_NAMESPACES_XFAIL = pytest.mark.xfail(
     strict=True,
     raises=mdoc.Error,
     reason="longfellow-zk fixes DeviceNameSpacesBytes to the empty map",
 )
+
+
+# Those two backends raise ValueError for a device_namespaces value other than the
+# empty map, which tests/api and tests/backends assert. No case here pairs such a
+# presentation with one of them as verifier. One as prover is kept: the prove step
+# fails inside the backend before verify runs.
+def _refuses_device_namespaces(backend: str, device_namespaces: bytes | None) -> bool:
+    return backend in _DEVICE_NAMESPACES_BACKENDS and device_namespaces != b"\xa0"
 
 
 def _param(

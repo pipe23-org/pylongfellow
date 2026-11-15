@@ -49,4 +49,5 @@ if __name__ == "__main__":
         datetime.fromisoformat(fx["timestamp"]),
         base64.b64decode(fx["proof_b64"]),
         fx["doctype"],
+        device_namespaces=b"\xa0",
     )

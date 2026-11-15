@@ -168,7 +168,7 @@ class _IsrgRustBackend:
         timestamp: datetime,
         proof: bytes,
         doctype: str,
-        device_namespaces: bytes | None,
+        device_namespaces: bytes,
     ) -> None:
         """Verify a proof that the claims hold, against the transcript.
 
@@ -180,17 +180,13 @@ class _IsrgRustBackend:
             timestamp: Timezone-aware verification time.
             proof: Proof bytes from `prove`.
             doctype: mdoc doctype the proof is scoped to.
-            device_namespaces: Inner bytes of the tag-24 DeviceNameSpacesBytes; required.
+            device_namespaces: Inner bytes of the tag-24 DeviceNameSpacesBytes; a
+                verification input.
 
         Raises:
-            ValueError: `device_namespaces` is None.
             BackendUnavailableError: the isrg-rust backend is not built.
             VerifierError: the proof does not hold.
         """
-        if device_namespaces is None:
-            raise ValueError(
-                "device_namespaces is required (inner bytes of the tag-24 DeviceNameSpacesBytes)"
-            )
         time = _fmt_timestamp(timestamp)
         encoded_public_key = _encode_public_key(issuer_public_key)
         zk, verifier = _ensure_verifier(cast("_LoadedCircuit", state))

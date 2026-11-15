@@ -48,7 +48,9 @@ claims = [mdoc.RequestedAttribute("org.iso.18013.5.1", "age_over_18", cbor2.dump
 issuer_public_key = mdoc.PublicKey(x, y)
 
 proof = longfellow.prove(credential, issuer_public_key, transcript, claims, now)
-longfellow.verify(issuer_public_key, transcript, claims, now, proof, doctype)  # raises on failure
+longfellow.verify(  # raises on failure
+    issuer_public_key, transcript, claims, now, proof, doctype, device_namespaces=b"\xa0"
+)
 ```
 
 Examples are in [`examples/`](examples/).

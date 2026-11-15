@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **BACKWARDS INCOMPATIBLE:** `Pylongfellow.verify` now takes `device_namespaces` as a
+  required keyword argument typed `bytes`, where it was optional and defaulted to `None`. The
+  google-cpp and lf-rust backends now raise `ValueError` for a value other than the encoded
+  empty map, `b"\xa0"`. They previously discarded the value and verified against the empty
+  map (#NN).
+
 ## 0.8.0 - 2026-11-14
 
 - The vendored longfellow-zk pin moved from v0.9 (`fe83ec6`) to `1c06629` (2026-11-03); the
