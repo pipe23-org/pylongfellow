@@ -6,7 +6,7 @@
   required keyword argument typed `bytes`, where it was optional and defaulted to `None`. The
   google-cpp and lf-rust backends now raise `ValueError` for a value other than the encoded
   empty map, `b"\xa0"`. They previously discarded the value and verified against the empty
-  map (#NN).
+  map (#87).
 
 ## 0.8.0 - 2026-11-14
 
