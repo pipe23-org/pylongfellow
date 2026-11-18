@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10.3.2
+      - uses: astral-sh/setup-uv@v10.3.3
         with:
           python-version: "3.14"
       - run: uv sync --locked --no-install-project
@@ -46,7 +46,7 @@ jobs:
             vendor/zk-cred-longfellow
             native/lf-rust
           shared-key: rust-backends
-      - uses: astral-sh/setup-uv@v10.3.2
+      - uses: astral-sh/setup-uv@v10.3.3
         with:
           python-version: "3.14"
       - run: uv sync --locked
@@ -72,7 +72,7 @@ jobs:
             vendor/zk-cred-longfellow
             native/lf-rust
           shared-key: rust-backends
-      - uses: astral-sh/setup-uv@v10.3.2
+      - uses: astral-sh/setup-uv@v10.3.3
         with:
           python-version: "3.14"
       - run: uv sync --locked
@@ -84,7 +84,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10.3.2
+      - uses: astral-sh/setup-uv@v10.3.3
         with:
           python-version: "3.14"
       # No submodule / native build: mkdocstrings reads the source statically.
@@ -118,7 +118,7 @@ jobs:
             vendor/zk-cred-longfellow
             native/lf-rust
           shared-key: rust-backends
-      - uses: astral-sh/setup-uv@v10.3.2
+      - uses: astral-sh/setup-uv@v10.3.3
         with:
           python-version: ${{ matrix.python-version }}
       - run: uv sync --locked
