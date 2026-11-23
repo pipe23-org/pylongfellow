@@ -15,6 +15,7 @@ longfellow-zk = { path = "../../vendor/longfellow-zk/rust", default-features = f
     "prover",
     "verifier",
     "mdoc",
+    "v1",
 ] }
 uniffi = { version = "0.32", features = ["cli"] }
 
