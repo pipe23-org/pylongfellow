@@ -7,6 +7,8 @@
   google-cpp and lf-rust backends now raise `ValueError` for a value other than the encoded
   empty map, `b"\xa0"`. They previously discarded the value and verified against the empty
   map (#87).
+- The vendored longfellow-zk pin moved from `1c06629` (2026-11-03) to `1424f50` (2026-11-19)
+  (#94).
 
 ## 0.8.0 - 2026-11-14
 

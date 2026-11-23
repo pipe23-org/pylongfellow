@@ -14,9 +14,9 @@ from pylongfellow.backends import BackendUnavailableError, lf_rust
 
 _REPO = Path(__file__).parents[2]
 _DATA = _REPO / "tests" / "api" / "data"
-_RUST = _REPO / "vendor" / "longfellow-zk" / "rust" / "applications" / "mdoc_zk"
+_RUST = _REPO / "vendor" / "longfellow-zk" / "rust" / "src" / "mdoc"
 _ARCHIVES = _RUST / "artifacts" / "circuits"
-_ERROR_RS = _RUST / "runtime" / "src" / "v1" / "error.rs"
+_ERROR_RS = _RUST / "runtime" / "v1" / "error.rs"
 
 _V7_1ATTR = "8d079211715200ff06c5109639245502bfe94aa869908d31176aae4016182121"
 
